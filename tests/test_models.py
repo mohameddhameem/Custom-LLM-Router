@@ -19,7 +19,7 @@ from transformers import (  # noqa: E402
 )
 
 from groupproject import evaluate_routing, make_splits, router, run_experts  # noqa: E402
-from groupproject.evidence import CrossEncoderScorer  # noqa: E402
+from groupproject.evidence import CrossEncoderScorer, RerankerScorer  # noqa: E402
 from groupproject.experts import PROMPT, HFExpert  # noqa: E402
 from synthetic import make_split  # noqa: E402
 
@@ -85,6 +85,13 @@ def test_cross_encoder_scores(tiny_models):
     assert scores.shape == (3,) and ((scores > 0) & (scores < 1)).all()
     assert 0 < scorer.sufficiency("Who directed the film?", ["Film: It was directed by Kalo."]) < 1
     assert scorer.pairs_seen == 3 * 3 + 2
+
+
+def test_reranker_scores(tiny_models):
+    scorer = RerankerScorer(str(tiny_models / "ce"), device="cpu")
+    scores = scorer.score("Who directed the film?", ["Film: It was directed by Kalo.", "Other: Unrelated."])
+    assert scores.shape == (2,) and ((scores > 0) & (scores < 1)).all()
+    assert np.isnan(scorer.sufficiency("Who directed the film?", ["Film: x"]))
 
 
 def test_end_to_end_with_models(tiny_models, tmp_path):

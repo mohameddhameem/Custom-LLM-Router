@@ -39,7 +39,7 @@ uv run eval-routing --run $R   # writes $R/report.json and $R/curves.csv
 | Config | Scorer | Experts | Use |
 |---|---|---|---|
 | `configs/smoke.toml` | lexical | heuristic stand-ins, no model | checking the pipeline |
-| `configs/cpu.toml` | lexical | Qwen2.5-0.5B (top-2) / 1.5B (all 10) | CPU pilot, tens of questions |
+| `configs/cpu.toml` | MS MARCO reranker | Qwen2.5-0.5B (top-2) / 1.5B (all 10) | CPU pilot, tens of questions |
 | `configs/gpu.toml` | nano-jev | Qwen2.5-1.5B (top-2) / 7B (all 10) | the minimal first experiment |
 
 Routers `question` and `question+evidence` share model, labels and data; only the input

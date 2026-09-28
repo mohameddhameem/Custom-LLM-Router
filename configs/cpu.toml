@@ -1,6 +1,9 @@
 # Real models small enough for a CPU. Use --limit 20-50; expect a few seconds per question.
 [scorer]
-kind = "lexical"
+# Public MS MARCO reranker as a stand-in for nano-jev; lexical scoring is near-useless here
+# because HotpotQA chose its distractors by word overlap with the question.
+kind = "reranker"
+path = "cross-encoder/ms-marco-MiniLM-L6-v2"
 
 [[experts]]
 name = "small"
