@@ -12,9 +12,12 @@ from groupproject.evidence import content_words, tokenize
 
 AUX_VERBS = frozenset("is are was were do does did can could has have had will would".split())
 
+# Two worked examples, chosen on calib questions: small-model F1 0.235 -> 0.466 vs asking for
+# "yes/no for yes/no questions", which made Qwen2.5-0.5B answer "Yes" to open questions.
 PROMPT = (
-    "Answer the question using the paragraphs below. Reply with the shortest possible answer: "
-    "a name, date, number or short phrase, or yes/no for yes/no questions.\n\n"
+    "Answer the question using the paragraphs below. Reply with only the answer, a few words, not a sentence.\n\n"
+    "Example: Question: Which city is the birthplace of the author of Dracula? Answer: Dublin\n"
+    "Example: Question: Are Paris and Rome both capital cities? Answer: yes\n\n"
     "{context}\n\nQuestion: {question}\nAnswer:"
 )
 
