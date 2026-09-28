@@ -1,6 +1,6 @@
 # Designing, Labelling, Training and Evaluating a Router on HotpotQA (Distractor Setting)
 
-Scope: implementation-level guidance for a student team with one consumer GPU (RTX 3060/4090 or Colab/Kaggle T4/P100). The team already exports HotpotQA distractor (train ~90k, validation ~7.4k) and has two reference codebases: nano-jev (MiniLM-L12-H384 cross-encoder, grouped softmax CE and temperature scaling) and rizzo-flow (LoRA on a small causal LM, soft CE over allowed answer-token logits). Research date: 27 Sep 2026.
+Scope: implementation-level guidance for a student team with one consumer GPU (RTX 3060/4090 or Colab/Kaggle T4/P100). The team already exports HotpotQA distractor (train ~90k, validation ~7.4k) and has two reference codebases: nano-jev (MiniLM-L12-H384 cross-encoder, grouped softmax CE and temperature scaling) and rizzo-flow (LoRA on a small causal LM, soft CE over allowed answer-token logits).
 
 ---
 
@@ -48,7 +48,7 @@ A three-tier pool fits the budget: (1) a fine-tuned extractive reader (DeBERTa-v
 
 ### Gaps
 - No peer-reviewed source was found for **Qwen2.5/Qwen3 0.5B–3B, Phi or Gemma zero-shot EM/F1 on the HotpotQA distractor setting**. The team must measure these itself; plan a 500–1,000-question pilot.
-- No HF checkpoint was found for a HotpotQA-tuned *large* extractive reader (ELECTRA-large/DeBERTa-v3-large with yes/no and supporting-fact heads). FE2H/Beam Retrieval code exists, but I did not confirm downloadable weights.
+- No HF checkpoint was found for a HotpotQA-tuned *large* extractive reader (ELECTRA-large/DeBERTa-v3-large with yes/no and supporting-fact heads). FE2H/Beam Retrieval code exists; downloadable weights unconfirmed.
 - The `MhoOmm/HotPotQA_DEBERT` validation split (4,687) differs from the official 7,405 dev set, so its 60.5/74.2 is not directly comparable.
 
 ---
@@ -116,7 +116,7 @@ Features from option 3 are known to be strong, but they pay for the cheap expert
 - The existing nano-jev cross-encoder is a natural **router backbone**. Encode `[question] [SEP] [expert descriptor / option]` and score each expert as an "option" with grouped softmax. This is exactly its existing (question, option) formulation, and temperature scaling then carries over directly.
 
 ### Gaps
-- I found no study on HotpotQA that directly compares question-only routers with routers that also see paragraph-relevance scores. This is a good ablation for the project.
+- No study was found on HotpotQA that directly compares question-only routers with routers that also see paragraph-relevance scores. This is a good ablation for the project.
 
 ---
 
@@ -225,6 +225,6 @@ Use HF `datasets`/`transformers`/`peft` for readers and routers, and **vLLM offl
   - Week 4: cost–quality curves, AIQ/APGR, per-type breakdowns, and the oracle/random baselines.
 
 ### Gaps
-- I found no authoritative per-token or per-question vLLM throughput for HotpotQA-length prompts (about 1–1.5k input and short output) on T4/P100/3060. The team should benchmark this on 500 questions.
+- No authoritative per-token or per-question vLLM throughput for HotpotQA-length prompts (about 1–1.5k input and short output) on T4/P100/3060. The team should benchmark this on 500 questions.
 - The average token length of a HotpotQA distractor context was not confirmed from a primary source. Compute it with the chosen tokenizer.
 - The RTX 4090 throughput figures come from a vendor blog with unspecified vLLM settings, so treat them as order-of-magnitude.

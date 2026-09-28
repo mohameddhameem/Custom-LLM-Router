@@ -1,7 +1,7 @@
 # Novel, Feasible Coursework Directions in Multi-hop QA (HotpotQA / 2WikiMultiHopQA / MuSiQue): Routing, Evidence Selection, Calibration, Training Objectives
 
 Research date: 2026-09-27. Paper dates are arXiv first-submission dates unless noted.
-Citation note: sources tagged **[bg]** come from background knowledge (well-known papers). Their arXiv IDs were not re-fetched in this session, so check them before putting them in a report. All other sources were retrieved via web search/fetch on 2026-09-27. Several 2026 preprints were checked only at abstract level (noted where relevant).
+Sources tagged **[bg]** are from recall; check their arXiv IDs before citing. Other sources were retrieved on 2026-09-27; several 2026 preprints were read at abstract level only.
 
 ---
 
@@ -90,7 +90,7 @@ Joint answer + supporting-fact multi-task learning is classic (2018–2020). Rat
 - Supervised objectives (cross-encoder sufficiency, joint answer+SP+sufficiency heads on a small reader, distillation from LLM soft labels) are the safest core contribution. RL is a stretch goal.
 
 ### Gaps
-- Exact GPU-hours for Search-R1 / R1-Searcher / ZeroSearch main runs were not extracted in this session.
+- Exact GPU-hours for Search-R1 / R1-Searcher / ZeroSearch main runs are unknown.
 - David-GRPO's wall-clock time on 4× 3090 was not stated in the pages fetched.
 
 ---

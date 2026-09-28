@@ -1,7 +1,7 @@
 [project]
 name = "groupproject"
 version = "0.1.0"
-description = "Add your description here"
+description = "Cost-aware routing between QA models on HotpotQA"
 readme = "README.md"
 authors = [
     { name = "Mohamed Dhameem", email = "mohamed_dhameem20@yahoo.com" }
@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [project.scripts]
-groupproject = "groupproject:main"
+prepare-hotpotqa = "groupproject.prepare_hotpotqa:main"
 
 [build-system]
 requires = ["uv_build>=0.12.1,<0.13.0"]
