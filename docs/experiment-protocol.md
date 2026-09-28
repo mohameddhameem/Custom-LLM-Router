@@ -11,9 +11,19 @@ Rules that apply to every experiment in this repo. The plan itself is in
 - Split by question `id` before deriving any per-paragraph or per-expert rows. All rows from one
   question stay in one split.
 - Exclude from router-train any question a component was trained on (nano-jev's 6,000 HotpotQA
-  train questions, any fine-tuned reader), or use k-fold cross-fitting.
+  train questions, any fine-tuned reader), or use k-fold cross-fitting. `make-splits --exclude
+  ids.txt` does this; dump the ids from nano-jev's `build_all()` output.
+- nano-jev also used validation[0:1000] for calibration and testing. Report final numbers on the
+  full validation set and on validation[1000:] so the difference is visible.
 - `level` is `hard` for every validation question. Do not use it as a feature or report
   per-level results on validation; use `type` (bridge/comparison) and yes/no vs span instead.
+
+## Evidence features
+
+nano-jev's sufficiency head was trained on 3-paragraph sets and truncates at 512 tokens. All ten
+distractor paragraphs run to roughly 1–1.5k tokens, so do not score sufficiency over the full
+context. Score each paragraph for relevance, then score sufficiency over the top-2 or top-3.
+Log how often the input is truncated.
 
 ## Leakage
 

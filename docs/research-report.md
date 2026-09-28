@@ -156,6 +156,36 @@ Two caveats specific to the distractor setting need to be designed in. First, a 
 
 RL fits on one GPU only as a stretch goal. It needs a model of 1.5B or smaller with LoRA, the closed distractor setting (so no retriever server), and the large model's answers cached offline so escalation costs nothing during training. Search-R1++ found that EM rewards beat F1 rewards and that REINFORCE beat PPO, so keep RLOO or REINFORCE as the fallback ([Search-R1++](https://arxiv.org/abs/2602.19526)). Novelty for every idea was checked by web search, and only at abstract level for the newest 2026 preprints. Two directly relevant papers appeared in September 2026 alone, so run a targeted Semantic Scholar check on each exact keyword combination before writing "first."
 
+## Minimal first experiment
+
+The blueprint above is more than four weeks of work. Build this end to end first, then extend it:
+
+1. Two experts only: **small** = Qwen2.5-1.5B/3B-Instruct over nano-jev's top-2 paragraphs;
+   **large** = a 7–8B model (4-bit) over all ten.
+2. One binary decision: answer with small, or escalate to large. Label = small is correct
+   (F1 ≥ τ).
+3. Routers with the same head and labels, differing only in input: question only; question +
+   nano-jev evidence features.
+4. Baselines: always-small, always-large, random at matched escalation rate, mean-token-entropy
+   threshold on the small model, oracle.
+5. Output: one F1-vs-cost curve on validation, with AIQ.
+
+Ideas 5 and 7 and conformal calibration come after this works.
+
+## Citations to verify before writing up
+
+The novelty argument rests on recent preprints that were read at abstract level or through
+summaries. Check each one against the paper before citing it:
+
+- RASER, [2606.02488](https://arxiv.org/abs/2606.02488): features and datasets as described
+- Beyond the Query, [2609.12437](https://arxiv.org/abs/2609.12437): the matched query-only
+  control result, and that it is multimodal
+- Routing Plateau, [2606.07587](https://arxiv.org/abs/2606.07587)
+- Is Escalation Worth It?, [2605.06350](https://arxiv.org/abs/2605.06350)
+- Pause and Reflect, [2605.14098](https://arxiv.org/abs/2605.14098)
+- Adaptive-RAG HotpotQA rows (oracle F1 64.0 at 1.59 steps; classifier accuracy 54.52%)
+- Bactrainus gold vs all-paragraph F1 (74.52 vs 57.20)
+
 ## Conclusion
 
 The field's own record says the router is not the contribution; the **controlled comparison** is. Learned routers across the literature sit far below their oracles. Adaptive-RAG, the canonical HotpotQA complexity router, is only 54.5% accurate on a three-way task, and a simple entropy threshold matches its accuracy at half the LM calls. The one matched-control test of retrieval-state features came back negative. A team that runs the same MiniLM head on question-only and question-plus-evidence inputs, under identical labels and cost curves, will produce a result worth reporting whichever way it falls. The distractor setting helps: with retrieval free, the causal effect of *evidence quality* on escalation is unusually clean to isolate.
