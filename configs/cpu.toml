@@ -1,0 +1,17 @@
+# Real models small enough for a CPU. Use --limit 20-50; expect a few seconds per question.
+[scorer]
+kind = "lexical"
+
+[[experts]]
+name = "small"
+kind = "hf"
+model = "Qwen/Qwen2.5-0.5B-Instruct"
+top_k = 2
+dtype = "float32"
+
+[[experts]]
+name = "large"
+kind = "hf"
+model = "Qwen/Qwen2.5-1.5B-Instruct"
+dtype = "float32"
+# no top_k: reads all ten paragraphs

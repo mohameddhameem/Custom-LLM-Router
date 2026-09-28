@@ -1,0 +1,19 @@
+# Minimal first experiment (docs/research-report.md). Set scorer.path to a nano-jev checkpoint
+# directory (model weights, tokenizer and calibration.json).
+[scorer]
+kind = "cross-encoder"
+path = "runs/nano-jev"
+sufficiency_top_k = 2
+
+[[experts]]
+name = "small"
+kind = "hf"
+model = "Qwen/Qwen2.5-1.5B-Instruct"
+top_k = 2
+dtype = "bfloat16"
+
+[[experts]]
+name = "large"
+kind = "hf"
+model = "Qwen/Qwen2.5-7B-Instruct"
+dtype = "bfloat16"
