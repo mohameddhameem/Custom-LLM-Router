@@ -94,12 +94,44 @@ class CrossEncoderScorer:
         return float(self._decide("sufficient", question, ["\n".join(paragraphs)])[0, 0])
 
 
+class RerankerScorer:
+    """Generic (query, passage) cross-encoder with one relevance logit, e.g. an MS MARCO reranker.
+
+    Stand-in until a nano-jev checkpoint is available. It has no sufficiency decision.
+    """
+
+    name = "reranker"
+
+    def __init__(self, path: str, device: str | None = None, max_length: int = 512):
+        import torch
+        from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
+        self.torch = torch
+        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+        self.tokenizer = AutoTokenizer.from_pretrained(path)
+        self.model = AutoModelForSequenceClassification.from_pretrained(path).to(self.device).eval()
+        self.max_length = max_length
+
+    def score(self, question: str, paragraphs: list[str]) -> np.ndarray:
+        """Sigmoid of the relevance logit per paragraph."""
+        enc = self.tokenizer([question] * len(paragraphs), paragraphs, truncation="only_second",
+                             max_length=self.max_length, padding=True, return_tensors="pt")
+        with self.torch.no_grad():
+            logits = self.model(**enc.to(self.device)).logits[:, 0].float().cpu().numpy()
+        return 1.0 / (1.0 + np.exp(-logits))
+
+    def sufficiency(self, question: str, paragraphs: list[str]) -> float:
+        return float("nan")
+
+
 def make_scorer(cfg: dict):
     kind = cfg.get("kind", "lexical")
     if kind == "lexical":
         return LexicalScorer()
     if kind == "cross-encoder":
         return CrossEncoderScorer(cfg["path"], device=cfg.get("device"))
+    if kind == "reranker":
+        return RerankerScorer(cfg["path"], device=cfg.get("device"))
     raise ValueError(f"unknown scorer kind: {kind}")
 
 

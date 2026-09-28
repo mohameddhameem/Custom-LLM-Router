@@ -39,15 +39,25 @@ uv run eval-routing --run $R   # writes $R/report.json and $R/curves.csv
 | Config | Scorer | Experts | Use |
 |---|---|---|---|
 | `configs/smoke.toml` | lexical | heuristic stand-ins, no model | checking the pipeline |
-| `configs/cpu.toml` | lexical | Qwen2.5-0.5B (top-2) / 1.5B (all 10) | CPU pilot, tens of questions |
+| `configs/cpu.toml` | MS MARCO reranker | Qwen2.5-0.5B (top-2) / 1.5B (all 10) | CPU pilot, tens of questions |
 | `configs/gpu.toml` | nano-jev | Qwen2.5-1.5B (top-2) / 7B (all 10) | the minimal first experiment |
+| `configs/t4-vllm.toml` | MS MARCO reranker | vLLM: Qwen2.5-1.5B (top-2) / 7B-AWQ (all 10) | free Colab T4 |
+| `configs/t4-hf.toml` | MS MARCO reranker | transformers: 1.5B / 7B in 4-bit | T4 fallback if vLLM fails |
 
 Routers `question` and `question+evidence` share model, labels and data; only the input
 differs. `eval-routing` compares them with random, oracle and a small-model entropy threshold
 on F1-vs-cost curves (AIQ), and picks an operating point on `calib` (≤1% F1 below always-large).
 
-`HFExpert` answers one question at a time with `transformers`. That is fine for pilots; for the
-full 20k-question label set, add a vLLM expert.
+`run-experts` works in stages (`--stage evidence|small|large|merge`, default all) and saves
+chunks of 500 questions under `<run>/<name>.parts/`. Rerunning a command skips finished chunks.
+On a GPU, run one stage per command so only one model holds GPU memory.
+
+### Google Colab (free T4)
+
+Open [`notebooks/colab_t4.ipynb`](notebooks/colab_t4.ipynb) in Colab, select a T4 runtime and
+**Run all**. It installs into its own environment, keeps data and results on Google Drive,
+runs a 500-question pilot with a time estimate, then the full run. After a disconnect, run all
+again to resume.
 
 ## Docs
 
