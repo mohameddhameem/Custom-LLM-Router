@@ -1,12 +1,11 @@
 """Download and prepare the HotpotQA dataset for experiments."""
 
 import logging
-import sys
 from pathlib import Path
 
 import pandas as pd
+from datasets import load_dataset
 
-logging.basicConfig(level=logging.INFO, format="%(message)s")
 log = logging.getLogger(__name__)
 
 CONFIG = "distractor"
@@ -17,9 +16,7 @@ SAMPLE = None  # Set to e.g. 500 for quick iteration
 
 def extract_supporting_context(example: dict) -> str:
     """Return the concatenated sentences marked as supporting facts."""
-    title_to_sents = {}
-    for title, sentences in zip(example["context"]["title"], example["context"]["sentences"]):
-        title_to_sents[title] = sentences
+    title_to_sents = dict(zip(example["context"]["title"], example["context"]["sentences"]))
 
     parts = []
     for title, sent_id in zip(example["supporting_facts"]["title"], example["supporting_facts"]["sent_id"]):
@@ -54,12 +51,8 @@ def flatten_example(example: dict) -> dict:
     }
 
 
-def main():
-    try:
-        from datasets import load_dataset
-    except ImportError:
-        sys.exit("Missing dependency: pip install datasets pyarrow")
-
+def main() -> None:
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     log.info(f"Loading HotpotQA ({CONFIG}) …")

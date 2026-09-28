@@ -47,9 +47,9 @@ On the distractor test set, results went from the 2018 baseline (Joint F1 40.16)
 - "Graph reasoning" readers (DFGN, HGN, SAE, AMGN, BFR-Graph, etc.) are heavily explored, and Shao et al. show they are not necessary with fine-tuned transformers. A new graph module is unlikely to count as novel on its own.
 
 ### Gaps
-- Exact compute for most leaderboard entries (PipNet, R3, S2G) was not reported on the leaderboard. I did not read those papers.
-- BigBird's own HotpotQA distractor numbers: the BigBird paper reports HotpotQA results, but I did not verify them from the PDF. The only related leaderboard row is "ETC-large".
-- I did not verify the "RD Model", "GIT" and "EGF Reader" papers.
+- Exact compute for most leaderboard entries (PipNet, R3, S2G) is not on the leaderboard; papers not checked.
+- BigBird's own HotpotQA distractor numbers: the BigBird paper reports HotpotQA results; unverified. The only related leaderboard row is "ETC-large".
+- Unverified: "RD Model", "GIT" and "EGF Reader" papers.
 - Many leaderboard entries are anonymous and unpublished. Treat them as existence proofs only.
 
 ---
@@ -96,8 +96,8 @@ The fullwiki leaderboard (test) is topped by AISO (May 2021, Joint EM/F1 44.87/7
 - Retrieval-only claims should be reported as dev P-EM / P-R@k with the official 2017 Wikipedia abstracts corpus so they compare with MDR (81.2 reranked P-EM) and Baleen (86.7 P-EM, 93.3 P-R@20).
 
 ### Gaps
-- I did not read the AISO, TPRR, Chain-of-Skills or HopRetriever papers for their retrieval metrics. My arXiv fetch for HopRetriever returned the wrong paper. The fullwiki test numbers above come from the leaderboard.
-- I did not verify Cognitive Graph or GoldEn Retriever compute.
+- Retrieval metrics for AISO, TPRR, Chain-of-Skills and HopRetriever are unchecked. The fullwiki test numbers above come from the leaderboard.
+- Cognitive Graph and GoldEn Retriever compute: unverified.
 
 ---
 
@@ -118,7 +118,7 @@ LLM papers almost never use the official protocol. They report answer-only EM/F1
 - **EfficientRAG** (Zhuang et al., EMNLP 2024): a small DeBERTa-v3-large (304M) "Labeler/Tagger" and "Filter" generate the next-hop query without calling the LLM each hop. Llama-3-8B-Instruct reader, Contriever-MSMARCO retriever. HotpotQA EM/F1/Acc: EfficientRAG 50.59/57.93/57.86; Iter-RetGen iter3 56.76/60.89/57.56; SelfAsk 33.58/39.10/42.36; Direct-R@10 38.24/44.55/44.56; CoT 27.99/34.05/30.53. Retrieval recall@K on HotpotQA 81.84 with only 6.41 chunks — [EfficientRAG](https://arxiv.org/abs/2408.04259)
 - **HippoRAG** (Gutiérrez et al., NeurIPS 2024): a KG built by an LLM plus Personalized PageRank. It uses **1,000 dev questions** and a **closed corpus of 9,221 passages** (all candidate passages of those questions, following IRCoT), which is *not fullwiki*. The authors themselves note HotpotQA "has been found to be a much weaker test for multi-hop reasoning due to many spurious signals" — [HippoRAG](https://arxiv.org/abs/2405.14831)
 - **HippoRAG 2** (Feb 2025), same style of subset and corpus, Llama-3.3-70B reader. HotpotQA QA F1: None 47.3; Contriever 62.3; BM25 63.4; NV-Embed-v2 75.3; RAPTOR 69.5; GraphRAG 68.6; LightRAG 2.4; HippoRAG 63.5; **HippoRAG 2 75.5**. Passage Recall@5: BM25 74.8; NV-Embed-v2 94.5; RAPTOR 86.9; HippoRAG 77.7; HippoRAG 2 96.3 — [HippoRAG 2](https://arxiv.org/abs/2502.14802)
-- **Search-o1** (Li et al., Jan 2025): QwQ-32B large reasoning model with agentic search and a "Reason-in-Documents" module. HotpotQA EM/F1: Search-o1 45.2/57.3; RAgent-QwQ-32B 43.0/55.2; RAG-QwQ-32B 34.2/46.4; direct QwQ-32B 25.4/33.3; Llama3.3-70B direct 37.8/49.1 — [Search-o1](https://arxiv.org/abs/2501.05366) (the eval subset size was not stated in the text I parsed; see Gaps)
+- **Search-o1** (Li et al., Jan 2025): QwQ-32B large reasoning model with agentic search and a "Reason-in-Documents" module. HotpotQA EM/F1: Search-o1 45.2/57.3; RAgent-QwQ-32B 43.0/55.2; RAG-QwQ-32B 34.2/46.4; direct QwQ-32B 25.4/33.3; Llama3.3-70B direct 37.8/49.1 — [Search-o1](https://arxiv.org/abs/2501.05366) (eval subset size not found; see Gaps)
 
 **RL-trained search agents (2025–2026):**
 - **Search-R1** (Jin et al., COLM 2025): PPO/GRPO RL with a masked loss on retrieved tokens and an outcome EM reward. Training data is NQ + HotpotQA train (so HotpotQA is in-domain). The retriever is E5 over the 2018 DPR Wikipedia dump with top-3 passages. Evaluated on full HotpotQA dev with EM. Qwen2.5-7B: Search-R1-base 0.433, Search-R1-instruct 0.370; RAG 0.299; IRCoT 0.133; Search-o1 0.187; R1 (no search) 0.242; Rejection-sampling SFT 0.331; Direct 0.183; CoT 0.092. Qwen2.5-3B: Search-R1-instruct 0.324, base 0.284. GRPO variants: 7B-instruct 0.386. Compute: one node with 8× H100 — [Search-R1](https://arxiv.org/abs/2503.09516)
@@ -134,7 +134,7 @@ LLM papers almost never use the official protocol. They report answer-only EM/F1
 - For a **router** project: Adaptive-RAG (complexity classifier), Self-RAG (reflection tokens), EfficientRAG (small model decides next hop / termination) and "adaptive search depth" RL (e.g., AutoSearch, 2026) are the closest prior art. Novelty must be claimed relative to these.
 
 ### Gaps
-- **FLARE** (Jiang et al., 2023): I believe it reports on 2WikiMultihopQA, not HotpotQA, but I did not verify this.
+- **FLARE** (Jiang et al., 2023): probably reports on 2WikiMultihopQA, not HotpotQA; unverified.
 - **GenGround** (Shi et al., ACL 2024): not retrieved, no numbers verified.
 - The Search-o1 open-domain QA subset size was not confirmed from the parsed text.
 - **AutoSearch** (arXiv 2604.17337, 2026, adaptive search depth via RL): found in search, but the PDF text did not parse, so no numbers.
@@ -162,8 +162,8 @@ Several 2019 studies showed that much of HotpotQA can be solved without multi-ho
 - Any HotpotQA-only novelty claim for "multi-hop reasoning" is weak unless it is also evaluated on MuSiQue and/or 2Wiki, or on adversarial HotpotQA (Jiang & Bansal's AddDoc). Reporting the bridge and comparison splits separately is also informative.
 
 ### Gaps
-- I did not verify whether the adversarial HotpotQA set (AddDoc) is still publicly downloadable. The paper's code release was not checked.
-- I did not look up Mavi et al.'s "Multi-hop Question Answering" survey (2022/2024) for its taxonomy.
+- Unverified: whether the adversarial HotpotQA set (AddDoc) is still downloadable.
+- Not checked: Mavi et al.'s "Multi-hop Question Answering" survey (2022/2024) taxonomy.
 
 ---
 
@@ -183,5 +183,5 @@ The official scorer is `hotpot_evaluate_v1.py`. Answer EM/F1 use SQuAD-style nor
 - LLM-era answer-only numbers ignore SP. A project that predicts supporting facts with an LLM or router pipeline and reports Joint EM/F1 on the full dev set would be directly comparable to the classic readers, and few LLM papers do this.
 
 ### Gaps
-- I did not verify the exact test-set size or the CodaLab submission instructions (the guide page was not fetched).
-- I did not check whether the HotpotQA team formally closed the leaderboard.
+- Unverified: exact test-set size and CodaLab submission instructions.
+- Unknown whether the leaderboard is formally closed.

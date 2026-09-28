@@ -1,8 +1,6 @@
 # Routing Techniques for LLM / ML Systems (with emphasis on HotpotQA / multi-hop QA)
 
-Compiled 2026-09-27. Sources were fetched in this session unless marked **[not fetched this session]**. Those items come from background knowledge with arXiv IDs I am confident of, but their details were NOT re-verified here, so check them before quoting.
-
-Verification note: one WebFetch summary (FrugalGPT) turned out to be hallucinated. It named MMLU/BBQ/TruthfulQA as datasets, and the real PDF says HEADLINES/OVERRULING/COQA. I corrected it against the PDF text. Other numbers below come from WebFetch summaries of arXiv HTML. Where two independent fetches agreed (e.g., Adaptive-RAG HotpotQA row reproduced in the MBA-RAG paper), I say so.
+Compiled 2026-09-27. Source status: items marked **[unverified]** are from recall, not a fetched source. Check them before citing. Most other numbers come from summaries of arXiv HTML pages; one such summary (FrugalGPT) was wrong and was corrected against the PDF, so spot-check any number you quote.
 
 ---
 
@@ -35,7 +33,7 @@ Almost all model routers use the same recipe. (1) Run every candidate LLM on a t
   - CPT(x%) = the minimum % of strong-model calls needed to reach x% PGR.
   — [arXiv 2406.18665 HTML](https://arxiv.org/html/2406.18665v4)
 - Results: more than 2× cost savings. MF on MT-Bench nearly halves CPT(80%) compared with random routing. Table 6 reports up to 3.66× savings on MT-Bench at 95% quality. With golden-label augmentation on MMLU, routers need about 20% fewer GPT-4 calls than random at CPT(50%). **No HotpotQA evaluation.** — [arXiv 2406.18665 HTML](https://arxiv.org/html/2406.18665v4)
-- Repo: lm-sys/RouteLLM (not fetched this session).
+- Repo: lm-sys/RouteLLM [unverified].
 
 **Hybrid LLM (Ding et al., ICLR 2024; arXiv 2404.14618): difficulty-aware router, small vs large model**
 - Router: **DeBERTa-v3-large (about 300M params)**, single forward pass, about 0.036 s latency (about 10× faster than the smallest LLM tested) — [arXiv 2404.14618 HTML](https://arxiv.org/html/2404.14618v1)
@@ -85,7 +83,7 @@ Almost all model routers use the same recipe. (1) Run every candidate LLM on a t
 - LLMRouter (Feng et al., arXiv 2608.06867, Aug 7 2026): unified library with 16+ routers, framed as context encoder + model encoder + scoring function + decision rule + learning signal. Introduces the xRouteBench benchmark. Learned routers beat the strongest fixed model by 14.6% (relative) — [arXiv 2608.06867](https://arxiv.org/abs/2608.06867)
 - Survey "Doing More with Less: A Survey on Routing Strategies for Resource Optimisation in LLM-Based Systems" (Varangot-Reille et al., arXiv 2502.00409, Feb 1 2025; v3 Jul 21 2025). Taxonomy: pre-generation vs post-generation (cascade) routing; similarity-based, supervised, RL-based, and generative routers — [arXiv 2502.00409](https://arxiv.org/abs/2502.00409)
 
-**Other named routers [not fetched this session; verify before citing details]**
+**Other named routers [unverified]**
 - LLM-Blender (Jiang et al., ACL 2023): PairRanker (pairwise cross-encoder) + GenFuser; MixInstruct dataset — [arXiv 2306.02561](https://arxiv.org/abs/2306.02561)
 - Zooter (Lu et al., 2023): reward-model-distilled query→expert router — [arXiv 2311.08692](https://arxiv.org/abs/2311.08692)
 - Tryage (Hu et al., 2023): perceptive router predicting per-model loss — [arXiv 2308.11601](https://arxiv.org/abs/2308.11601)
@@ -107,7 +105,7 @@ Almost all model routers use the same recipe. (1) Run every candidate LLM on a t
 
 ### Gaps
 - No RouteLLM, Hybrid-LLM, AutoMix, or FrugalGPT results on HotpotQA were found. Among model routers, only Router-R1 reports HotpotQA numbers, and RAGRouter uses HotpotQA only for cross-domain testing.
-- Details of Zooter, Tryage, Smoothie, Arch-Router, MixLLM, EmbedLLM, GraphRouter, RouterEval, and LLM-Blender were not fetched. Their training-set sizes and losses are unverified here.
+- Details of Zooter, Tryage, Smoothie, Arch-Router, MixLLM, EmbedLLM, GraphRouter, RouterEval, and LLM-Blender are unverified: training-set sizes and losses unknown.
 - Router-R1's exact cost-reward formula and α values were only summarized. Check the paper.
 
 ---
@@ -194,7 +192,7 @@ Adaptive-RAG (NAACL 2024) is the canonical query-complexity router for HotpotQA-
 - Five classical classifiers × three feature sets (TF-IDF with 3k uni+bigrams; MiniLM-L6 384-d embeddings; 23 hand-crafted structural features).
 - Best: **TF-IDF + SVM, macro-F1 0.928, accuracy 93.2%**, 28.1% simulated token savings (perfect labels would save 35.2%). TF-IDF beats MiniLM by 3.1 macro-F1 and structural features by 14.0. No HotpotQA results — [arXiv 2604.03455 HTML](https://arxiv.org/html/2604.03455)
 
-**Other adaptive-retrieval methods [not fetched this session]**
+**Other adaptive-retrieval methods [unverified]**
 - Self-RAG (Asai et al., ICLR 2024): reflection tokens [Retrieve], [IsREL], [IsSUP], [IsUSE], trained into the generator using critic-distilled labels. Main evaluations are PopQA, TriviaQA, PubHealth, ARC, ASQA, and bio generation, not HotpotQA — [arXiv 2310.11511](https://arxiv.org/abs/2310.11511)
 - FLARE (Jiang et al., EMNLP 2023): generates a lookahead sentence and retrieves if any token probability falls below a threshold — [arXiv 2305.06983](https://arxiv.org/abs/2305.06983)
 - SKR (Wang et al., Findings EMNLP 2023): self-knowledge elicitation (prompting, kNN over training questions, or a classifier) to decide whether to retrieve — [arXiv 2310.05002](https://arxiv.org/abs/2310.05002)
@@ -251,7 +249,7 @@ Cheap uncertainty signals are competitive routers for deciding when to escalate 
   - Cascade-Aware Training of LMs — [arXiv 2406.00060](https://arxiv.org/pdf/2406.00060)
   - "Is Escalation Worth It? A Decision-Theoretic Characterization of LLM Cascades" (2026) — [arXiv 2605.06350](https://arxiv.org/pdf/2605.06350)
   - "Probabilities of Chat LLMs Are Miscalibrated but Still Predict Correctness on MC Q&A" — [arXiv 2402.13213](https://arxiv.org/pdf/2402.13213)
-- Foundational methods [not fetched this session]:
+- Foundational methods [unverified]:
   - Semantic entropy (Kuhn et al., ICLR 2023): cluster sampled answers by bidirectional entailment, then take entropy over the clusters — [arXiv 2302.09664](https://arxiv.org/abs/2302.09664)
   - P(True) / self-evaluation (Kadavath et al., 2022) — [arXiv 2207.05221](https://arxiv.org/abs/2207.05221)
   - Verbalized confidence (Tian et al., EMNLP 2023) — [arXiv 2305.14975](https://arxiv.org/abs/2305.14975)
@@ -281,7 +279,7 @@ Token-level MoE routing (Switch/GShard/top-k gating with an auxiliary load-balan
 
 ### Cited Findings
 - Switch Transformer (Fedus, Zoph, Shazeer; arXiv Jan 2021, JMLR 2022) uses top-1 expert routing and reports up to 7× pre-training speedup over T5-Base/Large and 4× over T5-XXL — [arXiv 2101.03961](https://arxiv.org/abs/2101.03961)
-- The auxiliary load-balancing loss (formula from the paper, not re-extracted this session) is L_aux = α·N·Σ_i f_i·P_i with α = 10⁻². Here f_i is the fraction of tokens dispatched to expert i and P_i is the mean router probability for expert i. The paper also uses an expert capacity factor with token dropping — [arXiv 2101.03961](https://arxiv.org/abs/2101.03961)
+- The auxiliary load-balancing loss [unverified] is L_aux = α·N·Σ_i f_i·P_i with α = 10⁻². Here f_i is the fraction of tokens dispatched to expert i and P_i is the mean router probability for expert i. The paper also uses an expert capacity factor with token dropping — [arXiv 2101.03961](https://arxiv.org/abs/2101.03961)
 - Mixture-of-LoRA-experts landscape, 2024–2026:
   - Mixture-of-LoRAs for multitask tuning — [arXiv 2403.03432](https://arxiv.org/pdf/2403.03432)
   - DynMoLE: hybrid routing — [arXiv 2504.00661](https://arxiv.org/pdf/2504.00661)
@@ -292,7 +290,7 @@ Token-level MoE routing (Switch/GShard/top-k gating with an auxiliary load-balan
 - Two paradigms for combining LoRA experts: static parameter merging (e.g., LoRAHub) vs dynamic output ensembling with a router — [search summary citing LoRA-MoE literature](https://arxiv.org/html/2507.00029v2)
 - HotpotQA has **bridge** (entity-chaining) and **comparison** (extract-compare-choose) questions — [HotpotQA paper, EMNLP 2018](https://aclanthology.org/D18-1259.pdf)
 - A Stanford CS224N HotpotQA report argues for pipelines specialized per question type: direct retrieval works better for comparison questions, and graph/GNN approaches may suit bridge questions (student report, low authority) — [CS224N report](https://web.stanford.edu/class/archive/cs/cs224n/cs224n.1194/reports/custom/15743318.pdf)
-- [Not fetched this session]:
+- [unverified]:
   - Sparsely-gated MoE with noisy top-k gating and an importance/load loss (Shazeer et al., 2017) — [arXiv 1701.06538](https://arxiv.org/abs/1701.06538)
   - GShard top-2 routing — [arXiv 2006.16668](https://arxiv.org/abs/2006.16668)
   - MoLoRA / MoV (Zadouri et al., 2023): soft-merged LoRA experts with a token-level router for instruction tuning — [arXiv 2309.05444](https://arxiv.org/abs/2309.05444)
@@ -305,7 +303,7 @@ Token-level MoE routing (Switch/GShard/top-k gating with an auxiliary load-balan
 
 ### Gaps
 - No peer-reviewed paper was found that trains bridge-vs-comparison experts or type-routed LoRAs on HotpotQA and reports gains.
-- The Switch load-balancing formula and α were not re-extracted from the full text this session; they are from background knowledge.
+- The Switch load-balancing formula and α are unverified (from recall).
 
 ---
 
