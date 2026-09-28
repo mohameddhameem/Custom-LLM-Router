@@ -150,3 +150,18 @@ def router_columns(run) -> list[str]:
     import pickle
 
     return pickle.loads((run / "routers.pkl").read_bytes())["routers"]["question+evidence"]["columns"]
+
+
+@pytest.mark.parametrize("model_dir", ["lm", "chat-lm"])
+def test_hf_expert_batches_match_single(tiny_models, model_dir):
+    qs = ["Who directed the film?", "Where was Kalo born?", "Which film came out first, Film or Other?"]
+    ctx = [["Film: It was directed by Kalo."], ["Kalo: Kalo was born in Rimer.", "Other: Unrelated text here."],
+           ["Film: A 1990 film."]]
+    single = HFExpert("s", None, str(tiny_models / model_dir), device="cpu", max_new_tokens=5, dtype="float32")
+    batched = HFExpert("s", None, str(tiny_models / model_dir), device="cpu", max_new_tokens=5, dtype="float32",
+                       batch_size=3)
+    one = [single.answer(q, c) for q, c in zip(qs, ctx)]
+    many = batched.answer_batch(qs, ctx)
+    assert [o.answer for o in one] == [o.answer for o in many]
+    assert [o.cost for o in one] == [o.cost for o in many]
+    assert [o.uncertainty for o in one] == pytest.approx([o.uncertainty for o in many], rel=1e-3)

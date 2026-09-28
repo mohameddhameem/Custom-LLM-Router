@@ -1,0 +1,20 @@
+# Fallback for a free Colab T4 when vLLM does not run: transformers with left-padded batches,
+# and the 7B model loaded in 4-bit with bitsandbytes. Slower than vLLM.
+[scorer]
+kind = "reranker"
+path = "cross-encoder/ms-marco-MiniLM-L6-v2"
+
+[[experts]]
+name = "small"
+kind = "hf"
+model = "Qwen/Qwen2.5-1.5B-Instruct"
+top_k = 2
+dtype = "float16"
+batch_size = 32
+
+[[experts]]
+name = "large"
+kind = "hf"
+model = "Qwen/Qwen2.5-7B-Instruct"
+load_in_4bit = true
+batch_size = 8
