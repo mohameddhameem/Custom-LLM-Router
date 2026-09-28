@@ -10,10 +10,13 @@ Requires Python 3.12 and [uv](https://docs.astral.sh/uv/).
 
 ```sh
 uv sync
-uv run prepare-hotpotqa   # writes data/hotpotqa/distractor_{train,validation}.{json,parquet}
+uv run prepare-hotpotqa   # writes data/hotpotqa/distractor_{train,validation}.parquet
+uv run make-splits        # writes data/hotpotqa/splits.json (router_train, calib)
+uv run pytest
 ```
 
-Set `SAMPLE` in `src/groupproject/prepare_hotpotqa.py` to export a random subset per split.
+`prepare-hotpotqa --sample 500` exports a random subset per split; `--jsonl` also writes JSON
+Lines. `make-splits --exclude ids.txt` drops questions another component was trained on.
 
 ## Docs
 
