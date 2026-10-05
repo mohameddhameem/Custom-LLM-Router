@@ -95,6 +95,26 @@ Every step resumes, so if a job dies or runs out of walltime, submit it again.
 5. **Eval only** (CPU, seconds): `bash scripts/run_cluster.sh eval` on the login node.
    `full` already runs it at the end.
 
+## Recovering from failures
+
+Every step resumes from its finished 500-question chunks, so a rerun never repeats work.
+Three layers use that:
+
+- **Retries inside the job**: `scripts/omega.pbs` reruns the step up to `ATTEMPTS` times (default 3,
+  60 s apart). This covers Hub or network hiccups and transient CUDA errors.
+- **Requeue** (`#PBS -r y`): if the node goes down, PBS restarts the job. The log appends.
+- **Backup jobs** for walltime kills and failures that outlast the retries. A backup starts only if
+  the job before it fails, and PBS deletes it when that job succeeds:
+
+  ```bash
+  J1=$(qsub -v STEP=full scripts/omega.pbs)
+  J2=$(qsub -W depend=afternotok:$J1 -v STEP=full scripts/omega.pbs)
+  J3=$(qsub -W depend=afternotok:$J2 -v STEP=full scripts/omega.pbs)
+  ```
+
+If all three fail, the error repeats every time (for example out of memory: lower `batch_size` in
+the config, which a run directory accepts). Read `runs/logs/<jobid>.log`, fix the cause and submit again.
+
 ## Watching and managing jobs
 
 | | |
