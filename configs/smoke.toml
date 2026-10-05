@@ -7,9 +7,11 @@ kind = "lexical"
 name = "small"
 kind = "heuristic"
 top_k = 1
+params = 1.5  # stand-in size for the FLOPs cost unit
 
 [[experts]]
 name = "large"
 kind = "heuristic"
 top_k = 4
+params = 7
 hops = 1

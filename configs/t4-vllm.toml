@@ -1,14 +1,16 @@
 # Free Colab T4 (16 GB, no bfloat16) with vLLM. Run each run-experts stage as its own command
 # so only one model is on the GPU. If vLLM fails to start on the T4, use t4-hf.toml.
 [scorer]
-# Public MS MARCO reranker as a stand-in for nano-jev.
-kind = "reranker"
-path = "cross-encoder/ms-marco-MiniLM-L6-v2"
+# nano-jev v1.0 from the Hub (33M MiniLM): relevance per paragraph, sufficiency over the top 2.
+kind = "cross-encoder"
+path = "sdmlai/nano-jev@v1.0"
+sufficiency_top_k = 2
 
 [[experts]]
 name = "small"
 kind = "vllm"
 model = "Qwen/Qwen2.5-1.5B-Instruct"
+params = 1.54
 top_k = 2
 dtype = "float16"
 max_model_len = 4096
@@ -17,6 +19,7 @@ max_model_len = 4096
 name = "large"
 kind = "vllm"
 model = "Qwen/Qwen2.5-7B-Instruct-AWQ"  # official 4-bit weights; 16-bit 7B does not fit
+params = 7.62
 quantization = "awq"
 dtype = "float16"
 max_model_len = 8192

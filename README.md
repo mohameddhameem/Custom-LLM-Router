@@ -11,12 +11,14 @@ Requires Python 3.12 and [uv](https://docs.astral.sh/uv/).
 ```sh
 uv sync
 uv run prepare-hotpotqa   # writes data/hotpotqa/distractor_{train,validation}.parquet
-uv run make-splits        # writes data/hotpotqa/splits.json (router_train, calib)
+uv run nanojev-ids        # writes data/hotpotqa/nanojev_{train,validation}_ids.txt
+uv run make-splits --exclude data/hotpotqa/nanojev_train_ids.txt   # writes splits.json
 uv run pytest
 ```
 
 `prepare-hotpotqa --sample 500` exports a random subset per split; `--jsonl` also writes JSON
-Lines. `make-splits --exclude ids.txt` drops questions another component was trained on.
+Lines. `nanojev-ids` lists the questions nano-jev v1.0 was trained or tuned on, so router data
+and the clean test report can leave them out.
 
 ## Pipeline
 
@@ -34,19 +36,27 @@ uv run run-experts --config configs/cpu.toml --data data/hotpotqa/distractor_val
     --limit 20 --run $R --name test
 uv run train-router --run $R --tau 0.8
 uv run eval-routing --run $R   # writes $R/report.json and $R/curves.csv
+uv run eval-routing --run $R --exclude data/hotpotqa/nanojev_validation_ids.txt   # report-clean.json
 ```
 
 | Config | Scorer | Experts | Use |
 |---|---|---|---|
 | `configs/smoke.toml` | lexical | heuristic stand-ins, no model | checking the pipeline |
-| `configs/cpu.toml` | MS MARCO reranker | Qwen2.5-0.5B (top-2) / 1.5B (all 10) | CPU pilot, tens of questions |
+| `configs/cpu.toml` | nano-jev | Qwen2.5-0.5B (top-2) / 1.5B (all 10) | CPU pilot, tens of questions |
 | `configs/gpu.toml` | nano-jev | Qwen2.5-1.5B (top-2) / 7B (all 10) | the minimal first experiment |
-| `configs/t4-vllm.toml` | MS MARCO reranker | vLLM: Qwen2.5-1.5B (top-2) / 7B-AWQ (all 10) | free Colab T4 |
-| `configs/t4-hf.toml` | MS MARCO reranker | transformers: 1.5B / 7B in 4-bit | T4 fallback if vLLM fails |
+| `configs/t4-vllm.toml` | nano-jev | vLLM: Qwen2.5-1.5B (top-2) / 7B-AWQ (all 10) | free Colab T4 |
+| `configs/t4-hf.toml` | nano-jev | transformers: 1.5B / 7B in 4-bit | T4 fallback if vLLM fails |
+
+nano-jev is loaded from the Hub (`sdmlai/nano-jev@v1.0`) unless `scorer.path` is a local folder;
+`kind = "reranker"` with an MS MARCO cross-encoder still works as a relevance-only stand-in.
 
 Routers `question` and `question+evidence` share model, labels and data; only the input
-differs. `eval-routing` compares them with random, oracle and a small-model entropy threshold
-on F1-vs-cost curves (AIQ), and picks an operating point on `calib` (≤1% F1 below always-large).
+differs. Each is trained on two labels, `small-fails` and `large-helps` (small wrong and large
+right), giving four routers named `<inputs>/<label>`. `eval-routing` compares them with random,
+oracle and a small-model entropy threshold on F1-vs-cost curves (AIQ), and picks an operating
+point on `calib` (≤1% F1 below always-large). Cost defaults to GFLOPs, 2 × `params` × tokens,
+with `params` (billions) set per expert in the config; `--cost tokens` and `--cost seconds` are
+the alternatives.
 
 `run-experts` works in stages (`--stage evidence|small|large|merge`, default all) and saves
 chunks of 500 questions under `<run>/<name>.parts/`. Rerunning a command skips finished chunks.

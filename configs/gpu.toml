@@ -1,14 +1,16 @@
-# Minimal first experiment (docs/research-report.md). Set scorer.path to a nano-jev checkpoint
-# directory (model weights, tokenizer and calibration.json).
+# Minimal first experiment (docs/research-report.md). scorer.path may also be a local nano-jev
+# folder (weights, tokenizer and calibration.json). `params` (billions) sets the FLOPs cost unit.
 [scorer]
+# nano-jev v1.0 from the Hub (33M MiniLM): relevance per paragraph, sufficiency over the top 2.
 kind = "cross-encoder"
-path = "runs/nano-jev"
+path = "sdmlai/nano-jev@v1.0"
 sufficiency_top_k = 2
 
 [[experts]]
 name = "small"
 kind = "hf"
 model = "Qwen/Qwen2.5-1.5B-Instruct"
+params = 1.54
 top_k = 2
 dtype = "bfloat16"
 
@@ -16,4 +18,5 @@ dtype = "bfloat16"
 name = "large"
 kind = "hf"
 model = "Qwen/Qwen2.5-7B-Instruct"
+params = 7.62
 dtype = "bfloat16"

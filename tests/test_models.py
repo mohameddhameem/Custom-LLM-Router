@@ -84,6 +84,10 @@ def test_cross_encoder_scores(tiny_models):
     scores = scorer.score("Who directed the film?", ["Film: It was directed by Kalo.", "Other: Unrelated.", "X: y."])
     assert scores.shape == (3,) and ((scores > 0) & (scores < 1)).all()
     assert 0 < scorer.sufficiency("Who directed the film?", ["Film: It was directed by Kalo."]) < 1
+    seen = []
+    scorer._decide = lambda decision, q, states: seen.append(states) or np.array([[0.5, 0.5]])
+    scorer.sufficiency("q", ["A: one.", "B: two."])
+    assert seen == [["[1] A: one.\n[2] B: two."]]  # nano-jev's format_passages layout
     assert scorer.pairs_seen == 3 * 3 + 2
 
 
@@ -140,7 +144,7 @@ dtype = "float32"
     cache.to_parquet(run / "router_train.parquet")
 
     router.main(["--run", str(run)])
-    evaluate_routing.main(["--run", str(run)])
+    evaluate_routing.main(["--run", str(run), "--cost", "tokens"])  # local model paths carry no size
     report = json.loads((run / "report.json").read_text())
     assert report["n_test"] == 15
     assert "ev_sufficiency" in router_columns(run)
@@ -149,7 +153,7 @@ dtype = "float32"
 def router_columns(run) -> list[str]:
     import pickle
 
-    return pickle.loads((run / "routers.pkl").read_bytes())["routers"]["question+evidence"]["columns"]
+    return pickle.loads((run / "routers.pkl").read_bytes())["routers"]["question+evidence/small-fails"]["columns"]
 
 
 @pytest.mark.parametrize("model_dir", ["lm", "chat-lm"])
