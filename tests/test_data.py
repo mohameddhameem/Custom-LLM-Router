@@ -65,15 +65,23 @@ def test_splits_reject_oversized_request():
 
 def test_make_splits_cli(tmp_path):
     train = tmp_path / "train.parquet"
-    pd.DataFrame({"id": [f"q{i}" for i in range(50)], "type": ["bridge", "comparison"] * 25}).to_parquet(train)
+    pd.DataFrame({"id": [f"q{i}" for i in range(60)], "type": ["bridge", "comparison"] * 30,
+                  "level": ["hard"] * 50 + ["easy"] * 10}).to_parquet(train)
     exclude = tmp_path / "exclude.txt"
     exclude.write_text("q0\nq1\n\n")
     out = tmp_path / "splits.json"
     make_splits.main(["--train", str(train), "--exclude", str(exclude), "--router-size", "30", "--calib-size", "10", "--out", str(out)])
     manifest = json.loads(out.read_text())
-    assert manifest["num_excluded"] == 2
+    assert manifest["num_excluded"] == 2 and manifest["levels"] == ["hard"]
     assert len(manifest["router_train"]) == 30 and len(manifest["calib"]) == 10
-    assert "q0" not in manifest["router_train"] + manifest["calib"]
+    chosen = manifest["router_train"] + manifest["calib"]
+    assert "q0" not in chosen
+    assert not {f"q{i}" for i in range(50, 60)} & set(chosen)  # easy questions are left out by default
+    with pytest.raises(ValueError, match="only 48"):
+        make_splits.main(["--train", str(train), "--exclude", str(exclude), "--router-size", "45", "--calib-size", "5",
+                          "--out", str(out)])
+    make_splits.main(["--train", str(train), "--level", "any", "--router-size", "50", "--calib-size", "10", "--out", str(out)])
+    assert len(json.loads(out.read_text())["router_train"]) == 50
 
 
 def test_nanojev_ids_follow_its_shuffle_not_row_order():

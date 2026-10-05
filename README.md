@@ -18,7 +18,9 @@ uv run pytest
 
 `prepare-hotpotqa --sample 500` exports a random subset per split; `--jsonl` also writes JSON
 Lines. `nanojev-ids` lists the questions nano-jev v1.0 was trained or tuned on, so router data
-and the clean test report can leave them out.
+and the clean test report can leave them out. `make-splits` keeps only `level == "hard"` train
+questions by default (12k router-train, 2k calib), because every validation question is hard;
+`--level any` keeps all levels.
 
 ## Pipeline
 
@@ -44,23 +46,45 @@ uv run eval-routing --run $R --exclude data/hotpotqa/nanojev_validation_ids.txt 
 | `configs/smoke.toml` | lexical | heuristic stand-ins, no model | checking the pipeline |
 | `configs/cpu.toml` | nano-jev | Qwen2.5-0.5B (top-2) / 1.5B (all 10) | CPU pilot, tens of questions |
 | `configs/gpu.toml` | nano-jev | Qwen2.5-1.5B (top-2) / 7B (all 10) | the minimal first experiment |
+| `configs/gpu-vllm.toml` | nano-jev | vLLM: Qwen2.5-1.5B (top-2) / 7B (all 10) | the same, faster; 24 GB+ GPU |
 | `configs/t4-vllm.toml` | nano-jev | vLLM: Qwen2.5-1.5B (top-2) / 7B-AWQ (all 10) | free Colab T4 |
 | `configs/t4-hf.toml` | nano-jev | transformers: 1.5B / 7B in 4-bit | T4 fallback if vLLM fails |
 
 nano-jev is loaded from the Hub (`sdmlai/nano-jev@v1.0`) unless `scorer.path` is a local folder;
 `kind = "reranker"` with an MS MARCO cross-encoder still works as a relevance-only stand-in.
 
-Routers `question` and `question+evidence` share model, labels and data; only the input
-differs. Each is trained on two labels, `small-fails` and `large-helps` (small wrong and large
-right), giving four routers named `<inputs>/<label>`. `eval-routing` compares them with random,
-oracle and a small-model entropy threshold on F1-vs-cost curves (AIQ), and picks an operating
-point on `calib` (≤1% F1 below always-large). Cost defaults to GFLOPs, 2 × `params` × tokens,
+Routers `question`, `question+evidence` and `evidence` (an ablation) share model, labels, data
+and tuning (C picked from one grid by 5-fold CV); only the input differs. Each is trained on two
+labels, `small-fails` and `large-helps` (small wrong and large right), giving six routers named
+`<inputs>/<label>`. `eval-routing` compares them with random, oracle and a small-model entropy
+threshold on F1-vs-cost curves (AIQ, CPT 50%/80%), and picks an operating point on `calib`
+(≤1% F1 below always-large). It also temperature-scales each router on `calib` and reports ECE
+and reliability bins before and after, with breakdowns by bridge/comparison and yes/no vs span. Cost defaults to GFLOPs, 2 × `params` × tokens,
 with `params` (billions) set per expert in the config; `--cost tokens` and `--cost seconds` are
 the alternatives.
 
 `run-experts` works in stages (`--stage evidence|small|large|merge`, default all) and saves
 chunks of 500 questions under `<run>/<name>.parts/`. Rerunning a command skips finished chunks.
-On a GPU, run one stage per command so only one model holds GPU memory.
+On a GPU, run one stage per command so only one model holds GPU memory. `--limit N` takes a
+seeded random sample (`--seed`). A run directory is pinned to its first config: a config that
+would change outputs is refused (`batch_size`, `gpu_memory_utilization`, `device` and
+`max_model_len` may change). Caches keep raw signals (all ten paragraph scores, sufficiency over
+the top 2 and top 3, per-token entropies, prompt and generated token counts), and every command
+appends its environment, git commit and resolved model revisions to `<run>/provenance.jsonl`.
+An expert's `revision` key pins a Hub commit.
+
+### GPU cluster over SSH
+
+```sh
+bash scripts/run_cluster.sh prepare   # data, splits, model downloads (needs internet: login node)
+bash scripts/run_cluster.sh pilot     # 500 questions: F1 of both experts and a time estimate
+bash scripts/run_cluster.sh full      # all caches, then routers and reports
+```
+
+Set `CONFIG` (default `configs/gpu.toml`; `configs/gpu-vllm.toml` is faster), `RUN`, `HF_HOME`
+(a disk with ~20 GB free) and, on nodes without internet, `HF_HUB_OFFLINE=1`. An SSH (PuTTY)
+disconnect kills foreground jobs: run inside `tmux`, or `nohup bash scripts/run_cluster.sh full
+> full.log 2>&1 &`. Every step resumes when rerun.
 
 ### Google Colab (free T4)
 

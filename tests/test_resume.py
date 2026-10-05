@@ -65,6 +65,30 @@ def test_changed_question_list_is_rejected(tmp_path):
         run(tmp_path, "--stage", "evidence", "--limit", "5")
 
 
+def test_run_is_pinned_to_one_config(tmp_path):
+    make_split(12, seed=3).to_parquet(tmp_path / "q.parquet")
+    run(tmp_path, "--stage", "evidence")
+    other = tmp_path / "other.toml"
+    other.write_text(SMOKE.read_text().replace("top_k = 4", "top_k = 3"))
+    with pytest.raises(ValueError, match="new --run"):
+        run_experts.main(["--config", str(other), "--data", str(tmp_path / "q.parquet"), "--run", str(tmp_path / "run"),
+                          "--name", "test", "--chunk-size", "10"])
+    runtime_only = tmp_path / "runtime.toml"
+    runtime_only.write_text(SMOKE.read_text().replace("top_k = 4", "top_k = 4\nbatch_size = 8"))
+    run_experts.main(["--config", str(runtime_only), "--data", str(tmp_path / "q.parquet"), "--run",
+                      str(tmp_path / "run"), "--name", "test", "--chunk-size", "10"])
+
+
+def test_limit_is_a_seeded_random_sample(tmp_path):
+    make_split(100, seed=4).to_parquet(tmp_path / "q.parquet")
+    a = run_experts.load_questions(tmp_path / "q.parquet", None, None, 10, seed=0)
+    b = run_experts.load_questions(tmp_path / "q.parquet", None, None, 10, seed=0)
+    c = run_experts.load_questions(tmp_path / "q.parquet", None, None, 10, seed=1)
+    assert a["id"].tolist() == b["id"].tolist() != c["id"].tolist()
+    assert a["id"].tolist() != [f"syn{i:05d}" for i in range(10)]  # not the first rows
+    assert len(run_experts.load_questions(tmp_path / "q.parquet", None, None, 500)) == 100
+
+
 class FakeLogprob:
     def __init__(self, logprob):
         self.logprob = logprob

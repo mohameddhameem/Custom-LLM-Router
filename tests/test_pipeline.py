@@ -84,6 +84,30 @@ def test_aiq_uses_upper_hull_and_is_non_decreasing():
     assert aiq(pts, 0.0, 1.0) == pytest.approx(aiq(pts[:2] + [{"cost": 1.0, "f1": 0.8}], 0.0, 1.0))
 
 
+def test_aiq_handles_points_at_the_same_cost():
+    pts = [{"cost": 0.0, "f1": 0.2}, {"cost": 0.0, "f1": 0.4}, {"cost": 1.0, "f1": 0.6}]
+    assert aiq(pts, 0.0, 1.0) == pytest.approx(0.5)
+
+
+def test_temperature_scaling_recovers_overconfidence():
+    rng = np.random.default_rng(0)
+    true_logits = rng.normal(0, 2, 20_000)
+    labels = (rng.random(20_000) < 1 / (1 + np.exp(-true_logits))).astype(int)
+    overconfident = 1 / (1 + np.exp(-3 * true_logits))
+    t = evaluate_routing.fit_temperature(overconfident, labels)
+    assert t == pytest.approx(3, rel=0.1)
+    scaled = evaluate_routing.scale(overconfident, t)
+    assert evaluate_routing.ece(scaled, labels) < evaluate_routing.ece(overconfident, labels)
+    assert (np.diff(scaled[np.argsort(overconfident)]) >= 0).all()  # monotonic: ranking and curves unchanged
+
+
+def test_cpt_finds_cheapest_point_recovering_the_gap():
+    pts = [{"rate": 0.0, "cost": 1.0, "f1": 0.4}, {"rate": 0.5, "cost": 2.0, "f1": 0.55},
+           {"rate": 0.8, "cost": 3.0, "f1": 0.58}, {"rate": 1.0, "cost": 4.0, "f1": 0.6}]
+    out = evaluate_routing.cpt(pts, 0.4, 0.6)
+    assert out["50%"] == {"rate": 0.5, "cost": 2.0} and out["80%"] == {"rate": 0.8, "cost": 3.0}
+
+
 def test_end_to_end_smoke(tmp_path):
     data = tmp_path / "data"
     data.mkdir()
@@ -91,8 +115,8 @@ def test_end_to_end_smoke(tmp_path):
     make_split(120, seed=1, start=10_000).to_parquet(data / "validation.parquet")
     run = tmp_path / "run"
 
-    make_splits.main(["--train", str(data / "train.parquet"), "--router-size", "200", "--calib-size", "80",
-                      "--out", str(data / "splits.json")])
+    make_splits.main(["--train", str(data / "train.parquet"), "--level", "medium", "--router-size", "200",
+                      "--calib-size", "80", "--out", str(data / "splits.json")])
     common = ["--config", str(CONFIGS / "smoke.toml"), "--run", str(run)]
     for split in ("router_train", "calib"):
         run_experts.main(common + ["--data", str(data / "train.parquet"), "--splits", str(data / "splits.json"),
@@ -112,7 +136,7 @@ def test_end_to_end_smoke(tmp_path):
     assert large > small  # the experts must differ, or routing is not being exercised
     assert oracle >= large
     assert report["oracle"]["cost"] < report["always_large"]["cost"]
-    assert set(report["routers"]) == {f"{i}/{label}" for i in ("question", "question+evidence")
+    assert set(report["routers"]) == {f"{i}/{label}" for i in ("question", "question+evidence", "evidence")
                                       for label in ("small-fails", "large-helps")}
     for name, value in report["aiq"].items():
         assert 0 <= value <= 1, name
@@ -120,6 +144,14 @@ def test_end_to_end_smoke(tmp_path):
     assert report["aiq"]["router:question/large-helps"] > report["aiq"]["random"]
     for entry in report["routers"].values():
         assert 0 <= entry["operating_point"]["rate"] <= 1
+        assert entry["tuning"]["C"] in router.C_GRID and entry["temperature"] > 0
+        assert set(entry["operating_point"]["by_answer_kind"]) == {"span", "yes/no"}
+        assert sum(b["count"] for b in entry["reliability"]["scaled"]) == 120
+    assert set(report["by_answer_kind"]) == {"always_small", "always_large"}
+    assert report["cpt"]["oracle"]["80%"]["cost"] <= report["always_large"]["cost"]
+    assert report["scorer_cost"]["tokens"] == 0  # the lexical scorer runs no model
+    events = [json.loads(line)["event"] for line in (run / "provenance.jsonl").read_text().splitlines()]
+    assert events.count("run-experts") == 3 and "train-router" in events and "eval-routing" in events
     curves = pd.read_csv(run / "curves.csv")
     assert len(curves[curves["policy"] == "router:question/large-helps"]) == len(evaluate_routing.RATES)
 

@@ -12,6 +12,7 @@ dependencies = [
     "pandas>=3.0.6",
     "pyarrow>=25.0.1",
     "scikit-learn>=1.9.1",
+    "scipy>=1.14",
 ]
 
 [project.scripts]
@@ -21,6 +22,7 @@ nanojev-ids = "groupproject.nanojev_ids:main"
 run-experts = "groupproject.run_experts:main"
 train-router = "groupproject.router:main"
 eval-routing = "groupproject.evaluate_routing:main"
+prefetch-models = "groupproject.prefetch_models:main"
 
 [project.optional-dependencies]
 llm = [

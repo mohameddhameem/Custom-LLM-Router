@@ -60,6 +60,11 @@ def tiny_models(tmp_path_factory):
     lm.save_pretrained(root / "chat-lm")
     chat_tok.save_pretrained(root / "chat-lm")
 
+    # same weights, but a generation config that would change greedy output (as Qwen2.5's does)
+    lm.generation_config.repetition_penalty = 100.0
+    lm.save_pretrained(root / "lm-penalty")
+    lm_tok.save_pretrained(root / "lm-penalty")
+
     ce_tok = build_tokenizer(texts, pair_template=True)
     ce = BertForSequenceClassification(BertConfig(vocab_size=len(ce_tok), hidden_size=32, num_hidden_layers=1,
                                                   num_attention_heads=2, intermediate_size=64, num_labels=1))
@@ -76,6 +81,26 @@ def test_hf_expert_answers(tiny_models, model_dir):
     assert isinstance(out.answer, str)
     assert out.cost > 10
     assert np.isfinite(out.uncertainty) and out.uncertainty >= 0
+    assert out.prompt_tokens + out.generated_tokens == out.cost
+    assert len(out.token_entropy) == out.generated_tokens
+    assert out.uncertainty == pytest.approx(np.mean(out.token_entropy))
+
+
+def test_hf_expert_ignores_model_generation_config(tiny_models):
+    """Plain greedy decoding: a repetition penalty in the model's config must not change answers or entropy."""
+    qs = ["Who directed the film?", "Where was Kalo born?"]
+    ctx = [["Film: It was directed by Kalo. Kalo Kalo Kalo."], ["Kalo: Kalo was born in Rimer."]]
+    plain = HFExpert("s", None, str(tiny_models / "lm"), device="cpu", max_new_tokens=8, dtype="float32")
+    penalised = HFExpert("s", None, str(tiny_models / "lm-penalty"), device="cpu", max_new_tokens=8, dtype="float32")
+    a, b = plain.answer_batch(qs, ctx), penalised.answer_batch(qs, ctx)
+    assert [o.answer for o in a] == [o.answer for o in b]
+    assert [o.token_entropy for o in a] == [pytest.approx(o.token_entropy) for o in b]
+
+
+def test_hf_expert_rejects_overlong_prompts(tiny_models):
+    expert = HFExpert("s", None, str(tiny_models / "lm"), device="cpu", max_new_tokens=4, dtype="float32")
+    with pytest.raises(ValueError, match="exceed"):
+        expert.answer("Who directed the film?", ["Film: It was directed by Kalo. " * 200])
 
 
 def test_cross_encoder_scores(tiny_models):
@@ -103,14 +128,14 @@ def test_end_to_end_with_models(tiny_models, tmp_path):
     config.write_text(f"""
 [scorer]
 kind = "cross-encoder"
-path = "{tiny_models / 'ce'}"
+path = "{(tiny_models / 'ce').as_posix()}"
 device = "cpu"
 sufficiency_top_k = 2
 
 [[experts]]
 name = "small"
 kind = "hf"
-model = "{tiny_models / 'lm'}"
+model = "{(tiny_models / 'lm').as_posix()}"
 top_k = 2
 device = "cpu"
 max_new_tokens = 4
@@ -119,7 +144,7 @@ dtype = "float32"
 [[experts]]
 name = "large"
 kind = "hf"
-model = "{tiny_models / 'chat-lm'}"
+model = "{(tiny_models / 'chat-lm').as_posix()}"
 device = "cpu"
 max_new_tokens = 4
 dtype = "float32"
@@ -127,8 +152,8 @@ dtype = "float32"
     train, val = make_split(40, seed=5, level="medium"), make_split(15, seed=6, start=500)
     train.to_parquet(tmp_path / "train.parquet")
     val.to_parquet(tmp_path / "val.parquet")
-    make_splits.main(["--train", str(tmp_path / "train.parquet"), "--router-size", "25", "--calib-size", "10",
-                      "--out", str(tmp_path / "splits.json")])
+    make_splits.main(["--train", str(tmp_path / "train.parquet"), "--level", "medium", "--router-size", "25",
+                      "--calib-size", "10", "--out", str(tmp_path / "splits.json")])
     run = tmp_path / "run"
     common = ["--config", str(config), "--run", str(run)]
     for split in ("router_train", "calib"):
@@ -138,6 +163,12 @@ dtype = "float32"
 
     cache = pd.read_parquet(run / "router_train.parquet")
     assert cache["ev_sufficiency"].between(0, 1).all()
+    assert (cache["ev_sufficiency"] == cache["ev_sufficiency_k2"]).all()
+    assert cache["ev_sufficiency_k3"].between(0, 1).all()
+    assert cache["para_scores"].map(len).eq(10).all()
+    assert (cache["scorer_tokens"] > 0).all() and (cache["scorer_truncated"] >= 0).all()
+    assert (cache["small_prompt_tokens"] + cache["small_generated_tokens"] == cache["small_cost"]).all()
+    assert (cache["large_token_entropy"].map(len) == cache["large_generated_tokens"]).all()
     assert (cache["large_cost"] > cache["small_cost"]).all()
     # random models never answer correctly; plant correct small answers so both labels occur
     cache.loc[cache.index[::2], "small_f1"] = 1.0

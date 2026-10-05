@@ -11,6 +11,13 @@ Cost is in one of three units (--cost): `flops` (2 x parameters x tokens, in GFL
 costs more than a 1.5B one), `tokens` (prompt + generated, model size ignored) or `seconds`
 (measured wall-clock per question, averaged over each chunk). Parameter counts come from the run's
 config.toml: an expert's `params` (billions), else the size in its model name.
+
+The scorer (nano-jev) runs for every policy that uses the small expert's top-k paragraphs, so its
+cost is reported separately (`scorer_cost`, using `scorer.params` from the config) rather than
+added to the curves.
+
+Router probabilities are temperature-scaled on calib; scaling keeps the ranking, so curves and AIQ
+are unchanged, and the report gives ECE and reliability bins before and after.
 """
 
 import argparse
@@ -23,13 +30,17 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from scipy.optimize import minimize_scalar
 
+from groupproject import provenance
+from groupproject.metrics import normalize_answer
 from groupproject.router import LABELS, escalation_label, predict_escalation
 
 log = logging.getLogger(__name__)
 
 RATES = np.round(np.linspace(0, 1, 21), 2)
 COST_UNITS = ("flops", "tokens", "seconds")
+CPT_FRACTIONS = (0.5, 0.8)
 
 
 def expert_params(cfg: dict) -> dict[str, float | None]:
@@ -88,7 +99,10 @@ def random_curve(df: pd.DataFrame) -> list[dict]:
 
 def aiq(points: list[dict], cmin: float, cmax: float) -> float:
     """RouterBench AIQ: mean F1 under the non-decreasing upper convex hull over [cmin, cmax]."""
-    pts = sorted({(p["cost"], p["f1"]) for p in points})
+    best: dict[float, float] = {}
+    for p in points:  # keep the best F1 at each cost, so the hull has strictly increasing costs
+        best[p["cost"]] = max(best.get(p["cost"], -np.inf), p["f1"])
+    pts = sorted(best.items())
     hull: list[tuple[float, float]] = []
     for p in pts:
         while len(hull) >= 2:
@@ -112,6 +126,44 @@ def ece(probs: np.ndarray, labels: np.ndarray, bins: int = 10) -> float:
     ))
 
 
+def _logit(probs: np.ndarray) -> np.ndarray:
+    p = np.clip(probs, 1e-6, 1 - 1e-6)
+    return np.log(p / (1 - p))
+
+
+def fit_temperature(probs: np.ndarray, labels: np.ndarray) -> float:
+    """Temperature T minimising the NLL of sigmoid(logit(p) / T) on labels."""
+    z, y = _logit(probs), labels.astype(float)
+
+    def nll(log_t: float) -> float:
+        q = np.clip(1 / (1 + np.exp(-z / np.exp(log_t))), 1e-12, 1 - 1e-12)
+        return float(-(y * np.log(q) + (1 - y) * np.log(1 - q)).mean())
+
+    return float(np.exp(minimize_scalar(nll, bounds=(-4, 4), method="bounded").x))
+
+
+def scale(probs: np.ndarray, temperature: float) -> np.ndarray:
+    return 1 / (1 + np.exp(-_logit(probs) / temperature))
+
+
+def reliability(probs: np.ndarray, labels: np.ndarray, bins: int = 10) -> list[dict]:
+    """Per-bin mean predicted probability vs observed frequency: the data of a reliability diagram."""
+    idx = np.minimum((probs * bins).astype(int), bins - 1)
+    return [{"bin": f"{b / bins:.1f}-{(b + 1) / bins:.1f}", "count": int((idx == b).sum()),
+             "mean_prob": float(probs[idx == b].mean()), "frac_positive": float(labels[idx == b].mean())}
+            for b in range(bins) if (idx == b).any()]
+
+
+def cpt(points: list[dict], f1_small: float, f1_large: float) -> dict:
+    """RouteLLM CPT(x): cheapest curve point recovering fraction x of the small-to-large F1 gap."""
+    out = {}
+    for frac in CPT_FRACTIONS:
+        ok = [p for p in points if p["f1"] >= f1_small + frac * (f1_large - f1_small)]
+        best = min(ok, key=lambda p: p["cost"]) if ok else None
+        out[f"{round(frac * 100)}%"] = {"rate": best["rate"], "cost": best["cost"]} if best else None
+    return out
+
+
 def pick_threshold(calib: pd.DataFrame, scores: np.ndarray, max_drop: float) -> float:
     """Highest score threshold whose calib F1 is within max_drop (relative) of always-large."""
     target = (1 - max_drop) * calib["large_f1"].mean()
@@ -121,8 +173,21 @@ def pick_threshold(calib: pd.DataFrame, scores: np.ndarray, max_drop: float) -> 
     return -np.inf
 
 
+def answer_kind(df: pd.DataFrame) -> pd.Series:
+    """yes/no vs span gold answers: for breakdowns only, never a router input."""
+    return df["answer"].map(normalize_answer).isin({"yes", "no"}).map({True: "yes/no", False: "span"})
+
+
+def by_group(df: pd.DataFrame, escalate: np.ndarray, groups: pd.Series) -> dict:
+    return {g: outcome(df[m], escalate[m.to_numpy()], False) for g, m in ((g, groups == g) for g in sorted(groups.unique()))}
+
+
 def by_type(df: pd.DataFrame, escalate: np.ndarray) -> dict:
-    return {t: outcome(df[m], escalate[m.to_numpy()], False) for t, m in ((t, df["type"] == t) for t in sorted(df["type"].unique()))}
+    return by_group(df, escalate, df["type"])
+
+
+def breakdowns(df: pd.DataFrame, escalate: np.ndarray) -> dict:
+    return {"by_type": by_type(df, escalate), "by_answer_kind": by_group(df, escalate, answer_kind(df))}
 
 
 def evaluate(test: pd.DataFrame, calib: pd.DataFrame | None, routers: dict, tau: float, max_drop: float) -> tuple[dict, pd.DataFrame]:
@@ -149,14 +214,25 @@ def evaluate(test: pd.DataFrame, calib: pd.DataFrame | None, routers: dict, tau:
         scores = predict_escalation(router, test)
         curves[f"router:{name}"] = curve(test, scores)
         label = router.get("label", "small-fails")  # routers.pkl from before labels were named
-        entry = {"label": label, "ece": ece(scores, escalation_label(test, tau, label))}
+        labels = escalation_label(test, tau, label)
+        entry = {"label": label, "tuning": router.get("tuning"), "ece": ece(scores, labels),
+                 "reliability": {"raw": reliability(scores, labels)}}
         if calib is not None:
-            t = pick_threshold(calib, predict_escalation(router, calib), max_drop)
+            calib_scores = predict_escalation(router, calib)
+            t = pick_threshold(calib, calib_scores, max_drop)
             esc = scores >= t
-            entry["operating_point"] = {"threshold": t, **outcome(test, esc, False), "by_type": by_type(test, esc)}
+            entry["operating_point"] = {"threshold": t, **outcome(test, esc, False), **breakdowns(test, esc)}
+            temperature = fit_temperature(calib_scores, escalation_label(calib, tau, label))
+            scaled = scale(scores, temperature)
+            entry |= {"temperature": temperature, "ece_scaled": ece(scaled, labels)}
+            entry["reliability"]["scaled"] = reliability(scaled, labels)
         report["routers"][name] = entry
     report["aiq"] = {name: aiq(pts, cmin, cmax) for name, pts in curves.items()}
-    report["by_type"] = {"always_small": by_type(test, np.zeros(n, bool)), "always_large": by_type(test, np.ones(n, bool))}
+    f1_small, f1_large = report["always_small"]["f1"], report["always_large"]["f1"]
+    report["cpt"] = {name: cpt(pts, f1_small, f1_large) for name, pts in curves.items()}
+    for single, esc in (("always_small", np.zeros(n, bool)), ("always_large", np.ones(n, bool))):
+        for key, value in breakdowns(test, esc).items():
+            report.setdefault(key, {})[single] = value
 
     rows = [{"policy": name, **p} for name, pts in curves.items() for p in pts]
     return report, pd.DataFrame(rows)
@@ -177,7 +253,8 @@ def main(argv: list[str] | None = None) -> None:
     args = parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     saved = pickle.loads((args.run / "routers.pkl").read_bytes())
-    params = expert_params(tomllib.loads((args.run / "config.toml").read_text()))
+    cfg = tomllib.loads((args.run / "config.toml").read_text())
+    params = expert_params(cfg)
     test = pd.read_parquet(args.run / "test.parquet")
     excluded = set()
     for path in args.exclude:
@@ -196,15 +273,22 @@ def main(argv: list[str] | None = None) -> None:
         except ValueError:
             continue
         single[unit] = {"small": float(t["small_cost"].mean()), "large": float(t["large_cost"].mean())}
+    scorer_cost = None
+    if "scorer_tokens" in test:
+        tokens = float(test["scorer_tokens"].mean())
+        scorer_params = cfg.get("scorer", {}).get("params")
+        scorer_cost = {"tokens": tokens, "flops": 2 * scorer_params * tokens if scorer_params else None,
+                       "truncated_question_rate": float((test["scorer_truncated"] > 0).mean())}
     test = with_cost_unit(test, args.cost, params)
     calib = with_cost_unit(calib, args.cost, params) if calib is not None else None
 
     report, curves = evaluate(test, calib, saved["routers"], saved["tau"], args.max_drop)
     report = {"cost_unit": args.cost, "expert_params_b": params, "excluded_files": [str(p) for p in args.exclude],
-              **report, "single_expert_costs": single}
+              **report, "single_expert_costs": single, "scorer_cost": scorer_cost}
     suffix = "-clean" if excluded else ""
     (args.run / f"report{suffix}.json").write_text(json.dumps(report, indent=1))
     curves.to_csv(args.run / f"curves{suffix}.csv", index=False)
+    provenance.record(args.run, "eval-routing", report=f"report{suffix}.json", **provenance.environment())
 
     rates = " | ".join(f"{k} {v:.3f}" for k, v in report["escalate_label_rate"].items())
     log.info(f"test: {report['n_test']} questions | escalate label rate {rates} | gold pair in top-2 {report['gold_pair_in_top2']:.3f}")
@@ -217,7 +301,8 @@ def main(argv: list[str] | None = None) -> None:
     for name, entry in report["routers"].items():
         op = entry.get("operating_point")
         if op:
-            log.info(f"  op {name:<25} F1 {op['f1']:.3f} cost {op['cost']:.0f} rate {op['rate']:.2f} | ECE {entry['ece']:.3f}")
+            log.info(f"  op {name:<25} F1 {op['f1']:.3f} cost {op['cost']:.0f} rate {op['rate']:.2f} | "
+                     f"ECE {entry['ece']:.3f} -> {entry['ece_scaled']:.3f} at T={entry['temperature']:.2f}")
     log.info(f"Saved {args.run / f'report{suffix}.json'} and {args.run / f'curves{suffix}.csv'}")
 
 
