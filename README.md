@@ -47,8 +47,6 @@ uv run eval-routing --run $R --exclude data/hotpotqa/nanojev_validation_ids.txt 
 | `configs/cpu.toml` | nano-jev | Qwen2.5-0.5B (top-2) / 1.5B (all 10) | CPU pilot, tens of questions |
 | `configs/gpu.toml` | nano-jev | Qwen2.5-1.5B (top-2) / 7B (all 10) | the minimal first experiment |
 | `configs/gpu-vllm.toml` | nano-jev | vLLM: Qwen2.5-1.5B (top-2) / 7B (all 10) | the same, faster; 24 GB+ GPU |
-| `configs/t4-vllm.toml` | nano-jev | vLLM: Qwen2.5-1.5B (top-2) / 7B-AWQ (all 10) | free Colab T4 |
-| `configs/t4-hf.toml` | nano-jev | transformers: 1.5B / 7B in 4-bit | T4 fallback if vLLM fails |
 
 nano-jev is loaded from the Hub (`sdmlai/nano-jev@v1.0`) unless `scorer.path` is a local folder;
 `kind = "reranker"` with an MS MARCO cross-encoder still works as a relevance-only stand-in.
@@ -86,12 +84,8 @@ Set `CONFIG` (default `configs/gpu.toml`; `configs/gpu-vllm.toml` is faster), `R
 disconnect kills foreground jobs: run inside `tmux`, or `nohup bash scripts/run_cluster.sh full
 > full.log 2>&1 &`. Every step resumes when rerun.
 
-### Google Colab (free T4)
-
-Open [`notebooks/colab_t4.ipynb`](notebooks/colab_t4.ipynb) in Colab, select a T4 runtime and
-**Run all**. It installs into its own environment, keeps data and results on Google Drive,
-runs a 500-question pilot with a time estimate, then the full run. After a disconnect, run all
-again to resume.
+On omega (PBS Pro, NVIDIA L40S), run `prepare` on the login node and submit the GPU steps with
+`qsub -v STEP=pilot scripts/omega.pbs`; see [docs/omega-cluster.md](docs/omega-cluster.md).
 
 ## Docs
 

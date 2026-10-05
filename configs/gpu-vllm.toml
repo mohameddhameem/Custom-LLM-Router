@@ -1,5 +1,5 @@
 # Minimal first experiment with vLLM: several times faster than gpu.toml. Needs a 24 GB+ GPU with
-# bfloat16 (Ampere or newer); on a 16 GB or older GPU use t4-vllm.toml (7B AWQ, float16).
+# bfloat16 (Ampere or newer). Not yet tested on omega: vLLM is not a project dependency.
 # Run each run-experts stage as its own command (scripts/run_cluster.sh does) so only one model is loaded.
 [scorer]
 # nano-jev v1.0 from the Hub (33M MiniLM): relevance per paragraph, sufficiency over the top 2.

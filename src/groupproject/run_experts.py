@@ -11,7 +11,7 @@ loads is logged to `<run>/provenance.jsonl`.
 
 Work is split into stages (evidence, small, large, merge) and saved in chunks under
 `<run>/<name>.parts/`. Rerunning the same command skips finished chunks, so an interrupted
-Colab session resumes where it stopped. On a GPU, run each stage as its own command so only
+job resumes where it stopped. On a GPU, run each stage as its own command so only
 one model holds GPU memory at a time.
 """
 

@@ -9,7 +9,7 @@
 # Every step resumes: after a disconnect or a killed job, run the same command again.
 # An SSH disconnect kills foreground jobs, so start long steps inside tmux/screen, or with
 #   nohup bash scripts/run_cluster.sh full > full.log 2>&1 &
-# On a scheduler, wrap the same command, e.g. sbatch --gres=gpu:1 --wrap "bash scripts/run_cluster.sh full".
+# On omega (PBS), submit the GPU steps as jobs instead: qsub -v STEP=full scripts/omega.pbs (docs/omega-cluster.md).
 # GPU nodes without internet: run `prepare` on the login node, then export HF_HUB_OFFLINE=1.
 set -euo pipefail
 

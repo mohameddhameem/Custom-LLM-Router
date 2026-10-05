@@ -95,7 +95,7 @@ class HFExpert:
     transformers applies even without sampling, and vLLM does not. Uncertainty is the mean entropy
     of the raw (unprocessed) next-token distribution over the full vocabulary.
 
-    `load_in_4bit` uses bitsandbytes NF4, the fallback for 7B models on a 16 GB T4 when vLLM
+    `load_in_4bit` uses bitsandbytes NF4, the fallback for 7B models on a 16 GB GPU when vLLM
     is unavailable.
     """
 

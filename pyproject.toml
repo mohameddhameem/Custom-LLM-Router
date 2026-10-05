@@ -30,6 +30,15 @@ llm = [
     "transformers>=5.17.0",
 ]
 
+# omega's GPU node has driver 555 (CUDA 12.5): the default cu130 wheels cannot use it, cu126 can.
+[tool.uv.sources]
+torch = { index = "pytorch-cu126" }
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
+
 [build-system]
 requires = ["uv_build>=0.12.1,<0.13.0"]
 build-backend = "uv_build"
