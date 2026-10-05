@@ -1,8 +1,12 @@
-"""Escalation routers: predict whether the small expert will fail, from matched inputs.
+"""Escalation routers: predict whether a question should go to the large expert.
 
-Both routers share the model (logistic regression), labels and training data. They differ only
-in input: `question` sees question text and lexical cues; `question+evidence` also sees the
+Routers with the same label share the model (logistic regression) and training data and differ
+only in input: `question` sees question text and lexical cues; `question+evidence` also sees the
 paragraph-score features computed before any expert runs.
+
+Two labels are trained, because which one is right is part of the experiment:
+`small-fails` (small F1 < tau) also escalates questions the large expert gets wrong too, paying
+for nothing; `large-helps` (small F1 < tau and large F1 >= tau) escalates only when it pays off.
 """
 
 import argparse
@@ -40,9 +44,17 @@ def add_question_cues(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def escalation_label(df: pd.DataFrame, tau: float) -> np.ndarray:
-    """1 if the small expert is wrong (F1 < tau), i.e. the question should be escalated."""
-    return (df["small_f1"] < tau).astype(int).to_numpy()
+LABELS = ("small-fails", "large-helps")
+
+
+def escalation_label(df: pd.DataFrame, tau: float, label: str) -> np.ndarray:
+    """1 if the question should be escalated under `label` (see module docstring)."""
+    small_wrong = df["small_f1"] < tau
+    if label == "small-fails":
+        return small_wrong.astype(int).to_numpy()
+    if label == "large-helps":
+        return (small_wrong & (df["large_f1"] >= tau)).astype(int).to_numpy()
+    raise ValueError(f"unknown label: {label}")
 
 
 def usable_columns(df: pd.DataFrame, columns: list[str]) -> list[str]:
@@ -66,17 +78,22 @@ def predict_escalation(router: dict, df: pd.DataFrame) -> np.ndarray:
 
 
 def train_routers(df: pd.DataFrame, tau: float) -> dict[str, dict]:
+    """One router per (input set, label), named "<inputs>/<label>"."""
     X = add_question_cues(df)
-    y = escalation_label(df, tau)
-    if len(set(y)) < 2:
-        raise ValueError(f"all {len(y)} training labels are {y[0]}; change tau or add questions")
     routers = {}
-    for name, columns in ROUTER_INPUTS.items():
-        cols = usable_columns(X, columns)
-        X[cols] = X[cols].fillna(0.0)
-        model = build_router(cols).fit(X, y)
-        routers[name] = {"model": model, "columns": cols}
-        log.info(f"  {name}: {len(cols)} dense features {cols}")
+    for label in LABELS:
+        y = escalation_label(df, tau, label)
+        if len(set(y)) < 2:
+            log.warning(f"  skipping label {label}: all {len(y)} training labels are {y[0]}")
+            continue
+        for inputs, columns in ROUTER_INPUTS.items():
+            cols = usable_columns(X, columns)
+            X[cols] = X[cols].fillna(0.0)
+            model = build_router(cols).fit(X, y)
+            routers[f"{inputs}/{label}"] = {"model": model, "columns": cols, "label": label}
+            log.info(f"  {inputs}/{label}: {len(cols)} dense features {cols}")
+    if not routers:
+        raise ValueError(f"no label has both classes on {len(df)} questions; change tau or add questions")
     return routers
 
 
@@ -91,8 +108,8 @@ def main(argv: list[str] | None = None) -> None:
     args = parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     df = pd.read_parquet(args.run / "router_train.parquet")
-    y = escalation_label(df, args.tau)
-    log.info(f"router_train: {len(df)} questions, escalate rate {y.mean():.3f} at tau={args.tau}")
+    rates = " | ".join(f"{label} {escalation_label(df, args.tau, label).mean():.3f}" for label in LABELS)
+    log.info(f"router_train: {len(df)} questions, escalate rate at tau={args.tau}: {rates}")
     routers = train_routers(df, args.tau)
     out = args.run / "routers.pkl"
     out.write_bytes(pickle.dumps({"tau": args.tau, "routers": routers}))

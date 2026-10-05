@@ -11,10 +11,12 @@ Rules that apply to every experiment in this repo. The plan itself is in
 - Split by question `id` before deriving any per-paragraph or per-expert rows. All rows from one
   question stay in one split.
 - Exclude from router-train any question a component was trained on (nano-jev's 6,000 HotpotQA
-  train questions, any fine-tuned reader), or use k-fold cross-fitting. `make-splits --exclude
-  ids.txt` does this; dump the ids from nano-jev's `build_all()` output.
-- nano-jev also used validation[0:1000] for calibration and testing. Report final numbers on the
-  full validation set and on validation[1000:] so the difference is visible.
+  train questions, any fine-tuned reader), or use k-fold cross-fitting. `nanojev-ids` writes
+  nano-jev v1.0's question ids; pass `nanojev_train_ids.txt` to `make-splits --exclude`.
+- nano-jev also used 1,000 validation questions for calibration, epoch selection and its own test.
+  They are the first 1,000 **after** `shuffle(seed=0)`, not validation rows 0–999. Report final
+  numbers on the full validation set and without them (`eval-routing --exclude
+  nanojev_validation_ids.txt`, written to `report-clean.json`) so the difference is visible.
 - `level` is `hard` for every validation question. Do not use it as a feature or report
   per-level results on validation; use `type` (bridge/comparison) and yes/no vs span instead.
 
@@ -38,11 +40,15 @@ signal, so it is safe to keep.
 - Keep the raw prediction next to every score.
 - For routing labels, count an expert as correct at F1 ≥ τ (start with τ = 0.8) and report
   sensitivity to τ. Hand-audit ~200 disagreements between EM and F1.
+- Train every router on both escalation labels: `small-fails` (small wrong) and `large-helps`
+  (small wrong and large right). Only `large-helps` matches the oracle, which escalates when
+  the large expert does better; `small-fails` also escalates questions both experts miss.
 
 ## Router evaluation
 
-Report answer F1 and EM against mean cost per question (tokens primary, GPU wall-clock
-secondary). Always include:
+Report answer F1 and EM against mean cost per question. The primary unit is GFLOPs
+(2 × parameters × tokens), so a 7B token costs more than a 1.5B one; token counts alone ignore
+model size. GPU wall-clock is secondary. Always include:
 
 - each single expert as a point, and the zero router (their convex hull);
 - a random router at matched call rates;

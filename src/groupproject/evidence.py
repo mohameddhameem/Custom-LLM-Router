@@ -1,7 +1,8 @@
 """Paragraph scoring and the evidence features the router sees.
 
 `LexicalScorer` needs no model and is for smoke tests. `CrossEncoderScorer` loads a nano-jev
-checkpoint and uses its `relevance` and `sufficient` decisions.
+checkpoint (a local folder or a Hub id such as `sdmlai/nano-jev@v1.0`) and uses its `relevance`
+and `sufficient` decisions.
 """
 
 import json
@@ -30,6 +31,21 @@ def paragraph_text(title: str, sentences: list[str]) -> str:
     return f"{title}: " + " ".join(s.strip() for s in sentences)
 
 
+def passages_state(paragraphs: list[str]) -> str:
+    """Several "title: text" paragraphs as one state, in nano-jev's `format_passages` layout."""
+    return "\n".join(f"[{i + 1}] {p}" for i, p in enumerate(paragraphs))
+
+
+def resolve_checkpoint(path: str) -> Path:
+    """A local folder as is; otherwise a Hub id with optional "@revision", downloaded whole."""
+    if Path(path).is_dir():
+        return Path(path)
+    from huggingface_hub import snapshot_download
+
+    repo_id, _, revision = path.partition("@")
+    return Path(snapshot_download(repo_id, revision=revision or None))
+
+
 class LexicalScorer:
     """Fraction of the question's content words that appear in each paragraph."""
 
@@ -56,13 +72,14 @@ class CrossEncoderScorer:
         import torch
         from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
+        path = resolve_checkpoint(path)
         self.torch = torch
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
         self.tokenizer = AutoTokenizer.from_pretrained(path)
         self.model = AutoModelForSequenceClassification.from_pretrained(path).to(self.device).eval()
         self.max_length = max_length
         self.temperatures = {"relevance": 1.0, "sufficient": 1.0}
-        calib = Path(path) / "calibration.json"
+        calib = path / "calibration.json"
         if calib.exists():
             self.temperatures.update(json.loads(calib.read_text()))
         self.truncated = 0
@@ -91,7 +108,37 @@ class CrossEncoderScorer:
 
     def sufficiency(self, question: str, paragraphs: list[str]) -> float:
         """P(yes) that the given paragraphs together are enough to answer."""
-        return float(self._decide("sufficient", question, ["\n".join(paragraphs)])[0, 0])
+        return float(self._decide("sufficient", question, [passages_state(paragraphs)])[0, 0])
+
+
+class RerankerScorer:
+    """Generic (query, passage) cross-encoder with one relevance logit, e.g. an MS MARCO reranker.
+
+    Stand-in until a nano-jev checkpoint is available. It has no sufficiency decision.
+    """
+
+    name = "reranker"
+
+    def __init__(self, path: str, device: str | None = None, max_length: int = 512):
+        import torch
+        from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
+        self.torch = torch
+        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+        self.tokenizer = AutoTokenizer.from_pretrained(path)
+        self.model = AutoModelForSequenceClassification.from_pretrained(path).to(self.device).eval()
+        self.max_length = max_length
+
+    def score(self, question: str, paragraphs: list[str]) -> np.ndarray:
+        """Sigmoid of the relevance logit per paragraph."""
+        enc = self.tokenizer([question] * len(paragraphs), paragraphs, truncation="only_second",
+                             max_length=self.max_length, padding=True, return_tensors="pt")
+        with self.torch.no_grad():
+            logits = self.model(**enc.to(self.device)).logits[:, 0].float().cpu().numpy()
+        return 1.0 / (1.0 + np.exp(-logits))
+
+    def sufficiency(self, question: str, paragraphs: list[str]) -> float:
+        return float("nan")
 
 
 def make_scorer(cfg: dict):
@@ -100,6 +147,8 @@ def make_scorer(cfg: dict):
         return LexicalScorer()
     if kind == "cross-encoder":
         return CrossEncoderScorer(cfg["path"], device=cfg.get("device"))
+    if kind == "reranker":
+        return RerankerScorer(cfg["path"], device=cfg.get("device"))
     raise ValueError(f"unknown scorer kind: {kind}")
 
 

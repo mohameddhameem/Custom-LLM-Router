@@ -1,22 +1,32 @@
 """Answering experts. Each reads the question plus its top-k paragraphs.
 
 `HeuristicExpert` needs no model and exists only to exercise the pipeline. `HFExpert` runs a
-Hugging Face causal LM with greedy decoding.
+Hugging Face causal LM with greedy decoding, one question at a time. `VLLMExpert` does the same in
+batches with vLLM and is the one to use on a GPU.
 """
 
 import math
 import re
+
+import numpy as np
 from dataclasses import dataclass
 
 from groupproject.evidence import content_words, tokenize
 
 AUX_VERBS = frozenset("is are was were do does did can could has have had will would".split())
 
+# Two worked examples, chosen on calib questions: small-model F1 0.235 -> 0.466 vs asking for
+# "yes/no for yes/no questions", which made Qwen2.5-0.5B answer "Yes" to open questions.
 PROMPT = (
-    "Answer the question using the paragraphs below. Reply with the shortest possible answer: "
-    "a name, date, number or short phrase, or yes/no for yes/no questions.\n\n"
+    "Answer the question using the paragraphs below. Reply with only the answer, a few words, not a sentence.\n\n"
+    "Example: Question: Which city is the birthplace of the author of Dracula? Answer: Dublin\n"
+    "Example: Question: Are Paris and Rome both capital cities? Answer: yes\n\n"
     "{context}\n\nQuestion: {question}\nAnswer:"
 )
+
+
+def clean_answer(text: str) -> str:
+    return text.strip().split("\n")[0].strip().rstrip(".")
 
 
 @dataclass
@@ -75,46 +85,136 @@ class HeuristicExpert:
 
 
 class HFExpert:
+    """transformers causal LM, greedy decoding, left-padded batches.
+
+    `load_in_4bit` uses bitsandbytes NF4, the fallback for 7B models on a 16 GB T4 when vLLM
+    is unavailable.
+    """
+
     def __init__(self, name: str, top_k: int | None, model: str, device: str | None = None,
-                 max_new_tokens: int = 16, dtype: str = "auto"):
+                 max_new_tokens: int = 16, dtype: str = "auto", batch_size: int = 1, load_in_4bit: bool = False):
         import torch
         from transformers import AutoModelForCausalLM, AutoTokenizer
 
-        self.name, self.top_k, self.max_new_tokens = name, top_k, max_new_tokens
+        self.name, self.top_k, self.max_new_tokens, self.batch_size = name, top_k, max_new_tokens, batch_size
         self.torch = torch
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
-        self.tokenizer = AutoTokenizer.from_pretrained(model)
-        self.model = AutoModelForCausalLM.from_pretrained(model, dtype=dtype).to(self.device).eval()
+        self.tokenizer = AutoTokenizer.from_pretrained(model, padding_side="left")
+        if self.tokenizer.pad_token is None:
+            self.tokenizer.pad_token = self.tokenizer.eos_token
+        if load_in_4bit:
+            from transformers import BitsAndBytesConfig
 
-    def _prompt_ids(self, question: str, paragraphs: list[str]):
+            quant = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.float16)
+            self.model = AutoModelForCausalLM.from_pretrained(model, quantization_config=quant, device_map=self.device)
+        else:
+            self.model = AutoModelForCausalLM.from_pretrained(model, dtype=dtype).to(self.device)
+        self.model.eval()
+        eos = self.model.generation_config.eos_token_id
+        self.stop_ids = set(eos if isinstance(eos, list) else [eos]) | {self.tokenizer.eos_token_id}
+
+    def _prompt(self, question: str, paragraphs: list[str]) -> str:
         text = PROMPT.format(context="\n\n".join(paragraphs), question=question)
         if self.tokenizer.chat_template:
-            return self.tokenizer.apply_chat_template(
-                [{"role": "user", "content": text}], add_generation_prompt=True, return_tensors="pt", return_dict=True
-            )["input_ids"]
-        return self.tokenizer(text, return_tensors="pt")["input_ids"]
+            return self.tokenizer.apply_chat_template([{"role": "user", "content": text}], tokenize=False,
+                                                      add_generation_prompt=True)
+        return text
 
-    def answer(self, question: str, paragraphs: list[str]) -> ExpertOutput:
-        input_ids = self._prompt_ids(question, paragraphs).to(self.device)
+    def _generate(self, prompts: list[str]) -> list[ExpertOutput]:
+        enc = self.tokenizer(prompts, return_tensors="pt", padding=True, add_special_tokens=not self.tokenizer.chat_template)
+        enc = enc.to(self.device)
         with self.torch.no_grad():
             out = self.model.generate(
-                input_ids,
-                attention_mask=self.torch.ones_like(input_ids),
+                **enc,
                 max_new_tokens=self.max_new_tokens,
                 do_sample=False,
                 output_scores=True,
                 return_dict_in_generate=True,
-                pad_token_id=self.tokenizer.pad_token_id or self.tokenizer.eos_token_id,
+                pad_token_id=self.tokenizer.pad_token_id,
             )
-        new_ids = out.sequences[0, input_ids.shape[1]:]
-        entropies = []
-        for step_scores in out.scores:
-            logp = self.torch.log_softmax(step_scores[0].float(), dim=-1)
-            entropies.append(float(-(logp.exp() * logp).sum()))
-        text = self.tokenizer.decode(new_ids, skip_special_tokens=True)
-        answer = text.strip().split("\n")[0].strip().rstrip(".")
-        uncertainty = sum(entropies) / len(entropies) if entropies else math.inf
-        return ExpertOutput(answer, int(input_ids.shape[1] + len(new_ids)), uncertainty)
+        new = out.sequences[:, enc["input_ids"].shape[1]:].tolist()
+        logp = self.torch.stack([self.torch.log_softmax(s.float(), dim=-1) for s in out.scores], dim=1)
+        entropy = -(logp.exp() * logp).sum(-1).cpu()  # [batch, steps]
+        results = []
+        for b, ids in enumerate(new):
+            n = len(ids)
+            for j, tok in enumerate(ids):
+                if tok in self.stop_ids:
+                    n = j + 1
+                    break
+            steps = entropy[b, :n].tolist()
+            text = self.tokenizer.decode(ids[:n], skip_special_tokens=True)
+            uncertainty = sum(steps) / len(steps) if steps else math.inf
+            cost = int(enc["attention_mask"][b].sum()) + n
+            results.append(ExpertOutput(clean_answer(text), cost, uncertainty))
+        return results
+
+    def answer_batch(self, questions: list[str], contexts: list[list[str]]) -> list[ExpertOutput]:
+        prompts = [self._prompt(q, c) for q, c in zip(questions, contexts)]
+        results = []
+        for i in range(0, len(prompts), self.batch_size):
+            results += self._generate(prompts[i: i + self.batch_size])
+        return results
+
+    def answer(self, question: str, paragraphs: list[str]) -> ExpertOutput:
+        return self.answer_batch([question], [paragraphs])[0]
+
+
+class VLLMExpert:
+    """Greedy batched generation with vLLM.
+
+    Uncertainty is the mean entropy of the renormalised top-`logprobs` distribution at each
+    generated token, an approximation of HFExpert's full-vocabulary entropy.
+    """
+
+    def __init__(self, name: str, top_k: int | None, model: str, dtype: str = "auto",
+                 quantization: str | None = None, max_model_len: int = 8192,
+                 gpu_memory_utilization: float = 0.85, max_new_tokens: int = 16, logprobs: int = 20):
+        from vllm import LLM, SamplingParams
+
+        self.name, self.top_k = name, top_k
+        self.max_new_tokens, self.max_model_len = max_new_tokens, max_model_len
+        self.llm = LLM(model=model, dtype=dtype, quantization=quantization, max_model_len=max_model_len,
+                       gpu_memory_utilization=gpu_memory_utilization)
+        self.tokenizer = self.llm.get_tokenizer()
+        self.params = SamplingParams(temperature=0.0, max_tokens=max_new_tokens, logprobs=logprobs)
+
+    def _prompt(self, question: str, paragraphs: list[str]) -> str:
+        text = PROMPT.format(context="\n\n".join(paragraphs), question=question)
+        if self.tokenizer.chat_template:
+            return self.tokenizer.apply_chat_template([{"role": "user", "content": text}], tokenize=False,
+                                                      add_generation_prompt=True)
+        return text
+
+    def answer_batch(self, questions: list[str], contexts: list[list[str]]) -> list[ExpertOutput]:
+        prompts = [self._prompt(q, c) for q, c in zip(questions, contexts)]
+        limit = self.max_model_len - self.max_new_tokens
+        too_long = [i for i, p in enumerate(prompts) if len(self.tokenizer.encode(p)) > limit]
+        if too_long:
+            raise ValueError(f"{len(too_long)} prompts exceed {limit} tokens (batch positions {too_long[:5]}); "
+                             "raise max_model_len rather than truncating evidence")
+
+        results = []
+        for out in self.llm.generate(prompts, self.params, use_tqdm=False):
+            completion = out.outputs[0]
+            entropies = []
+            for step in completion.logprobs or []:
+                p = np.exp(np.array([lp.logprob for lp in step.values()]))
+                p /= p.sum()
+                entropies.append(float(-(p * np.log(p + 1e-12)).sum()))
+            uncertainty = sum(entropies) / len(entropies) if entropies else math.inf
+            cost = len(out.prompt_token_ids) + len(completion.token_ids)
+            results.append(ExpertOutput(clean_answer(completion.text), cost, uncertainty))
+        return results
+
+    def answer(self, question: str, paragraphs: list[str]) -> ExpertOutput:
+        return self.answer_batch([question], [paragraphs])[0]
+
+
+def answer_batch(expert, questions: list[str], contexts: list[list[str]]) -> list[ExpertOutput]:
+    if hasattr(expert, "answer_batch"):
+        return expert.answer_batch(questions, contexts)
+    return [expert.answer(q, c) for q, c in zip(questions, contexts)]
 
 
 def make_expert(cfg: dict):
@@ -123,6 +223,9 @@ def make_expert(cfg: dict):
     if kind == "heuristic":
         return HeuristicExpert(cfg["name"], top_k, hops=cfg.get("hops", 0))
     if kind == "hf":
-        return HFExpert(cfg["name"], top_k, cfg["model"], device=cfg.get("device"),
-                        max_new_tokens=cfg.get("max_new_tokens", 16), dtype=cfg.get("dtype", "auto"))
+        options = ("device", "max_new_tokens", "dtype", "batch_size", "load_in_4bit")
+        return HFExpert(cfg["name"], top_k, cfg["model"], **{k: cfg[k] for k in options if k in cfg})
+    if kind == "vllm":
+        options = ("dtype", "quantization", "max_model_len", "gpu_memory_utilization", "max_new_tokens", "logprobs")
+        return VLLMExpert(cfg["name"], top_k, cfg["model"], **{k: cfg[k] for k in options if k in cfg})
     raise ValueError(f"unknown expert kind: {kind}")

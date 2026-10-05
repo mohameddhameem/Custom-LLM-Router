@@ -1,11 +1,15 @@
 # Real models small enough for a CPU. Use --limit 20-50; expect a few seconds per question.
 [scorer]
-kind = "lexical"
+# nano-jev v1.0 from the Hub (33M MiniLM): relevance per paragraph, sufficiency over the top 2.
+kind = "cross-encoder"
+path = "sdmlai/nano-jev@v1.0"
+sufficiency_top_k = 2
 
 [[experts]]
 name = "small"
 kind = "hf"
 model = "Qwen/Qwen2.5-0.5B-Instruct"
+params = 0.49
 top_k = 2
 dtype = "float32"
 
@@ -13,5 +17,6 @@ dtype = "float32"
 name = "large"
 kind = "hf"
 model = "Qwen/Qwen2.5-1.5B-Instruct"
+params = 1.54
 dtype = "float32"
 # no top_k: reads all ten paragraphs

@@ -17,6 +17,7 @@ dependencies = [
 [project.scripts]
 prepare-hotpotqa = "groupproject.prepare_hotpotqa:main"
 make-splits = "groupproject.make_splits:main"
+nanojev-ids = "groupproject.nanojev_ids:main"
 run-experts = "groupproject.run_experts:main"
 train-router = "groupproject.router:main"
 eval-routing = "groupproject.evaluate_routing:main"

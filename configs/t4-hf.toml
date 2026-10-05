@@ -1,5 +1,5 @@
-# Minimal first experiment (docs/research-report.md). scorer.path may also be a local nano-jev
-# folder (weights, tokenizer and calibration.json). `params` (billions) sets the FLOPs cost unit.
+# Fallback for a free Colab T4 when vLLM does not run: transformers with left-padded batches,
+# and the 7B model loaded in 4-bit with bitsandbytes. Slower than vLLM.
 [scorer]
 # nano-jev v1.0 from the Hub (33M MiniLM): relevance per paragraph, sufficiency over the top 2.
 kind = "cross-encoder"
@@ -12,11 +12,13 @@ kind = "hf"
 model = "Qwen/Qwen2.5-1.5B-Instruct"
 params = 1.54
 top_k = 2
-dtype = "bfloat16"
+dtype = "float16"
+batch_size = 32
 
 [[experts]]
 name = "large"
 kind = "hf"
 model = "Qwen/Qwen2.5-7B-Instruct"
 params = 7.62
-dtype = "bfloat16"
+load_in_4bit = true
+batch_size = 8

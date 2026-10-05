@@ -16,3 +16,6 @@ wheels/
 # Generated data and model outputs
 data/
 runs/
+
+# Local clones of the reference projects (see docs/reference-projects.md)
+reference/

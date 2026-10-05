@@ -19,7 +19,7 @@ from transformers import (  # noqa: E402
 )
 
 from groupproject import evaluate_routing, make_splits, router, run_experts  # noqa: E402
-from groupproject.evidence import CrossEncoderScorer  # noqa: E402
+from groupproject.evidence import CrossEncoderScorer, RerankerScorer  # noqa: E402
 from groupproject.experts import PROMPT, HFExpert  # noqa: E402
 from synthetic import make_split  # noqa: E402
 
@@ -84,7 +84,18 @@ def test_cross_encoder_scores(tiny_models):
     scores = scorer.score("Who directed the film?", ["Film: It was directed by Kalo.", "Other: Unrelated.", "X: y."])
     assert scores.shape == (3,) and ((scores > 0) & (scores < 1)).all()
     assert 0 < scorer.sufficiency("Who directed the film?", ["Film: It was directed by Kalo."]) < 1
+    seen = []
+    scorer._decide = lambda decision, q, states: seen.append(states) or np.array([[0.5, 0.5]])
+    scorer.sufficiency("q", ["A: one.", "B: two."])
+    assert seen == [["[1] A: one.\n[2] B: two."]]  # nano-jev's format_passages layout
     assert scorer.pairs_seen == 3 * 3 + 2
+
+
+def test_reranker_scores(tiny_models):
+    scorer = RerankerScorer(str(tiny_models / "ce"), device="cpu")
+    scores = scorer.score("Who directed the film?", ["Film: It was directed by Kalo.", "Other: Unrelated."])
+    assert scores.shape == (2,) and ((scores > 0) & (scores < 1)).all()
+    assert np.isnan(scorer.sufficiency("Who directed the film?", ["Film: x"]))
 
 
 def test_end_to_end_with_models(tiny_models, tmp_path):
@@ -133,7 +144,7 @@ dtype = "float32"
     cache.to_parquet(run / "router_train.parquet")
 
     router.main(["--run", str(run)])
-    evaluate_routing.main(["--run", str(run)])
+    evaluate_routing.main(["--run", str(run), "--cost", "tokens"])  # local model paths carry no size
     report = json.loads((run / "report.json").read_text())
     assert report["n_test"] == 15
     assert "ev_sufficiency" in router_columns(run)
@@ -142,4 +153,19 @@ dtype = "float32"
 def router_columns(run) -> list[str]:
     import pickle
 
-    return pickle.loads((run / "routers.pkl").read_bytes())["routers"]["question+evidence"]["columns"]
+    return pickle.loads((run / "routers.pkl").read_bytes())["routers"]["question+evidence/small-fails"]["columns"]
+
+
+@pytest.mark.parametrize("model_dir", ["lm", "chat-lm"])
+def test_hf_expert_batches_match_single(tiny_models, model_dir):
+    qs = ["Who directed the film?", "Where was Kalo born?", "Which film came out first, Film or Other?"]
+    ctx = [["Film: It was directed by Kalo."], ["Kalo: Kalo was born in Rimer.", "Other: Unrelated text here."],
+           ["Film: A 1990 film."]]
+    single = HFExpert("s", None, str(tiny_models / model_dir), device="cpu", max_new_tokens=5, dtype="float32")
+    batched = HFExpert("s", None, str(tiny_models / model_dir), device="cpu", max_new_tokens=5, dtype="float32",
+                       batch_size=3)
+    one = [single.answer(q, c) for q, c in zip(qs, ctx)]
+    many = batched.answer_batch(qs, ctx)
+    assert [o.answer for o in one] == [o.answer for o in many]
+    assert [o.cost for o in one] == [o.cost for o in many]
+    assert [o.uncertainty for o in one] == pytest.approx([o.uncertainty for o in many], rel=1e-3)

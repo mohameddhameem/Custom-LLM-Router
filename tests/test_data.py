@@ -74,3 +74,18 @@ def test_make_splits_cli(tmp_path):
     assert manifest["num_excluded"] == 2
     assert len(manifest["router_train"]) == 30 and len(manifest["calib"]) == 10
     assert "q0" not in manifest["router_train"] + manifest["calib"]
+
+
+def test_nanojev_ids_follow_its_shuffle_not_row_order():
+    from datasets import Dataset
+
+    from groupproject.nanojev_ids import shuffled_ids
+
+    split = Dataset.from_dict({"id": [f"q{i}" for i in range(50)]})
+    ids = shuffled_ids(split, seed=0, n=10)
+    # nano-jev's calib and test ranges: shuffle(seed).select(range(start, start + n))
+    calib = list(split.shuffle(seed=0).select(range(0, 5))["id"])
+    test = list(split.shuffle(seed=0).select(range(5, 10))["id"])
+    assert ids == calib + test
+    assert ids != list(split["id"])[:10]
+    assert shuffled_ids(split, seed=0, n=100) == list(split.shuffle(seed=0)["id"])
