@@ -39,6 +39,7 @@ uv run run-experts --config configs/cpu.toml --data data/hotpotqa/distractor_val
 uv run train-router --run $R --tau 0.8
 uv run eval-routing --run $R   # writes $R/report.json and $R/curves.csv
 uv run eval-routing --run $R --exclude data/hotpotqa/nanojev_validation_ids.txt   # report-clean.json
+uv run tau-sweep --run $R   # retrain and evaluate at tau 0.5-1.0: $R/tau-sweep.csv
 ```
 
 | Config | Scorer | Experts | Use |
@@ -54,10 +55,15 @@ nano-jev is loaded from the Hub (`sdmlai/nano-jev@v1.0`) unless `scorer.path` is
 Routers `question`, `question+evidence` and `evidence` (an ablation) share model, labels, data
 and tuning (C picked from one grid by 5-fold CV); only the input differs. Each is trained on two
 labels, `small-fails` and `large-helps` (small wrong and large right), giving six routers named
-`<inputs>/<label>`. `eval-routing` compares them with random, oracle and a small-model entropy
+`<inputs>/<label>`. Four more, `evidence+small` and `question+evidence+small`, are cascade
+routers: they also see the small expert's answer (token entropy, length, yes/no), so they decide
+after it has run and pay for both experts when they escalate. `eval-routing` compares them with random, oracle and a small-model entropy
 threshold on F1-vs-cost curves (AIQ, CPT 50%/80%), and picks an operating point on `calib`
 (≤1% F1 below always-large). It also temperature-scales each router on `calib` and reports ECE
-and reliability bins before and after, with breakdowns by bridge/comparison and yes/no vs span. Cost defaults to GFLOPs, 2 × `params` × tokens,
+and reliability bins before and after, with breakdowns by bridge/comparison and yes/no vs span.
+A paired bootstrap over test questions (`--bootstrap 1000`, the default) gives 95% intervals for
+every AIQ, for each router's AIQ minus the entropy and random baselines', and for each operating
+point's F1 minus always-large's. Cost defaults to GFLOPs, 2 × `params` × tokens,
 with `params` (billions) set per expert in the config; `--cost tokens` and `--cost seconds` are
 the alternatives.
 

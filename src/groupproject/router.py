@@ -7,6 +7,11 @@ procedure and differ only in input: `question` sees question text and lexical cu
 each router from the same grid by stratified 5-fold cross-validated log-loss, so no input set
 wins by being better tuned.
 
+The `+small` input sets are cascade routers: they also see the small expert's answer signals
+(token entropy, length, whether it answered yes/no), so they decide after the small expert has
+run and an escalated question pays for both experts. They compete with the small-entropy
+baseline, not with the pre-generation routers.
+
 Two labels are trained, because which one is right is part of the experiment:
 `small-fails` (small F1 < tau) also escalates questions the large expert gets wrong too, paying
 for nothing; `large-helps` (small F1 < tau and large F1 >= tau) escalates only when it pays off.
@@ -29,16 +34,21 @@ from sklearn.preprocessing import StandardScaler
 from groupproject import provenance
 from groupproject.evidence import tokenize
 from groupproject.experts import AUX_VERBS
+from groupproject.metrics import normalize_answer
 
 log = logging.getLogger(__name__)
 
 CUE_COLUMNS = ["q_starts_aux", "q_has_or", "q_comparative", "q_num_tokens", "q_num_capitalised"]
 EVIDENCE_COLUMNS = ["ev_top1", "ev_top2_sum", "ev_margin_2_3", "ev_entropy", "ev_sufficiency"]
-# input set -> (dense columns, whether the question text is used)
+SMALL_COLUMNS = ["small_uncertainty", "small_entropy_max", "small_entropy_first", "small_generated_tokens",
+                 "small_says_yesno"]
+# input set -> (dense columns, whether the question text is used, whether it needs the small expert's answer)
 ROUTER_INPUTS = {
-    "question": (CUE_COLUMNS, True),
-    "question+evidence": (CUE_COLUMNS + EVIDENCE_COLUMNS, True),
-    "evidence": (EVIDENCE_COLUMNS, False),
+    "question": (CUE_COLUMNS, True, False),
+    "question+evidence": (CUE_COLUMNS + EVIDENCE_COLUMNS, True, False),
+    "evidence": (EVIDENCE_COLUMNS, False, False),
+    "evidence+small": (EVIDENCE_COLUMNS + SMALL_COLUMNS, False, True),
+    "question+evidence+small": (CUE_COLUMNS + EVIDENCE_COLUMNS + SMALL_COLUMNS, True, True),
 }
 C_GRID = (0.01, 0.03, 0.1, 0.3, 1.0, 3.0, 10.0)
 CV_FOLDS = 5
@@ -54,6 +64,26 @@ def add_question_cues(df: pd.DataFrame) -> pd.DataFrame:
     df["q_num_tokens"] = toks.map(len).astype(float)
     df["q_num_capitalised"] = df["question"].str.count(r"\b[A-Z]").astype(float)
     return df
+
+
+def add_small_cues(df: pd.DataFrame) -> pd.DataFrame:
+    """Signals from the small expert's own answer (NaN when the cache has no small expert)."""
+    df = df.copy()
+    if "small_token_entropy" not in df:
+        for c in SMALL_COLUMNS:
+            df[c] = df.get(c, np.nan)
+        return df
+    steps = df["small_token_entropy"].map(lambda e: np.asarray(e, dtype=float))
+    df["small_entropy_max"] = steps.map(lambda e: e.max() if e.size else np.nan)
+    df["small_entropy_first"] = steps.map(lambda e: e[0] if e.size else np.nan)
+    df["small_generated_tokens"] = df["small_generated_tokens"].astype(float)
+    df["small_says_yesno"] = df["small_pred"].map(normalize_answer).isin({"yes", "no"}).astype(float)
+    df["small_uncertainty"] = df["small_uncertainty"].replace([np.inf, -np.inf], np.nan)  # no tokens generated
+    return df
+
+
+def add_features(df: pd.DataFrame) -> pd.DataFrame:
+    return add_small_cues(add_question_cues(df))
 
 
 LABELS = ("small-fails", "large-helps")
@@ -88,7 +118,7 @@ def fit_tuned(model: Pipeline, X: pd.DataFrame, y: np.ndarray, seed: int) -> tup
     if folds < 2:
         return model.fit(X, y), {"C": model.get_params()["clf__C"], "cv_folds": 0}
     search = GridSearchCV(model, {"clf__C": list(C_GRID)}, scoring="neg_log_loss",
-                          cv=StratifiedKFold(folds, shuffle=True, random_state=seed))
+                          cv=StratifiedKFold(folds, shuffle=True, random_state=seed), n_jobs=-1)
     search.fit(X, y)
     return search.best_estimator_, {"C": search.best_params_["clf__C"], "cv_folds": folds,
                                     "cv_log_loss": -float(search.best_score_)}
@@ -96,28 +126,29 @@ def fit_tuned(model: Pipeline, X: pd.DataFrame, y: np.ndarray, seed: int) -> tup
 
 def predict_escalation(router: dict, df: pd.DataFrame) -> np.ndarray:
     """The router's P(escalate) for each row, under its own label (see escalation_label)."""
-    X = add_question_cues(df)
+    X = add_features(df)
     X[router["columns"]] = X[router["columns"]].fillna(0.0)
     return router["model"].predict_proba(X)[:, 1]
 
 
 def train_routers(df: pd.DataFrame, tau: float, seed: int = 0) -> dict[str, dict]:
     """One router per (input set, label), named "<inputs>/<label>"."""
-    X = add_question_cues(df)
+    X = add_features(df)
     routers = {}
     for label in LABELS:
         y = escalation_label(df, tau, label)
         if len(set(y)) < 2:
             log.warning(f"  skipping label {label}: all {len(y)} training labels are {y[0]}")
             continue
-        for inputs, (columns, text) in ROUTER_INPUTS.items():
+        for inputs, (columns, text, post) in ROUTER_INPUTS.items():
             cols = usable_columns(X, columns)
-            if not cols and not text:
+            if (not cols and not text) or (post and not set(cols) & set(SMALL_COLUMNS)):
                 log.warning(f"  skipping {inputs}/{label}: no usable features")
                 continue
             X[cols] = X[cols].fillna(0.0)
             model, tuning = fit_tuned(build_router(cols, text), X, y, seed)
-            routers[f"{inputs}/{label}"] = {"model": model, "columns": cols, "label": label, "tuning": tuning}
+            routers[f"{inputs}/{label}"] = {"model": model, "columns": cols, "label": label, "tuning": tuning,
+                                            "post": post}
             log.info(f"  {inputs}/{label}: {len(cols)} dense features {cols} | {tuning}")
     if not routers:
         raise ValueError(f"no label has both classes on {len(df)} questions; change tau or add questions")

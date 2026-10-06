@@ -163,6 +163,10 @@ GFLOPs. So there is no sign that nano-jev having seen these questions inflates t
 
 Required by [experiment-protocol.md](../experiment-protocol.md) but not in this run:
 
+(τ sensitivity and significance tests were done in
+[experiment 2](2026-10-06-cascade-routers.md): the +0.003 AIQ over the entropy baseline is not
+significant, CI [−0.002, +0.009].)
+
 - sensitivity to τ (0.8 only so far);
 - a hand audit of ~200 EM/F1 disagreements;
 - reliability diagram plots (the data is in `report.json`);

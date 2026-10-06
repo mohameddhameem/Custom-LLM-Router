@@ -4,8 +4,8 @@ For each policy, questions are escalated to the large expert in order of the pol
 at escalation rates from 0 to 1. Each rate gives one (mean cost, mean F1, mean EM) point.
 
 Pre-generation policies (routers, oracle, random) pay for one expert per question. The
-entropy baseline decides after the small expert has answered, so escalated questions pay for
-both experts.
+entropy baseline and the `+small` cascade routers decide after the small expert has answered, so
+escalated questions pay for both experts.
 
 Cost is in one of three units (--cost): `flops` (2 x parameters x tokens, in GFLOPs, so a 7B token
 costs more than a 1.5B one), `tokens` (prompt + generated, model size ignored) or `seconds`
@@ -18,6 +18,15 @@ added to the curves.
 
 Router probabilities are temperature-scaled on calib; scaling keeps the ranking, so curves and AIQ
 are unchanged, and the report gives ECE and reliability bins before and after.
+
+Uncertainty (--bootstrap): a paired bootstrap over test questions. Each resample re-ranks the same
+router scores, so the intervals cover test-set sampling, not router retraining. The report gives a
+95% percentile interval for each policy's AIQ, for each router's AIQ minus the small-entropy and
+random baselines', and for each operating point's F1 minus always-large's, with the share of
+resamples in which the difference is <= 0 (a one-sided bootstrap p-value). AIQ takes the upper
+hull of a curve, so even a random ranking scores at or above the random baseline's straight line:
+the difference to `random` is biased upward on small test sets, while the difference between two
+ranked policies (e.g. a router and small-entropy) is not.
 """
 
 import argparse
@@ -41,6 +50,8 @@ log = logging.getLogger(__name__)
 RATES = np.round(np.linspace(0, 1, 21), 2)
 COST_UNITS = ("flops", "tokens", "seconds")
 CPT_FRACTIONS = (0.5, 0.8)
+CURVE_COLUMNS = ("small_f1", "large_f1", "small_em", "large_em", "small_cost", "large_cost", "small_uncertainty")
+BASELINES = ("small-entropy (post)", "random")
 
 
 def expert_params(cfg: dict) -> dict[str, float | None]:
@@ -87,14 +98,74 @@ def escalate_top(scores: np.ndarray, rate: float) -> np.ndarray:
     return esc
 
 
-def curve(df: pd.DataFrame, scores: np.ndarray, post: bool = False) -> list[dict]:
-    return [outcome(df, escalate_top(scores, r), post) for r in RATES]
+def as_arrays(df: pd.DataFrame) -> dict[str, np.ndarray]:
+    return {c: df[c].to_numpy(dtype=float) for c in CURVE_COLUMNS}
 
 
-def random_curve(df: pd.DataFrame) -> list[dict]:
+def curve(df: pd.DataFrame | dict, scores: np.ndarray, post: bool = False) -> list[dict]:
+    """outcome(df, escalate_top(scores, r), post) for each rate in RATES, from cumulative sums."""
+    n = len(scores)
+    order = np.argsort(-np.asarray(scores), kind="stable")
+    out = []
+    totals, gains = {}, {}
+    for m in ("f1", "em", "cost"):
+        small, large = np.asarray(df[f"small_{m}"], dtype=float), np.asarray(df[f"large_{m}"], dtype=float)
+        delta = large if post and m == "cost" else large - small  # post: the small expert is always paid
+        totals[m] = small.sum()
+        gains[m] = np.concatenate([[0.0], np.cumsum(delta[order])])
+    for r in RATES:
+        k = round(r * n)
+        out.append({"rate": k / n, **{m: float((totals[m] + gains[m][k]) / n) for m in ("cost", "f1", "em")}})
+    return out
+
+
+def random_curve(df: pd.DataFrame | dict) -> list[dict]:
     """Expected value of escalating a random fraction: a linear mix of the two experts."""
-    s, l = outcome(df, np.zeros(len(df)), False), outcome(df, np.ones(len(df)), False)
+    n = len(df["small_f1"])
+    s, l = outcome(df, np.zeros(n), False), outcome(df, np.ones(n), False)
     return [{k: (1 - r) * s[k] + r * l[k] for k in s} | {"rate": float(r)} for r in RATES]
+
+
+def policy_curves(a: dict[str, np.ndarray], scores: dict[str, tuple[np.ndarray, bool]]) -> dict[str, list[dict]]:
+    """Curves of the baselines and of each scored policy (name -> (scores, post))."""
+    n = len(a["small_f1"])
+    oracle = a["large_f1"] > a["small_f1"]
+    curves = {
+        "random": random_curve(a),
+        "oracle": [outcome(a, np.zeros(n), False), outcome(a, oracle, False), outcome(a, np.ones(n), False)],
+        "small-entropy (post)": curve(a, a["small_uncertainty"], post=True),
+    }
+    for name, (s, post) in scores.items():
+        curves[name] = curve(a, s, post)
+    return curves
+
+
+def bootstrap(a: dict[str, np.ndarray], scores: dict[str, tuple[np.ndarray, bool]],
+              operating: dict[str, tuple[np.ndarray, bool]], n_boot: int, seed: int) -> dict:
+    """Paired bootstrap over questions: AIQ intervals, AIQ differences, operating-point F1 vs always-large."""
+    rng = np.random.default_rng(seed)
+    n = len(a["small_f1"])
+    aiqs: dict[str, list[float]] = {}
+    op_gaps: dict[str, list[float]] = {name: [] for name in operating}
+    for _ in range(n_boot):
+        idx = rng.integers(0, n, n)
+        s = {k: v[idx] for k, v in a.items()}
+        curves = policy_curves(s, {name: (sc[idx], post) for name, (sc, post) in scores.items()})
+        cmin, cmax = s["small_cost"].mean(), s["large_cost"].mean()
+        for name, pts in curves.items():
+            aiqs.setdefault(name, []).append(aiq(pts, cmin, cmax))
+        for name, (esc, post) in operating.items():
+            op_gaps[name].append(outcome(s, esc[idx], post)["f1"] - s["large_f1"].mean())
+
+    def summary(values: list[float]) -> dict:
+        v = np.asarray(values)
+        return {"ci95": [float(np.percentile(v, 2.5)), float(np.percentile(v, 97.5))], "p_le_0": float((v <= 0).mean())}
+
+    aiqs_np = {name: np.asarray(v) for name, v in aiqs.items()}
+    diffs = {f"{name} - {base}": summary(aiqs_np[name] - aiqs_np[base])
+             for name in scores for base in BASELINES}
+    return {"n": n_boot, "seed": seed, "aiq_ci95": {name: summary(v)["ci95"] for name, v in aiqs_np.items()},
+            "aiq_diff": diffs, "op_f1_minus_large": {name: summary(v) for name, v in op_gaps.items()}}
 
 
 def aiq(points: list[dict], cmin: float, cmax: float) -> float:
@@ -168,7 +239,7 @@ def pick_threshold(calib: pd.DataFrame, scores: np.ndarray, max_drop: float) -> 
     """Highest score threshold whose calib F1 is within max_drop (relative) of always-large."""
     target = (1 - max_drop) * calib["large_f1"].mean()
     for t in sorted(set(scores), reverse=True) + [-np.inf]:
-        if outcome(calib, scores >= t, False)["f1"] >= target:
+        if outcome(calib, scores >= t, False)["f1"] >= target:  # F1 does not depend on post
             return float(t)
     return -np.inf
 
@@ -178,28 +249,25 @@ def answer_kind(df: pd.DataFrame) -> pd.Series:
     return df["answer"].map(normalize_answer).isin({"yes", "no"}).map({True: "yes/no", False: "span"})
 
 
-def by_group(df: pd.DataFrame, escalate: np.ndarray, groups: pd.Series) -> dict:
-    return {g: outcome(df[m], escalate[m.to_numpy()], False) for g, m in ((g, groups == g) for g in sorted(groups.unique()))}
+def by_group(df: pd.DataFrame, escalate: np.ndarray, groups: pd.Series, post: bool = False) -> dict:
+    return {g: outcome(df[m], escalate[m.to_numpy()], post) for g, m in ((g, groups == g) for g in sorted(groups.unique()))}
 
 
-def by_type(df: pd.DataFrame, escalate: np.ndarray) -> dict:
-    return by_group(df, escalate, df["type"])
+def by_type(df: pd.DataFrame, escalate: np.ndarray, post: bool = False) -> dict:
+    return by_group(df, escalate, df["type"], post)
 
 
-def breakdowns(df: pd.DataFrame, escalate: np.ndarray) -> dict:
-    return {"by_type": by_type(df, escalate), "by_answer_kind": by_group(df, escalate, answer_kind(df))}
+def breakdowns(df: pd.DataFrame, escalate: np.ndarray, post: bool = False) -> dict:
+    return {"by_type": by_type(df, escalate, post), "by_answer_kind": by_group(df, escalate, answer_kind(df), post)}
 
 
-def evaluate(test: pd.DataFrame, calib: pd.DataFrame | None, routers: dict, tau: float, max_drop: float) -> tuple[dict, pd.DataFrame]:
+def evaluate(test: pd.DataFrame, calib: pd.DataFrame | None, routers: dict, tau: float, max_drop: float,
+             n_boot: int = 0, seed: int = 0) -> tuple[dict, pd.DataFrame]:
     n = len(test)
     oracle = (test["large_f1"] > test["small_f1"]).to_numpy()
     cmin, cmax = test["small_cost"].mean(), test["large_cost"].mean()
-
-    curves = {
-        "random": random_curve(test),
-        "oracle": [outcome(test, np.zeros(n), False), outcome(test, oracle, False), outcome(test, np.ones(n), False)],
-        "small-entropy (post)": curve(test, test["small_uncertainty"].to_numpy(), post=True),
-    }
+    a = as_arrays(test)
+    scores_by_policy, operating = {}, {}
     report = {
         "n_test": n,
         "tau": tau,
@@ -212,27 +280,32 @@ def evaluate(test: pd.DataFrame, calib: pd.DataFrame | None, routers: dict, tau:
     }
     for name, router in routers.items():
         scores = predict_escalation(router, test)
-        curves[f"router:{name}"] = curve(test, scores)
+        post = router.get("post", False)  # cascade router: decides after the small expert
+        scores_by_policy[f"router:{name}"] = (scores, post)
         label = router.get("label", "small-fails")  # routers.pkl from before labels were named
         labels = escalation_label(test, tau, label)
-        entry = {"label": label, "tuning": router.get("tuning"), "ece": ece(scores, labels),
+        entry = {"label": label, "post": post, "tuning": router.get("tuning"), "ece": ece(scores, labels),
                  "reliability": {"raw": reliability(scores, labels)}}
         if calib is not None:
             calib_scores = predict_escalation(router, calib)
             t = pick_threshold(calib, calib_scores, max_drop)
             esc = scores >= t
-            entry["operating_point"] = {"threshold": t, **outcome(test, esc, False), **breakdowns(test, esc)}
+            operating[f"router:{name}"] = (esc, post)
+            entry["operating_point"] = {"threshold": t, **outcome(test, esc, post), **breakdowns(test, esc, post)}
             temperature = fit_temperature(calib_scores, escalation_label(calib, tau, label))
             scaled = scale(scores, temperature)
             entry |= {"temperature": temperature, "ece_scaled": ece(scaled, labels)}
             entry["reliability"]["scaled"] = reliability(scaled, labels)
         report["routers"][name] = entry
+    curves = policy_curves(a, scores_by_policy)
     report["aiq"] = {name: aiq(pts, cmin, cmax) for name, pts in curves.items()}
     f1_small, f1_large = report["always_small"]["f1"], report["always_large"]["f1"]
     report["cpt"] = {name: cpt(pts, f1_small, f1_large) for name, pts in curves.items()}
     for single, esc in (("always_small", np.zeros(n, bool)), ("always_large", np.ones(n, bool))):
         for key, value in breakdowns(test, esc).items():
             report.setdefault(key, {})[single] = value
+    if n_boot:
+        report["bootstrap"] = bootstrap(a, scores_by_policy, operating, n_boot, seed)
 
     rows = [{"policy": name, **p} for name, pts in curves.items() for p in pts]
     return report, pd.DataFrame(rows)
@@ -246,6 +319,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--exclude", type=Path, action="append", default=[],
                         help="file with test question ids to drop (e.g. ones nano-jev was tuned on); repeatable. "
                              "Writes report-clean.json and curves-clean.csv")
+    parser.add_argument("--bootstrap", type=int, default=1000, help="paired bootstrap resamples (0 to skip)")
+    parser.add_argument("--seed", type=int, default=0, help="bootstrap seed")
     return parser.parse_args(argv)
 
 
@@ -282,7 +357,7 @@ def main(argv: list[str] | None = None) -> None:
     test = with_cost_unit(test, args.cost, params)
     calib = with_cost_unit(calib, args.cost, params) if calib is not None else None
 
-    report, curves = evaluate(test, calib, saved["routers"], saved["tau"], args.max_drop)
+    report, curves = evaluate(test, calib, saved["routers"], saved["tau"], args.max_drop, args.bootstrap, args.seed)
     report = {"cost_unit": args.cost, "expert_params_b": params, "excluded_files": [str(p) for p in args.exclude],
               **report, "single_expert_costs": single, "scorer_cost": scorer_cost}
     suffix = "-clean" if excluded else ""
@@ -296,12 +371,16 @@ def main(argv: list[str] | None = None) -> None:
     for name in ("always_small", "always_large", "oracle"):
         p = report[name]
         log.info(f"  {name:<28} F1 {p['f1']:.3f} EM {p['em']:.3f} cost {p['cost']:.0f} rate {p['rate']:.2f}")
+    ci = report.get("bootstrap", {}).get("aiq_ci95", {})
     for name, value in report["aiq"].items():
-        log.info(f"  AIQ {name:<24} {value:.4f}")
+        interval = f" [{ci[name][0]:.4f}, {ci[name][1]:.4f}]" if name in ci else ""
+        log.info(f"  AIQ {name:<40} {value:.4f}{interval}")
+    for name, d in report.get("bootstrap", {}).get("aiq_diff", {}).items():
+        log.info(f"  AIQ {name:<64} 95% CI [{d['ci95'][0]:+.4f}, {d['ci95'][1]:+.4f}] p(<=0) {d['p_le_0']:.3f}")
     for name, entry in report["routers"].items():
         op = entry.get("operating_point")
         if op:
-            log.info(f"  op {name:<25} F1 {op['f1']:.3f} cost {op['cost']:.0f} rate {op['rate']:.2f} | "
+            log.info(f"  op {name:<40} F1 {op['f1']:.3f} cost {op['cost']:.0f} rate {op['rate']:.2f} | "
                      f"ECE {entry['ece']:.3f} -> {entry['ece_scaled']:.3f} at T={entry['temperature']:.2f}")
     log.info(f"Saved {args.run / f'report{suffix}.json'} and {args.run / f'curves{suffix}.csv'}")
 

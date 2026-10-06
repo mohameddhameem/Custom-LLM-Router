@@ -23,6 +23,7 @@ run-experts = "groupproject.run_experts:main"
 train-router = "groupproject.router:main"
 eval-routing = "groupproject.evaluate_routing:main"
 prefetch-models = "groupproject.prefetch_models:main"
+tau-sweep = "groupproject.tau_sweep:main"
 
 [project.optional-dependencies]
 llm = [

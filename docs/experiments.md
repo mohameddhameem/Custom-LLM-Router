@@ -15,13 +15,18 @@ Cost is GFLOPs per question.
 | [1](experiments/2026-10-05-omega-full-run.md) | 2026-10-05 | Always small: Qwen2.5-1.5B, top-2 nano-jev paragraphs | 48.3 | 61.3 | 1,051 | 0% | |
 | | | Always large: Qwen2.5-7B, all 10 paragraphs | 53.0 | 66.9 | 22,762 | 100% | |
 | | | Router, evidence / large-helps | 52.9 | 66.7 | 8,503 | 34% | 0.663 |
-| | | Router, question+evidence / large-helps | 52.5 | 66.0 | 5,933 | 23% | **0.665** |
+| | | Router, question+evidence / large-helps | 52.5 | 66.0 | 5,933 | 23% | 0.665 |
 | | | Small-entropy threshold (baseline) | | | | | 0.662 |
 | | | Random routing (baseline) | | | | | 0.641 |
 | | | Oracle router (upper bound) | 63.1 | 77.2 | 5,638 | 21% | 0.755 |
+| [2](experiments/2026-10-06-cascade-routers.md) | 2026-10-06 | Cascade router, evidence+small / small-fails | 54.1 | 67.6 | 12,657 | 50% | 0.666 |
+| | | Cascade router, question+evidence+small / large-helps | 52.9 | 66.5 | 6,340 | 23% | **0.672** |
 
 Both experts are instruction-tuned and not fine-tuned on HotpotQA, prompted with two
 answer-format examples. Routers are logistic regression, with τ = 0.8.
+Run 2 reuses run 1's expert outputs. Its cascade routers decide after the small expert has
+answered, and the bootstrap shows they are the only routers significantly better than the entropy
+baseline. AIQ 95% CIs are about ±0.008.
 
 ## Published reference points (answer EM / F1)
 
