@@ -5,6 +5,8 @@ changes one expert and reuses everything else from experiment 1's `runs/gpu` (`R
 so only one model runs per job. Cluster setup, monitoring and recovery are in
 [omega-cluster.md](omega-cluster.md).
 
+**Status:** all four ran on 2026-10-06. See [the results](experiments/2026-10-06-experiments-3-5.md).
+
 | Exp. | Config | Run directory | What changes | GPU stage that runs | Estimated time |
 |---|---|---|---|---|---|
 | 3a | `configs/gpu-large-top3.toml` | `runs/gpu-large-top3` | 7B reads nano-jev's top 3 paragraphs, not all 10 | large | ~35 min |
