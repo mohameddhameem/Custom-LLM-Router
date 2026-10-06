@@ -19,3 +19,6 @@ runs/
 
 # Local clones of the reference projects (see docs/reference-projects.md)
 reference/
+
+# PBS job stdout stubs (scripts/omega.pbs logs to runs/logs/)
+*.o[0-9]*

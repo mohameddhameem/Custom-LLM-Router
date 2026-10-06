@@ -7,7 +7,9 @@ Rules that apply to every experiment in this repo. The plan itself is in
 
 - HotpotQA distractor has two public splits: train (90,447) and validation (7,405). The
   validation set is the final test set. Do not tune on it.
-- Carve router-train and calibration sets (e.g. 20k and 2k questions) out of **train**.
+- Carve router-train and calibration sets (12k and 2k questions) out of **train**, from
+  `level == "hard"` questions only (the `make-splits` default): validation is all hard, and a
+  router or threshold fit on easier questions does not transfer.
 - Split by question `id` before deriving any per-paragraph or per-expert rows. All rows from one
   question stay in one split.
 - Exclude from router-train any question a component was trained on (nano-jev's 6,000 HotpotQA

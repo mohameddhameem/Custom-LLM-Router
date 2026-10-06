@@ -12,6 +12,7 @@ dependencies = [
     "pandas>=3.0.6",
     "pyarrow>=25.0.1",
     "scikit-learn>=1.9.1",
+    "scipy>=1.14",
 ]
 
 [project.scripts]
@@ -21,12 +22,23 @@ nanojev-ids = "groupproject.nanojev_ids:main"
 run-experts = "groupproject.run_experts:main"
 train-router = "groupproject.router:main"
 eval-routing = "groupproject.evaluate_routing:main"
+prefetch-models = "groupproject.prefetch_models:main"
+tau-sweep = "groupproject.tau_sweep:main"
 
 [project.optional-dependencies]
 llm = [
     "torch>=2.14.0",
     "transformers>=5.17.0",
 ]
+
+# omega's GPU node has driver 555 (CUDA 12.5): the default cu130 wheels cannot use it, cu126 can.
+[tool.uv.sources]
+torch = { index = "pytorch-cu126" }
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
 
 [build-system]
 requires = ["uv_build>=0.12.1,<0.13.0"]

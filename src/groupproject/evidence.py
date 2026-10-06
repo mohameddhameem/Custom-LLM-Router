@@ -84,6 +84,7 @@ class CrossEncoderScorer:
             self.temperatures.update(json.loads(calib.read_text()))
         self.truncated = 0
         self.pairs_seen = 0
+        self.tokens_seen = 0  # model tokens processed, for the scorer's own cost
 
     def _decide(self, decision: str, question: str, states: list[str]) -> np.ndarray:
         """Return [len(states), num_options] temperature-scaled probabilities."""
@@ -95,6 +96,7 @@ class CrossEncoderScorer:
         full_lengths = [len(ids) for ids in self.tokenizer(firsts, seconds)["input_ids"]]
         self.truncated += sum(n > self.max_length for n in full_lengths)
         self.pairs_seen += len(full_lengths)
+        self.tokens_seen += sum(min(n, self.max_length) for n in full_lengths)
         with self.torch.no_grad():
             logits = self.model(**enc.to(self.device)).logits[:, 0].float().cpu().numpy()
         logits = logits.reshape(len(states), len(options)) / self.temperatures[decision]
@@ -128,11 +130,16 @@ class RerankerScorer:
         self.tokenizer = AutoTokenizer.from_pretrained(path)
         self.model = AutoModelForSequenceClassification.from_pretrained(path).to(self.device).eval()
         self.max_length = max_length
+        self.truncated = self.pairs_seen = self.tokens_seen = 0
 
     def score(self, question: str, paragraphs: list[str]) -> np.ndarray:
         """Sigmoid of the relevance logit per paragraph."""
         enc = self.tokenizer([question] * len(paragraphs), paragraphs, truncation="only_second",
                              max_length=self.max_length, padding=True, return_tensors="pt")
+        full_lengths = [len(ids) for ids in self.tokenizer([question] * len(paragraphs), paragraphs)["input_ids"]]
+        self.truncated += sum(n > self.max_length for n in full_lengths)
+        self.pairs_seen += len(full_lengths)
+        self.tokens_seen += sum(min(n, self.max_length) for n in full_lengths)
         with self.torch.no_grad():
             logits = self.model(**enc.to(self.device)).logits[:, 0].float().cpu().numpy()
         return 1.0 / (1.0 + np.exp(-logits))
