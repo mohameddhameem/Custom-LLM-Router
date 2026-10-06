@@ -66,20 +66,29 @@ def add_question_cues(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def add_small_cues(df: pd.DataFrame) -> pd.DataFrame:
-    """Signals from the small expert's own answer (NaN when the cache has no small expert)."""
+def answer_columns(prefix: str) -> list[str]:
+    return [c.replace("small_", f"{prefix}_", 1) for c in SMALL_COLUMNS]
+
+
+def add_answer_cues(df: pd.DataFrame, prefix: str) -> pd.DataFrame:
+    """Signals from expert `prefix`'s own answer (NaN when the cache has no such expert)."""
     df = df.copy()
-    if "small_token_entropy" not in df:
-        for c in SMALL_COLUMNS:
+    if f"{prefix}_token_entropy" not in df:
+        for c in answer_columns(prefix):
             df[c] = df.get(c, np.nan)
         return df
-    steps = df["small_token_entropy"].map(lambda e: np.asarray(e, dtype=float))
-    df["small_entropy_max"] = steps.map(lambda e: e.max() if e.size else np.nan)
-    df["small_entropy_first"] = steps.map(lambda e: e[0] if e.size else np.nan)
-    df["small_generated_tokens"] = df["small_generated_tokens"].astype(float)
-    df["small_says_yesno"] = df["small_pred"].map(normalize_answer).isin({"yes", "no"}).astype(float)
-    df["small_uncertainty"] = df["small_uncertainty"].replace([np.inf, -np.inf], np.nan)  # no tokens generated
+    steps = df[f"{prefix}_token_entropy"].map(lambda e: np.asarray(e, dtype=float))
+    df[f"{prefix}_entropy_max"] = steps.map(lambda e: e.max() if e.size else np.nan)
+    df[f"{prefix}_entropy_first"] = steps.map(lambda e: e[0] if e.size else np.nan)
+    df[f"{prefix}_generated_tokens"] = df[f"{prefix}_generated_tokens"].astype(float)
+    df[f"{prefix}_says_yesno"] = df[f"{prefix}_pred"].map(normalize_answer).isin({"yes", "no"}).astype(float)
+    df[f"{prefix}_uncertainty"] = df[f"{prefix}_uncertainty"].replace([np.inf, -np.inf], np.nan)  # no tokens generated
     return df
+
+
+def add_small_cues(df: pd.DataFrame) -> pd.DataFrame:
+    """Signals from the small expert's own answer (NaN when the cache has no small expert)."""
+    return add_answer_cues(df, "small")
 
 
 def add_features(df: pd.DataFrame) -> pd.DataFrame:

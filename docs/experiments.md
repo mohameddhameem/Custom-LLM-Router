@@ -30,6 +30,8 @@ Cost is GFLOPs per question.
 | | | Oracle router (1.5B / 14B) | 64.8 | 79.4 | 11,174 | 24% | 0.772 |
 | [5](experiments/2026-10-06-experiments-3-5.md) | 2026-10-06 | Always small: Qwen2.5-3B, top-2 nano-jev paragraphs | 49.3 | 61.8 | 2,105 | 0% | |
 | | | Router, evidence+small / large-helps (7B on all 10) | 53.6 | 67.1 | 6,384 | 19% | 0.681 |
+| [6](experiments/2026-10-06-multi-stage-cascade.md) | 2026-10-06 | Cascade 1.5B (top 2) → 7B (top 3) → 14B (all 10) | **58.4** | **72.6** | 14,243 | 15% to 14B | 0.721 |
+| | | Cascade 1.5B (top 2) → 14B (all 10), same procedure | 57.8 | 72.3 | 35,202 | 78% | 0.695 |
 
 Both experts are instruction-tuned and not fine-tuned on HotpotQA, prompted with two
 answer-format examples. Routers are logistic regression, with τ = 0.8.
@@ -39,6 +41,8 @@ baseline. AIQ 95% CIs are about ±0.008.
 Runs 3–5 each change one expert of run 1 (rows not shown are unchanged). Reading only nano-jev's
 top 3 or 5 paragraphs makes the 7B both better and cheaper. AIQ depends on each run's own expert
 pair, so compare it only within a run. The per-run outputs are in [results/](../results/).
+Run 6 chains cached experts from runs 1–4 on CPU. Its AIQ is over 1,051–43,906 GFLOPs (1.5B to 14B),
+so it is comparable only within run 6.
 
 ## Published reference points (answer EM / F1)
 

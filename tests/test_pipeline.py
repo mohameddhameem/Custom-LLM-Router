@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from groupproject import evaluate_routing, make_splits, router, run_experts, tau_sweep
+from groupproject import cascade, evaluate_routing, make_splits, router, run_experts, tau_sweep
 from groupproject.evaluate_routing import aiq, as_arrays, curve, escalate_top, expert_params, outcome, with_cost_unit
 from groupproject.evidence import passages_state
 from groupproject.router import escalation_label
@@ -252,3 +252,59 @@ def test_reuse_from_copies_only_identical_stages(tmp_path):
     a, b = pd.read_parquet(first / "test.parquet"), pd.read_parquet(second / "test.parquet")
     pd.testing.assert_frame_equal(a.filter(regex="^(ev_|small_)"), b.filter(regex="^(ev_|small_)"))
     assert len(b) == 60 and b["large_pred"].notna().all()
+
+
+def fake_run(path: Path, n: int, seed: int, experts: dict[str, tuple[float, float]]) -> None:
+    """A run folder whose caches hold experts {column: (accuracy, cost)}; uncertainty tracks errors."""
+    path.mkdir(parents=True)
+    rng = np.random.default_rng(seed)
+    lines = []
+    for split, size in (("router_train", n), ("calib", n // 2), ("test", n // 2)):
+        base = np.random.default_rng(100 + len(split))  # same questions and evidence in every run
+        df = pd.DataFrame({"id": [f"q{i}" for i in range(size)], "question": "Is it?", "answer": "yes",
+                           "type": "bridge", **{c: base.random(size) for c in router.EVIDENCE_COLUMNS}})
+        for column, (acc, cost) in experts.items():
+            right = rng.random(size) < acc
+            df[f"{column}_pred"] = np.where(right, "yes", "no")
+            df[f"{column}_f1"] = df[f"{column}_em"] = right.astype(float)
+            df[f"{column}_cost"] = cost
+            df[f"{column}_prompt_tokens"] = cost - 1
+            df[f"{column}_generated_tokens"] = 1
+            df[f"{column}_uncertainty"] = np.where(right, 0.2, 0.8) + 0.3 * rng.random(size)
+            df[f"{column}_token_entropy"] = [[u] for u in df[f"{column}_uncertainty"]]
+        df.to_parquet(path / f"{split}.parquet")
+    for column in experts:
+        lines.append(f'[[experts]]\nname = "{column}"\nmodel = "m"\nparams = 1.0\n')
+    (path / "config.toml").write_text("\n".join(lines))
+
+
+def test_stops_follow_thresholds():
+    scores = np.array([[0.9, 0.9, 0.1], [0.9, 0.1, 0.9]])
+    assert cascade.stops(scores, (0.5, 0.5)).tolist() == [2, 1, 0]
+    assert cascade.stops(scores, (np.inf, -np.inf)).tolist() == [0, 0, 0]
+    assert cascade.stops(scores, (-np.inf, -np.inf)).tolist() == [2, 2, 2]
+
+
+def test_three_stage_cascade(tmp_path):
+    fake_run(tmp_path / "a", 600, 0, {"small": (0.5, 10), "large": (0.9, 100)})
+    fake_run(tmp_path / "b", 600, 1, {"large": (0.75, 40)})
+    experts = ["--expert", f"small={tmp_path / 'a'}:small", "--expert", f"mid={tmp_path / 'b'}:large",
+               "--expert", f"large={tmp_path / 'a'}:large"]
+    out = tmp_path / "out"
+    cascade.main(experts + ["--cascade", "small,large", "--cascade", "small,mid,large", "--bootstrap", "50",
+                            "--cost", "tokens", "--out", str(out)])
+    report = json.loads((out / "report.json").read_text())
+    assert report["aiq_range"] == [10, 100] and report["n_test"] == 300
+    three = report["cascades"]["small>mid>large"]
+    assert len(three["routers"]) == 2 and "agree_small_mid" in three["routers"][1]["columns"]
+    for variant in ("router", "entropy"):
+        pts = three[variant]["points"]
+        assert all(b["calib_f1"] > a["calib_f1"] and b["calib_cost"] >= a["calib_cost"] for a, b in zip(pts, pts[1:]))
+        assert sum(three[variant]["operating_point"]["stage_shares"].values()) == pytest.approx(1)
+        assert 0 < three[variant]["aiq"] <= 1
+    # uncertainty separates right from wrong answers, so the cascade must beat the straight line between
+    # always-small (F1 0.5 at cost 10) and always-large (0.9 at 100), whose mean over the range is 0.7
+    assert three["router"]["aiq"] > 0.7 and three["entropy"]["aiq"] > 0.7
+    assert "small>mid>large/router - small>large/router" in report["bootstrap"]["aiq_diff"]
+    with pytest.raises(ValueError, match="cheapest"):
+        cascade.main(experts + ["--cascade", "mid,large", "--bootstrap", "0", "--cost", "tokens", "--out", str(out)])

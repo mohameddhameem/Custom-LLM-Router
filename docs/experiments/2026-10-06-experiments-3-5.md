@@ -102,6 +102,8 @@ two experts, so it is only comparable *within* a row. Compare F1 and GFLOPs acro
 
 ## Next steps
 
+The three-expert cascade is done in [experiment 6](2026-10-06-multi-stage-cascade.md).
+
 - **Combine the best pieces:** the 1.5B or 3B on the top 2, then the 7B on the top 5, then the 14B
   on the top 5. Everything except a 14B-on-top-5 run is already cached, so a three-expert
   cascade can be tested on CPU.

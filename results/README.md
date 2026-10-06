@@ -12,6 +12,7 @@ headline numbers are in [docs/experiments.md](../docs/experiments.md).
 | `gpu-large-top5` | 3b: 7B reads the top 5 | `configs/gpu-large-top5.toml` |
 | `gpu-large-14b` | 4: 14B replaces the 7B | `configs/gpu-large-14b.toml` |
 | `gpu-small-3b` | 5: 3B replaces the 1.5B | `configs/gpu-small-3b.toml` |
+| `cascade` | 6: multi-stage cascades over the caches above (CPU) | `cascade` command, see `provenance.jsonl` |
 
 Each folder has:
 
@@ -23,6 +24,7 @@ Each folder has:
 | `config.toml`, `provenance.jsonl` | The exact config, and every command with its git commit, package versions and model revisions |
 | `logs/` | The PBS job log |
 | `tau-sweep.csv`, `tau-sweep.json` | `gpu-cascade` only |
+| `run.log` | `cascade` only; it has no caches, config or `routers.pkl` of its own |
 
 `routers.pkl` is left out: it is about 8 MB, loading a shared pickle is unsafe, and the caches
 rebuild it in minutes. To rerun any CPU analysis, copy a folder back into `runs/`:

@@ -1,0 +1,59 @@
+cascade small>large14
+    router small -> large14: label rate 0.194 | {'C': 0.1, 'cv_folds': 5, 'cv_log_loss': 0.46687792432996333}
+  router   AIQ 0.6951 | op F1 0.723 EM 0.578 cost 35,202 | stops small 22%, large14 78%
+  entropy  AIQ 0.6871 | op F1 0.714 EM 0.569 cost 36,734 | stops small 19%, large14 81%
+cascade small>mid5>large14
+    router small -> mid5: label rate 0.233 | {'C': 0.1, 'cv_folds': 5, 'cv_log_loss': 0.509920689001077}
+    router mid5 -> large14: label rate 0.099 | {'C': 0.1, 'cv_folds': 5, 'cv_log_loss': 0.2928700383045501}
+  router   AIQ 0.7165 | op F1 0.723 EM 0.580 cost 16,531 | stops small 21%, mid5 65%, large14 14%
+  entropy  AIQ 0.7097 | op F1 0.720 EM 0.577 cost 22,559 | stops small 9%, mid5 66%, large14 25%
+cascade small>mid3>large14
+    router small -> mid3: label rate 0.232 | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.5111158919110278}
+    router mid3 -> large14: label rate 0.107 | {'C': 0.03, 'cv_folds': 5, 'cv_log_loss': 0.3014850351300862}
+  router   AIQ 0.7206 | op F1 0.726 EM 0.584 cost 14,243 | stops small 11%, mid3 74%, large14 15%
+  entropy  AIQ 0.7132 | op F1 0.722 EM 0.580 cost 19,086 | stops small 0%, mid3 76%, large14 24%
+cascade small>mid3>mid5>large14
+    router small -> mid3: label rate 0.244 | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.5195062081023893}
+    router mid3 -> mid5: label rate 0.123 | {'C': 0.03, 'cv_folds': 5, 'cv_log_loss': 0.32418233470761343}
+    router mid5 -> large14: label rate 0.099 | {'C': 0.1, 'cv_folds': 5, 'cv_log_loss': 0.2931797210781381}
+  router   AIQ 0.7207 | op F1 0.720 EM 0.578 cost 13,313 | stops small 0%, mid3 75%, mid5 20%, large14 5%
+  entropy  AIQ 0.7132 | op F1 0.722 EM 0.579 cost 21,730 | stops small 0%, mid3 76%, mid5 0%, large14 24%
+cascade small>mid5
+    router small -> mid5: label rate 0.175 | {'C': 0.1, 'cv_folds': 5, 'cv_log_loss': 0.44229703997790926}
+  router   AIQ 0.6972 | op F1 0.700 EM 0.562 cost 8,098 | stops small 39%, mid5 61%
+  entropy  AIQ 0.6926 | op F1 0.695 EM 0.556 cost 9,778 | stops small 25%, mid5 75%
+cascade small>mid3
+    router small -> mid3: label rate 0.163 | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.42916171899618777}
+  router   AIQ 0.6886 | op F1 0.688 EM 0.555 cost 5,686 | stops small 36%, mid3 64%
+  entropy  AIQ 0.6868 | op F1 0.688 EM 0.552 cost 6,993 | stops small 19%, mid3 81%
+cascade small>large7
+    router small -> large7: label rate 0.167 | {'C': 0.1, 'cv_folds': 5, 'cv_log_loss': 0.4290510571707008}
+  router   AIQ 0.6767 | op F1 0.670 EM 0.534 cost 8,044 | stops small 69%, large7 31%
+  entropy  AIQ 0.6679 | op F1 0.673 EM 0.536 cost 15,866 | stops small 35%, large7 65%
+cascade small>mid5>large7
+    router small -> mid5: label rate 0.208 | {'C': 0.1, 'cv_folds': 5, 'cv_log_loss': 0.48214532019152073}
+    router mid5 -> large7: label rate 0.059 | {'C': 0.1, 'cv_folds': 5, 'cv_log_loss': 0.20169509430636054}
+  router   AIQ 0.7025 | op F1 0.703 EM 0.565 cost 8,420 | stops small 44%, mid5 52%, large7 4%
+  entropy  AIQ 0.6968 | op F1 0.695 EM 0.556 cost 9,778 | stops small 25%, mid5 75%, large7 0%
+expert small    F1 0.613 EM 0.483 cost 1,051
+expert mid3     F1 0.692 EM 0.555 cost 7,292
+expert mid5     F1 0.700 EM 0.558 cost 11,598
+expert large7   F1 0.669 EM 0.530 cost 22,762
+expert large14  F1 0.719 EM 0.571 cost 43,906
+oracle F1 0.842 cost 5,343
+  AIQ small>large14/router - small>large14/entropy                 95% CI [+0.0053, +0.0106] p(<=0) 0.000
+  AIQ small>mid5>large14/router - small>mid5>large14/entropy       95% CI [+0.0036, +0.0097] p(<=0) 0.000
+  AIQ small>mid3>large14/router - small>mid3>large14/entropy       95% CI [+0.0038, +0.0106] p(<=0) 0.000
+  AIQ small>mid3>mid5>large14/router - small>mid3>mid5>large14/entropy 95% CI [+0.0045, +0.0105] p(<=0) 0.000
+  AIQ small>mid5/router - small>mid5/entropy                       95% CI [+0.0024, +0.0073] p(<=0) 0.000
+  AIQ small>mid3/router - small>mid3/entropy                       95% CI [+0.0005, +0.0041] p(<=0) 0.003
+  AIQ small>large7/router - small>large7/entropy                   95% CI [+0.0050, +0.0120] p(<=0) 0.000
+  AIQ small>mid5>large7/router - small>mid5>large7/entropy         95% CI [+0.0034, +0.0096] p(<=0) 0.000
+  AIQ small>mid5>large14/router - small>large14/router             95% CI [+0.0168, +0.0255] p(<=0) 0.000
+  AIQ small>mid3>large14/router - small>large14/router             95% CI [+0.0211, +0.0301] p(<=0) 0.000
+  AIQ small>mid3>mid5>large14/router - small>large14/router        95% CI [+0.0212, +0.0306] p(<=0) 0.000
+  AIQ small>mid5/router - small>large14/router                     95% CI [-0.0046, +0.0084] p(<=0) 0.286
+  AIQ small>mid3/router - small>large14/router                     95% CI [-0.0136, +0.0006] p(<=0) 0.957
+  AIQ small>large7/router - small>large14/router                   95% CI [-0.0242, -0.0131] p(<=0) 1.000
+  AIQ small>mid5>large7/router - small>large14/router              95% CI [+0.0024, +0.0136] p(<=0) 0.001
+Saved results/cascade/report.json and results/cascade/curves.csv
