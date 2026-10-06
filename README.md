@@ -92,5 +92,8 @@ On omega (PBS Pro, NVIDIA L40S), run `prepare` on the login node and submit the 
 - [docs/research-report.md](docs/research-report.md): the plan and the prior work behind it.
 - [docs/experiment-protocol.md](docs/experiment-protocol.md): splits, leakage rules, scoring.
 - [docs/reference-projects.md](docs/reference-projects.md): nano-jev and rizzo-flow.
+- [docs/omega-cluster.md](docs/omega-cluster.md): running on omega's GPU node (PBS).
+- [docs/experiments.md](docs/experiments.md): headline numbers of every run against published
+  HotpotQA results; per-run write-ups in [docs/experiments/](docs/experiments/).
 - [docs/research-notes/](docs/research-notes/): source notes with citations. Items marked
   unverified or `[bg]` must be checked before citing.
