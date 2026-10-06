@@ -48,6 +48,9 @@ uv run tau-sweep --run $R   # retrain and evaluate at tau 0.5-1.0: $R/tau-sweep.
 | `configs/cpu.toml` | nano-jev | Qwen2.5-0.5B (top-2) / 1.5B (all 10) | CPU pilot, tens of questions |
 | `configs/gpu.toml` | nano-jev | Qwen2.5-1.5B (top-2) / 7B (all 10) | the minimal first experiment |
 | `configs/gpu-vllm.toml` | nano-jev | vLLM: Qwen2.5-1.5B (top-2) / 7B (all 10) | the same, faster; 24 GB+ GPU |
+| `configs/gpu-large-top3.toml`, `-top5` | nano-jev | Qwen2.5-1.5B (top-2) / 7B (top-3 or top-5) | experiment 3, [gpu-jobs.md](docs/gpu-jobs.md) |
+| `configs/gpu-large-14b.toml` | nano-jev | Qwen2.5-1.5B (top-2) / 14B (all 10) | experiment 4 |
+| `configs/gpu-small-3b.toml` | nano-jev | Qwen2.5-3B (top-2) / 7B (all 10) | experiment 5 |
 
 nano-jev is loaded from the Hub (`sdmlai/nano-jev@v1.0`) unless `scorer.path` is a local folder;
 `kind = "reranker"` with an MS MARCO cross-encoder still works as a relevance-only stand-in.
@@ -69,6 +72,7 @@ the alternatives.
 
 `run-experts` works in stages (`--stage evidence|small|large|merge`, default all) and saves
 chunks of 500 questions under `<run>/<name>.parts/`. Rerunning a command skips finished chunks.
+`--reuse-from <run>` copies the finished chunks of any stage whose settings match that run.
 On a GPU, run one stage per command so only one model holds GPU memory. `--limit N` takes a
 seeded random sample (`--seed`). A run directory is pinned to its first config: a config that
 would change outputs is refused (`batch_size`, `gpu_memory_utilization`, `device` and

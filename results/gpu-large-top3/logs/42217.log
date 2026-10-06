@@ -1,0 +1,237 @@
+job 42217.pbs-omega on a-11, step full
+name, memory.used [MiB], memory.total [MiB], driver_version
+NVIDIA L40S, 14 MiB, 46068 MiB, 555.58.02
+   Building groupproject @ file:///storage/home/dhameem.m.2025/Custom-LLM-Router
+      Built groupproject @ file:///storage/home/dhameem.m.2025/Custom-LLM-Router
+Uninstalled 1 package in 10ms
+Installed 1 package in 53ms
+torch 2.14.1+cu126 NVIDIA L40S
+router_train: 12000 questions in 24 chunks | stages ['evidence']
+--reuse-from: copied 24 evidence chunks from runs/gpu
+router_train: 12000 questions in 24 chunks | stages ['small']
+--reuse-from: copied 24 small chunks from runs/gpu
+router_train: 12000 questions in 24 chunks | stages ['large']
+--reuse-from: large settings differ from runs/gpu; recomputing
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-7B-Instruct/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-7B-Instruct/a09a35458c702b33eeacc393d103063234e8bc28/config.json?%2FQwen%2FQwen2.5-7B-Instruct%2Fresolve%2Fmain%2Fconfig.json=&etag=%220178295f88afc3c7f279ed284f961f8c1be00654%22 "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-7B-Instruct/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-7B-Instruct/a09a35458c702b33eeacc393d103063234e8bc28/tokenizer_config.json?%2FQwen%2FQwen2.5-7B-Instruct%2Fresolve%2Fmain%2Ftokenizer_config.json=&etag=%2207bfe0640cb5a0037f9322287fbfc682806cf672%22 "HTTP/1.1 200 OK"
+HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen2.5-7B-Instruct/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen2.5-7B-Instruct/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen2.5-7B-Instruct "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-7B-Instruct/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-7B-Instruct/a09a35458c702b33eeacc393d103063234e8bc28/config.json?%2FQwen%2FQwen2.5-7B-Instruct%2Fresolve%2Fmain%2Fconfig.json=&etag=%220178295f88afc3c7f279ed284f961f8c1be00654%22 "HTTP/1.1 200 OK"
+Loading weights:   0%|          | 0/339 [00:00<?, ?it/s]Loading weights: 100%|██████████| 339/339 [00:00<00:00, 11509.75it/s]
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-7B-Instruct/resolve/main/generation_config.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-7B-Instruct/a09a35458c702b33eeacc393d103063234e8bc28/generation_config.json?%2FQwen%2FQwen2.5-7B-Instruct%2Fresolve%2Fmain%2Fgeneration_config.json=&etag=%220eb3c536657dcd12626e09eca4b6198c0cbcde1e%22 "HTTP/1.1 200 OK"
+  large chunk 1/24: 0.089 s/question
+  large chunk 2/24: 0.083 s/question
+  large chunk 3/24: 0.087 s/question
+  large chunk 4/24: 0.080 s/question
+  large chunk 5/24: 0.085 s/question
+  large chunk 6/24: 0.087 s/question
+  large chunk 7/24: 0.085 s/question
+  large chunk 8/24: 0.085 s/question
+  large chunk 9/24: 0.089 s/question
+  large chunk 10/24: 0.087 s/question
+  large chunk 11/24: 0.087 s/question
+  large chunk 12/24: 0.085 s/question
+  large chunk 13/24: 0.086 s/question
+  large chunk 14/24: 0.085 s/question
+  large chunk 15/24: 0.086 s/question
+  large chunk 16/24: 0.084 s/question
+  large chunk 17/24: 0.086 s/question
+  large chunk 18/24: 0.087 s/question
+  large chunk 19/24: 0.084 s/question
+  large chunk 20/24: 0.086 s/question
+  large chunk 21/24: 0.087 s/question
+  large chunk 22/24: 0.092 s/question
+  large chunk 23/24: 0.085 s/question
+  large chunk 24/24: 0.088 s/question
+router_train: 12000 questions in 24 chunks | stages ['merge']
+  small: EM 0.485 F1 0.605 cost 341 sec/q 0.021
+  large: EM 0.567 F1 0.700 cost 478 sec/q 0.086
+  gold pair in top-2: 0.745 | questions with a truncated scorer input: 0.127
+Saved runs/gpu-large-top3/router_train.parquet
+calib: 2000 questions in 4 chunks | stages ['evidence']
+--reuse-from: copied 4 evidence chunks from runs/gpu
+calib: 2000 questions in 4 chunks | stages ['small']
+--reuse-from: copied 4 small chunks from runs/gpu
+calib: 2000 questions in 4 chunks | stages ['large']
+--reuse-from: large settings differ from runs/gpu; recomputing
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-7B-Instruct/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-7B-Instruct/a09a35458c702b33eeacc393d103063234e8bc28/config.json?%2FQwen%2FQwen2.5-7B-Instruct%2Fresolve%2Fmain%2Fconfig.json=&etag=%220178295f88afc3c7f279ed284f961f8c1be00654%22 "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-7B-Instruct/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-7B-Instruct/a09a35458c702b33eeacc393d103063234e8bc28/tokenizer_config.json?%2FQwen%2FQwen2.5-7B-Instruct%2Fresolve%2Fmain%2Ftokenizer_config.json=&etag=%2207bfe0640cb5a0037f9322287fbfc682806cf672%22 "HTTP/1.1 200 OK"
+HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen2.5-7B-Instruct/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen2.5-7B-Instruct/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen2.5-7B-Instruct "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-7B-Instruct/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-7B-Instruct/a09a35458c702b33eeacc393d103063234e8bc28/config.json?%2FQwen%2FQwen2.5-7B-Instruct%2Fresolve%2Fmain%2Fconfig.json=&etag=%220178295f88afc3c7f279ed284f961f8c1be00654%22 "HTTP/1.1 200 OK"
+Loading weights:   0%|          | 0/339 [00:00<?, ?it/s]Loading weights: 100%|██████████| 339/339 [00:00<00:00, 10745.77it/s]
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-7B-Instruct/resolve/main/generation_config.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-7B-Instruct/a09a35458c702b33eeacc393d103063234e8bc28/generation_config.json?%2FQwen%2FQwen2.5-7B-Instruct%2Fresolve%2Fmain%2Fgeneration_config.json=&etag=%220eb3c536657dcd12626e09eca4b6198c0cbcde1e%22 "HTTP/1.1 200 OK"
+  large chunk 1/4: 0.088 s/question
+  large chunk 2/4: 0.083 s/question
+  large chunk 3/4: 0.081 s/question
+  large chunk 4/4: 0.088 s/question
+calib: 2000 questions in 4 chunks | stages ['merge']
+  small: EM 0.479 F1 0.615 cost 339 sec/q 0.020
+  large: EM 0.558 F1 0.696 cost 476 sec/q 0.085
+  gold pair in top-2: 0.755 | questions with a truncated scorer input: 0.115
+Saved runs/gpu-large-top3/calib.parquet
+test: 7405 questions in 15 chunks | stages ['evidence']
+--reuse-from: copied 15 evidence chunks from runs/gpu
+test: 7405 questions in 15 chunks | stages ['small']
+--reuse-from: copied 15 small chunks from runs/gpu
+test: 7405 questions in 15 chunks | stages ['large']
+--reuse-from: large settings differ from runs/gpu; recomputing
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-7B-Instruct/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-7B-Instruct/a09a35458c702b33eeacc393d103063234e8bc28/config.json?%2FQwen%2FQwen2.5-7B-Instruct%2Fresolve%2Fmain%2Fconfig.json=&etag=%220178295f88afc3c7f279ed284f961f8c1be00654%22 "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-7B-Instruct/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-7B-Instruct/a09a35458c702b33eeacc393d103063234e8bc28/tokenizer_config.json?%2FQwen%2FQwen2.5-7B-Instruct%2Fresolve%2Fmain%2Ftokenizer_config.json=&etag=%2207bfe0640cb5a0037f9322287fbfc682806cf672%22 "HTTP/1.1 200 OK"
+HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen2.5-7B-Instruct/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen2.5-7B-Instruct/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen2.5-7B-Instruct "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-7B-Instruct/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-7B-Instruct/a09a35458c702b33eeacc393d103063234e8bc28/config.json?%2FQwen%2FQwen2.5-7B-Instruct%2Fresolve%2Fmain%2Fconfig.json=&etag=%220178295f88afc3c7f279ed284f961f8c1be00654%22 "HTTP/1.1 200 OK"
+Loading weights:   0%|          | 0/339 [00:00<?, ?it/s]Loading weights: 100%|██████████| 339/339 [00:00<00:00, 12716.49it/s]
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-7B-Instruct/resolve/main/generation_config.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-7B-Instruct/a09a35458c702b33eeacc393d103063234e8bc28/generation_config.json?%2FQwen%2FQwen2.5-7B-Instruct%2Fresolve%2Fmain%2Fgeneration_config.json=&etag=%220eb3c536657dcd12626e09eca4b6198c0cbcde1e%22 "HTTP/1.1 200 OK"
+  large chunk 1/15: 0.082 s/question
+  large chunk 2/15: 0.085 s/question
+  large chunk 3/15: 0.085 s/question
+  large chunk 4/15: 0.087 s/question
+  large chunk 5/15: 0.087 s/question
+  large chunk 6/15: 0.090 s/question
+  large chunk 7/15: 0.086 s/question
+  large chunk 8/15: 0.086 s/question
+  large chunk 9/15: 0.088 s/question
+  large chunk 10/15: 0.085 s/question
+  large chunk 11/15: 0.088 s/question
+  large chunk 12/15: 0.090 s/question
+  large chunk 13/15: 0.087 s/question
+  large chunk 14/15: 0.083 s/question
+  large chunk 15/15: 0.087 s/question
+test: 7405 questions in 15 chunks | stages ['merge']
+  small: EM 0.483 F1 0.613 cost 341 sec/q 0.020
+  large: EM 0.555 F1 0.692 cost 479 sec/q 0.086
+  gold pair in top-2: 0.754 | questions with a truncated scorer input: 0.123
+Saved runs/gpu-large-top3/test.parquet
+router_train: 12000 questions, escalate rate at tau=0.8: small-fails 0.469 | large-helps 0.163
+  question/small-fails: 5 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.6731091566472196}
+  question+evidence/small-fails: 10 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 1.0, 'cv_folds': 5, 'cv_log_loss': 0.6476198212455446}
+  evidence/small-fails: 5 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.03, 'cv_folds': 5, 'cv_log_loss': 0.6653862079827891}
+  evidence+small/small-fails: 10 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.1, 'cv_folds': 5, 'cv_log_loss': 0.6021866821424633}
+  question+evidence+small/small-fails: 15 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.5921558502333263}
+  question/large-helps: 5 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised'] | {'C': 0.1, 'cv_folds': 5, 'cv_log_loss': 0.44080395192565236}
+  question+evidence/large-helps: 10 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.43561095359179286}
+  evidence/large-helps: 5 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.03, 'cv_folds': 5, 'cv_log_loss': 0.4389273731964531}
+  evidence+small/large-helps: 10 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.42916171899618777}
+  question+evidence+small/large-helps: 15 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.4248744241397325}
+Saved runs/gpu-large-top3/routers.pkl
+test: 7405 questions | escalate label rate small-fails 0.463 | large-helps 0.148 | gold pair in top-2 0.754
+cost unit: flops
+  always_small                 F1 0.613 EM 0.483 cost 1051 rate 0.00
+  always_large                 F1 0.692 EM 0.555 cost 7292 rate 1.00
+  oracle                       F1 0.759 EM 0.622 cost 2277 rate 0.20
+  AIQ random                                   0.6525 [0.6439, 0.6607]
+  AIQ oracle                                   0.7448 [0.7361, 0.7529]
+  AIQ small-entropy (post)                     0.6654 [0.6568, 0.6746]
+  AIQ router:question/small-fails              0.6525 [0.6441, 0.6612]
+  AIQ router:question+evidence/small-fails     0.6597 [0.6508, 0.6687]
+  AIQ router:evidence/small-fails              0.6612 [0.6525, 0.6700]
+  AIQ router:evidence+small/small-fails        0.6655 [0.6564, 0.6745]
+  AIQ router:question+evidence+small/small-fails 0.6652 [0.6563, 0.6741]
+  AIQ router:question/large-helps              0.6587 [0.6503, 0.6678]
+  AIQ router:question+evidence/large-helps     0.6666 [0.6581, 0.6755]
+  AIQ router:evidence/large-helps              0.6650 [0.6563, 0.6742]
+  AIQ router:evidence+small/large-helps        0.6676 [0.6589, 0.6767]
+  AIQ router:question+evidence+small/large-helps 0.6690 [0.6601, 0.6781]
+  AIQ router:question/small-fails - small-entropy (post)               95% CI [-0.0156, -0.0098] p(<=0) 1.000
+  AIQ router:question/small-fails - random                             95% CI [+0.0000, +0.0021] p(<=0) 0.121
+  AIQ router:question+evidence/small-fails - small-entropy (post)      95% CI [-0.0089, -0.0018] p(<=0) 0.997
+  AIQ router:question+evidence/small-fails - random                    95% CI [+0.0053, +0.0103] p(<=0) 0.000
+  AIQ router:evidence/small-fails - small-entropy (post)               95% CI [-0.0078, -0.0007] p(<=0) 0.988
+  AIQ router:evidence/small-fails - random                             95% CI [+0.0066, +0.0112] p(<=0) 0.000
+  AIQ router:evidence+small/small-fails - small-entropy (post)         95% CI [-0.0021, +0.0025] p(<=0) 0.483
+  AIQ router:evidence+small/small-fails - random                       95% CI [+0.0103, +0.0162] p(<=0) 0.000
+  AIQ router:question+evidence+small/small-fails - small-entropy (post) 95% CI [-0.0028, +0.0022] p(<=0) 0.615
+  AIQ router:question+evidence+small/small-fails - random              95% CI [+0.0102, +0.0155] p(<=0) 0.000
+  AIQ router:question/large-helps - small-entropy (post)               95% CI [-0.0105, -0.0026] p(<=0) 1.000
+  AIQ router:question/large-helps - random                             95% CI [+0.0039, +0.0095] p(<=0) 0.000
+  AIQ router:question+evidence/large-helps - small-entropy (post)      95% CI [-0.0031, +0.0050] p(<=0) 0.315
+  AIQ router:question+evidence/large-helps - random                    95% CI [+0.0113, +0.0171] p(<=0) 0.000
+  AIQ router:evidence/large-helps - small-entropy (post)               95% CI [-0.0043, +0.0032] p(<=0) 0.628
+  AIQ router:evidence/large-helps - random                             95% CI [+0.0102, +0.0152] p(<=0) 0.000
+  AIQ router:evidence+small/large-helps - small-entropy (post)         95% CI [-0.0001, +0.0042] p(<=0) 0.031
+  AIQ router:evidence+small/large-helps - random                       95% CI [+0.0125, +0.0181] p(<=0) 0.000
+  AIQ router:question+evidence+small/large-helps - small-entropy (post) 95% CI [+0.0003, +0.0061] p(<=0) 0.017
+  AIQ router:question+evidence+small/large-helps - random              95% CI [+0.0139, +0.0194] p(<=0) 0.000
+  op question/small-fails                     F1 0.678 cost 6411 rate 0.86 | ECE 0.018 -> 0.019 at T=0.80
+  op question+evidence/small-fails            F1 0.680 cost 5937 rate 0.79 | ECE 0.017 -> 0.016 at T=1.00
+  op evidence/small-fails                     F1 0.687 cost 6979 rate 0.95 | ECE 0.022 -> 0.021 at T=0.98
+  op evidence+small/small-fails               F1 0.686 cost 6272 rate 0.71 | ECE 0.023 -> 0.028 at T=1.08
+  op question+evidence+small/small-fails      F1 0.684 cost 5621 rate 0.63 | ECE 0.021 -> 0.020 at T=1.07
+  op question/large-helps                     F1 0.678 cost 5757 rate 0.75 | ECE 0.015 -> 0.004 at T=0.95
+  op question+evidence/large-helps            F1 0.685 cost 5632 rate 0.74 | ECE 0.014 -> 0.009 at T=0.96
+  op evidence/large-helps                     F1 0.685 cost 6110 rate 0.82 | ECE 0.014 -> 0.006 at T=0.96
+  op evidence+small/large-helps               F1 0.688 cost 5646 rate 0.63 | ECE 0.019 -> 0.014 at T=0.97
+  op question+evidence+small/large-helps      F1 0.682 cost 5007 rate 0.54 | ECE 0.016 -> 0.015 at T=0.97
+Saved runs/gpu-large-top3/report.json and runs/gpu-large-top3/curves.csv
+excluded 1000 of 7405 test questions
+test: 6405 questions | escalate label rate small-fails 0.462 | large-helps 0.148 | gold pair in top-2 0.756
+cost unit: flops
+  always_small                 F1 0.614 EM 0.484 cost 1050 rate 0.00
+  always_large                 F1 0.694 EM 0.558 cost 7287 rate 1.00
+  oracle                       F1 0.762 EM 0.623 cost 2286 rate 0.20
+  AIQ random                                   0.6542 [0.6455, 0.6623]
+  AIQ oracle                                   0.7467 [0.7382, 0.7551]
+  AIQ small-entropy (post)                     0.6664 [0.6575, 0.6756]
+  AIQ router:question/small-fails              0.6542 [0.6460, 0.6634]
+  AIQ router:question+evidence/small-fails     0.6625 [0.6540, 0.6709]
+  AIQ router:evidence/small-fails              0.6633 [0.6544, 0.6718]
+  AIQ router:evidence+small/small-fails        0.6665 [0.6577, 0.6755]
+  AIQ router:question+evidence+small/small-fails 0.6661 [0.6573, 0.6749]
+  AIQ router:question/large-helps              0.6602 [0.6518, 0.6691]
+  AIQ router:question+evidence/large-helps     0.6680 [0.6596, 0.6768]
+  AIQ router:evidence/large-helps              0.6666 [0.6582, 0.6754]
+  AIQ router:evidence+small/large-helps        0.6683 [0.6597, 0.6771]
+  AIQ router:question+evidence+small/large-helps 0.6699 [0.6611, 0.6786]
+  AIQ router:question/small-fails - small-entropy (post)               95% CI [-0.0149, -0.0087] p(<=0) 1.000
+  AIQ router:question/small-fails - random                             95% CI [-0.0000, +0.0027] p(<=0) 0.178
+  AIQ router:question+evidence/small-fails - small-entropy (post)      95% CI [-0.0077, -0.0001] p(<=0) 0.976
+  AIQ router:question+evidence/small-fails - random                    95% CI [+0.0058, +0.0115] p(<=0) 0.000
+  AIQ router:evidence/small-fails - small-entropy (post)               95% CI [-0.0071, +0.0005] p(<=0) 0.960
+  AIQ router:evidence/small-fails - random                             95% CI [+0.0065, +0.0117] p(<=0) 0.000
+  AIQ router:evidence+small/small-fails - small-entropy (post)         95% CI [-0.0024, +0.0024] p(<=0) 0.499
+  AIQ router:evidence+small/small-fails - random                       95% CI [+0.0095, +0.0157] p(<=0) 0.000
+  AIQ router:question+evidence+small/small-fails - small-entropy (post) 95% CI [-0.0028, +0.0022] p(<=0) 0.622
+  AIQ router:question+evidence+small/small-fails - random              95% CI [+0.0092, +0.0152] p(<=0) 0.000
+  AIQ router:question/large-helps - small-entropy (post)               95% CI [-0.0101, -0.0016] p(<=0) 0.993
+  AIQ router:question/large-helps - random                             95% CI [+0.0038, +0.0095] p(<=0) 0.000
+  AIQ router:question+evidence/large-helps - small-entropy (post)      95% CI [-0.0025, +0.0060] p(<=0) 0.255
+  AIQ router:question+evidence/large-helps - random                    95% CI [+0.0112, +0.0171] p(<=0) 0.000
+  AIQ router:evidence/large-helps - small-entropy (post)               95% CI [-0.0038, +0.0046] p(<=0) 0.479
+  AIQ router:evidence/large-helps - random                             95% CI [+0.0099, +0.0158] p(<=0) 0.000
+  AIQ router:evidence+small/large-helps - small-entropy (post)         95% CI [-0.0006, +0.0041] p(<=0) 0.077
+  AIQ router:evidence+small/large-helps - random                       95% CI [+0.0113, +0.0175] p(<=0) 0.000
+  AIQ router:question+evidence+small/large-helps - small-entropy (post) 95% CI [+0.0003, +0.0065] p(<=0) 0.013
+  AIQ router:question+evidence+small/large-helps - random              95% CI [+0.0128, +0.0190] p(<=0) 0.000
+  op question/small-fails                     F1 0.681 cost 6419 rate 0.86 | ECE 0.022 -> 0.022 at T=0.80
+  op question+evidence/small-fails            F1 0.683 cost 5931 rate 0.79 | ECE 0.016 -> 0.015 at T=1.00
+  op evidence/small-fails                     F1 0.689 cost 6970 rate 0.95 | ECE 0.021 -> 0.020 at T=0.98
+  op evidence+small/small-fails               F1 0.688 cost 6274 rate 0.71 | ECE 0.024 -> 0.028 at T=1.08
+  op question+evidence+small/small-fails      F1 0.685 cost 5621 rate 0.63 | ECE 0.023 -> 0.020 at T=1.07
+  op question/large-helps                     F1 0.679 cost 5760 rate 0.75 | ECE 0.014 -> 0.003 at T=0.95
+  op question+evidence/large-helps            F1 0.687 cost 5650 rate 0.74 | ECE 0.014 -> 0.010 at T=0.96
+  op evidence/large-helps                     F1 0.687 cost 6107 rate 0.82 | ECE 0.013 -> 0.005 at T=0.96
+  op evidence+small/large-helps               F1 0.688 cost 5661 rate 0.64 | ECE 0.018 -> 0.013 at T=0.97
+  op question+evidence+small/large-helps      F1 0.683 cost 5016 rate 0.55 | ECE 0.016 -> 0.016 at T=0.97
+Saved runs/gpu-large-top3/report-clean.json and runs/gpu-large-top3/curves-clean.csv

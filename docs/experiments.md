@@ -21,12 +21,28 @@ Cost is GFLOPs per question.
 | | | Oracle router (upper bound) | 63.1 | 77.2 | 5,638 | 21% | 0.755 |
 | [2](experiments/2026-10-06-cascade-routers.md) | 2026-10-06 | Cascade router, evidence+small / small-fails | 54.1 | 67.6 | 12,657 | 50% | 0.666 |
 | | | Cascade router, question+evidence+small / large-helps | 52.9 | 66.5 | 6,340 | 23% | **0.672** |
+| [3a](experiments/2026-10-06-experiments-3-5.md) | 2026-10-06 | Always large: 7B on top-3 nano-jev paragraphs | 55.5 | 69.2 | 7,292 | 100% | |
+| | | Router, question+evidence+small / large-helps | 54.8 | 68.2 | 5,007 | 54% | 0.669 |
+| [3b](experiments/2026-10-06-experiments-3-5.md) | 2026-10-06 | Always large: 7B on top-5 nano-jev paragraphs | 55.8 | **70.0** | 11,598 | 100% | |
+| | | Router, question+evidence+small / large-helps | 54.5 | 68.1 | 4,958 | 34% | 0.682 |
+| [4](experiments/2026-10-06-experiments-3-5.md) | 2026-10-06 | Always large: Qwen2.5-14B, all 10 paragraphs | 57.1 | **71.9** | 43,906 | 100% | |
+| | | Router, question+evidence+small / large-helps | 57.2 | 71.3 | 23,043 | 50% | 0.697 |
+| | | Oracle router (1.5B / 14B) | 64.8 | 79.4 | 11,174 | 24% | 0.772 |
+| [5](experiments/2026-10-06-experiments-3-5.md) | 2026-10-06 | Always small: Qwen2.5-3B, top-2 nano-jev paragraphs | 49.3 | 61.8 | 2,105 | 0% | |
+| | | Router, evidence+small / large-helps (7B on all 10) | 53.6 | 67.1 | 6,384 | 19% | 0.681 |
+| [6](experiments/2026-10-06-multi-stage-cascade.md) | 2026-10-06 | Cascade 1.5B (top 2) → 7B (top 3) → 14B (all 10) | **58.4** | **72.6** | 14,243 | 15% to 14B | 0.721 |
+| | | Cascade 1.5B (top 2) → 14B (all 10), same procedure | 57.8 | 72.3 | 35,202 | 78% | 0.695 |
 
 Both experts are instruction-tuned and not fine-tuned on HotpotQA, prompted with two
 answer-format examples. Routers are logistic regression, with τ = 0.8.
 Run 2 reuses run 1's expert outputs. Its cascade routers decide after the small expert has
 answered, and the bootstrap shows they are the only routers significantly better than the entropy
 baseline. AIQ 95% CIs are about ±0.008.
+Runs 3–5 each change one expert of run 1 (rows not shown are unchanged). Reading only nano-jev's
+top 3 or 5 paragraphs makes the 7B both better and cheaper. AIQ depends on each run's own expert
+pair, so compare it only within a run. The per-run outputs are in [results/](../results/).
+Run 6 chains cached experts from runs 1–4 on CPU. Its AIQ is over 1,051–43,906 GFLOPs (1.5B to 14B),
+so it is comparable only within run 6.
 
 ## Published reference points (answer EM / F1)
 
@@ -49,11 +65,12 @@ baseline. AIQ 95% CIs are about ±0.008.
   1.5B on 2 paragraphs scores +3.0 F1, and the 7B on 10 paragraphs +8.6 F1, over the baseline's
   58.3 dev F1.
 - **Against other LLMs:** the 7B reader (66.9 F1) is close to Llama-2-70B and Mixtral-8x7B
-  (67.7 and 68.1 F1), which used few-shot chain-of-thought. It is about 10 F1 below GPT-3.5.
-- **Against fine-tuned systems:** our best runs are 15–18 F1 below fine-tuned readers (82–85 F1),
+  (67.7 and 68.1 F1), which used few-shot chain-of-thought. Reading the top 5 paragraphs (70.0)
+  or using the 14B (71.9) moves past them, but both remain 5–7 F1 below GPT-3.5.
+- **Against fine-tuned systems:** our best run (the 14B, 71.9) is 10–13 F1 below fine-tuned readers (82–85 F1),
   and far below humans (91.4 F1).
-- **The oracle router** (77.2 F1) matches GPT-3.5 using only the 1.5B and 7B experts. That is
-  the ceiling a better router could reach with the current experts.
+- **The oracle router** (77.2 F1) matches GPT-3.5 using only the 1.5B and 7B experts. With the
+  14B, it reaches 79.4 F1. That is the ceiling a better router could reach with these experts.
 
 ## Comparability caveats
 

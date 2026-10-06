@@ -1,0 +1,240 @@
+router_train: 12000 questions, escalate rate at tau=0.8: small-fails 0.469 | large-helps 0.167
+  question/small-fails: 5 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.6731091566512177}
+  question+evidence/small-fails: 10 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 1.0, 'cv_folds': 5, 'cv_log_loss': 0.6476196313628366}
+  evidence/small-fails: 5 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.03, 'cv_folds': 5, 'cv_log_loss': 0.6653862079827891}
+  evidence+small/small-fails: 10 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.1, 'cv_folds': 5, 'cv_log_loss': 0.6021866821424633}
+  question+evidence+small/small-fails: 15 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.5921558502353625}
+  question/large-helps: 5 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.4474452276974453}
+  question+evidence/large-helps: 10 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.4328879998456688}
+  evidence/large-helps: 5 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.03, 'cv_folds': 5, 'cv_log_loss': 0.43836362927033184}
+  evidence+small/large-helps: 10 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.1, 'cv_folds': 5, 'cv_log_loss': 0.4290510571707008}
+  question+evidence+small/large-helps: 15 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.42150990557306056}
+Saved runs/gpu-cascade/routers.pkl
+test: 7405 questions | escalate label rate small-fails 0.463 | large-helps 0.154 | gold pair in top-2 0.754
+cost unit: flops
+  always_small                 F1 0.613 EM 0.483 cost 1051 rate 0.00
+  always_large                 F1 0.669 EM 0.530 cost 22762 rate 1.00
+  oracle                       F1 0.772 EM 0.631 cost 5638 rate 0.21
+  AIQ random                                   0.6413 [0.6331, 0.6492]
+  AIQ oracle                                   0.7548 [0.7464, 0.7627]
+  AIQ small-entropy (post)                     0.6619 [0.6534, 0.6707]
+  AIQ router:question/small-fails              0.6413 [0.6333, 0.6495]
+  AIQ router:question+evidence/small-fails     0.6559 [0.6480, 0.6643]
+  AIQ router:evidence/small-fails              0.6606 [0.6519, 0.6691]
+  AIQ router:evidence+small/small-fails        0.6664 [0.6580, 0.6752]
+  AIQ router:question+evidence+small/small-fails 0.6659 [0.6576, 0.6746]
+  AIQ router:question/large-helps              0.6478 [0.6403, 0.6567]
+  AIQ router:question+evidence/large-helps     0.6653 [0.6569, 0.6750]
+  AIQ router:evidence/large-helps              0.6626 [0.6542, 0.6715]
+  AIQ router:evidence+small/large-helps        0.6718 [0.6634, 0.6803]
+  AIQ router:question+evidence+small/large-helps 0.6724 [0.6645, 0.6816]
+  AIQ router:question/small-fails - small-entropy (post)               95% CI [-0.0243, -0.0169] p(<=0) 1.000
+  AIQ router:question/small-fails - random                             95% CI [-0.0000, +0.0022] p(<=0) 0.336
+  AIQ router:question+evidence/small-fails - small-entropy (post)      95% CI [-0.0102, -0.0016] p(<=0) 0.997
+  AIQ router:question+evidence/small-fails - random                    95% CI [+0.0123, +0.0182] p(<=0) 0.000
+  AIQ router:evidence/small-fails - small-entropy (post)               95% CI [-0.0062, +0.0030] p(<=0) 0.768
+  AIQ router:evidence/small-fails - random                             95% CI [+0.0167, +0.0225] p(<=0) 0.000
+  AIQ router:evidence+small/small-fails - small-entropy (post)         95% CI [+0.0016, +0.0072] p(<=0) 0.001
+  AIQ router:evidence+small/small-fails - random                       95% CI [+0.0217, +0.0292] p(<=0) 0.000
+  AIQ router:question+evidence+small/small-fails - small-entropy (post) 95% CI [+0.0009, +0.0069] p(<=0) 0.005
+  AIQ router:question+evidence+small/small-fails - random              95% CI [+0.0215, +0.0286] p(<=0) 0.000
+  AIQ router:question/large-helps - small-entropy (post)               95% CI [-0.0186, -0.0093] p(<=0) 1.000
+  AIQ router:question/large-helps - random                             95% CI [+0.0045, +0.0098] p(<=0) 0.000
+  AIQ router:question+evidence/large-helps - small-entropy (post)      95% CI [-0.0021, +0.0090] p(<=0) 0.098
+  AIQ router:question+evidence/large-helps - random                    95% CI [+0.0205, +0.0284] p(<=0) 0.000
+  AIQ router:evidence/large-helps - small-entropy (post)               95% CI [-0.0040, +0.0052] p(<=0) 0.438
+  AIQ router:evidence/large-helps - random                             95% CI [+0.0187, +0.0245] p(<=0) 0.000
+  AIQ router:evidence+small/large-helps - small-entropy (post)         95% CI [+0.0065, +0.0127] p(<=0) 0.000
+  AIQ router:evidence+small/large-helps - random                       95% CI [+0.0272, +0.0342] p(<=0) 0.000
+  AIQ router:question+evidence+small/large-helps - small-entropy (post) 95% CI [+0.0063, +0.0145] p(<=0) 0.000
+  AIQ router:question+evidence+small/large-helps - random              95% CI [+0.0278, +0.0352] p(<=0) 0.000
+  op question/small-fails                     F1 0.657 cost 19313 rate 0.84 | ECE 0.018 -> 0.019 at T=0.80
+  op question+evidence/small-fails            F1 0.661 cost 11726 rate 0.49 | ECE 0.017 -> 0.016 at T=1.00
+  op evidence/small-fails                     F1 0.663 cost 6645 rate 0.25 | ECE 0.022 -> 0.021 at T=0.98
+  op evidence+small/small-fails               F1 0.676 cost 12657 rate 0.50 | ECE 0.023 -> 0.028 at T=1.08
+  op question+evidence+small/small-fails      F1 0.670 cost 9886 rate 0.39 | ECE 0.021 -> 0.020 at T=1.07
+  op question/large-helps                     F1 0.647 cost 11505 rate 0.48 | ECE 0.015 -> 0.005 at T=0.94
+  op question+evidence/large-helps            F1 0.660 cost 5933 rate 0.23 | ECE 0.016 -> 0.013 at T=0.96
+  op evidence/large-helps                     F1 0.667 cost 8503 rate 0.34 | ECE 0.017 -> 0.011 at T=0.97
+  op evidence+small/large-helps               F1 0.667 cost 7135 rate 0.27 | ECE 0.015 -> 0.018 at T=0.97
+  op question+evidence+small/large-helps      F1 0.665 cost 6340 rate 0.23 | ECE 0.016 -> 0.022 at T=0.96
+Saved runs/gpu-cascade/report.json and runs/gpu-cascade/curves.csv
+excluded 1000 of 7405 test questions
+test: 6405 questions | escalate label rate small-fails 0.462 | large-helps 0.153 | gold pair in top-2 0.756
+cost unit: flops
+  always_small                 F1 0.614 EM 0.484 cost 1050 rate 0.00
+  always_large                 F1 0.671 EM 0.531 cost 22747 rate 1.00
+  oracle                       F1 0.772 EM 0.631 cost 5629 rate 0.21
+  AIQ random                                   0.6425 [0.6338, 0.6509]
+  AIQ oracle                                   0.7553 [0.7465, 0.7637]
+  AIQ small-entropy (post)                     0.6624 [0.6535, 0.6714]
+  AIQ router:question/small-fails              0.6425 [0.6342, 0.6514]
+  AIQ router:question+evidence/small-fails     0.6579 [0.6491, 0.6670]
+  AIQ router:evidence/small-fails              0.6618 [0.6526, 0.6708]
+  AIQ router:evidence+small/small-fails        0.6665 [0.6573, 0.6757]
+  AIQ router:question+evidence+small/small-fails 0.6661 [0.6575, 0.6753]
+  AIQ router:question/large-helps              0.6491 [0.6402, 0.6583]
+  AIQ router:question+evidence/large-helps     0.6663 [0.6577, 0.6761]
+  AIQ router:evidence/large-helps              0.6636 [0.6545, 0.6727]
+  AIQ router:evidence+small/large-helps        0.6721 [0.6629, 0.6808]
+  AIQ router:question+evidence+small/large-helps 0.6725 [0.6634, 0.6816]
+  AIQ router:question/small-fails - small-entropy (post)               95% CI [-0.0233, -0.0157] p(<=0) 1.000
+  AIQ router:question/small-fails - random                             95% CI [-0.0000, +0.0028] p(<=0) 0.301
+  AIQ router:question+evidence/small-fails - small-entropy (post)      95% CI [-0.0093, -0.0002] p(<=0) 0.979
+  AIQ router:question+evidence/small-fails - random                    95% CI [+0.0128, +0.0188] p(<=0) 0.000
+  AIQ router:evidence/small-fails - small-entropy (post)               95% CI [-0.0054, +0.0037] p(<=0) 0.641
+  AIQ router:evidence/small-fails - random                             95% CI [+0.0167, +0.0227] p(<=0) 0.000
+  AIQ router:evidence+small/small-fails - small-entropy (post)         95% CI [+0.0011, +0.0070] p(<=0) 0.003
+  AIQ router:evidence+small/small-fails - random                       95% CI [+0.0206, +0.0284] p(<=0) 0.000
+  AIQ router:question+evidence+small/small-fails - small-entropy (post) 95% CI [+0.0007, +0.0070] p(<=0) 0.011
+  AIQ router:question+evidence+small/small-fails - random              95% CI [+0.0205, +0.0278] p(<=0) 0.000
+  AIQ router:question/large-helps - small-entropy (post)               95% CI [-0.0182, -0.0081] p(<=0) 1.000
+  AIQ router:question/large-helps - random                             95% CI [+0.0045, +0.0102] p(<=0) 0.000
+  AIQ router:question+evidence/large-helps - small-entropy (post)      95% CI [-0.0016, +0.0102] p(<=0) 0.068
+  AIQ router:question+evidence/large-helps - random                    95% CI [+0.0209, +0.0290] p(<=0) 0.000
+  AIQ router:evidence/large-helps - small-entropy (post)               95% CI [-0.0037, +0.0057] p(<=0) 0.336
+  AIQ router:evidence/large-helps - random                             95% CI [+0.0183, +0.0246] p(<=0) 0.000
+  AIQ router:evidence+small/large-helps - small-entropy (post)         95% CI [+0.0063, +0.0125] p(<=0) 0.000
+  AIQ router:evidence+small/large-helps - random                       95% CI [+0.0258, +0.0332] p(<=0) 0.000
+  AIQ router:question+evidence+small/large-helps - small-entropy (post) 95% CI [+0.0059, +0.0144] p(<=0) 0.000
+  AIQ router:question+evidence+small/large-helps - random              95% CI [+0.0267, +0.0343] p(<=0) 0.000
+  op question/small-fails                     F1 0.659 cost 19337 rate 0.84 | ECE 0.022 -> 0.022 at T=0.80
+  op question+evidence/small-fails            F1 0.664 cost 11767 rate 0.49 | ECE 0.016 -> 0.015 at T=1.00
+  op evidence/small-fails                     F1 0.664 cost 6617 rate 0.25 | ECE 0.021 -> 0.020 at T=0.98
+  op evidence+small/small-fails               F1 0.676 cost 12679 rate 0.51 | ECE 0.024 -> 0.028 at T=1.08
+  op question+evidence+small/small-fails      F1 0.669 cost 9894 rate 0.39 | ECE 0.023 -> 0.020 at T=1.07
+  op question/large-helps                     F1 0.649 cost 11529 rate 0.48 | ECE 0.016 -> 0.006 at T=0.94
+  op question+evidence/large-helps            F1 0.662 cost 5919 rate 0.22 | ECE 0.015 -> 0.012 at T=0.96
+  op evidence/large-helps                     F1 0.668 cost 8459 rate 0.34 | ECE 0.016 -> 0.011 at T=0.97
+  op evidence+small/large-helps               F1 0.666 cost 7108 rate 0.27 | ECE 0.015 -> 0.016 at T=0.97
+  op question+evidence+small/large-helps      F1 0.665 cost 6343 rate 0.23 | ECE 0.015 -> 0.020 at T=0.96
+Saved runs/gpu-cascade/report-clean.json and runs/gpu-cascade/curves-clean.csv
+tau 0.5
+  question/small-fails: 5 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.6407279613416006}
+  question+evidence/small-fails: 10 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.6085264371080591}
+  evidence/small-fails: 5 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.03, 'cv_folds': 5, 'cv_log_loss': 0.6260391800706089}
+  evidence+small/small-fails: 10 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.03, 'cv_folds': 5, 'cv_log_loss': 0.572648653748559}
+  question+evidence+small/small-fails: 15 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.5580266469412744}
+  question/large-helps: 5 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.4587053308360393}
+  question+evidence/large-helps: 10 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.43731830992874093}
+  evidence/large-helps: 5 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.1, 'cv_folds': 5, 'cv_log_loss': 0.4439229770392366}
+  evidence+small/large-helps: 10 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.03, 'cv_folds': 5, 'cv_log_loss': 0.4292560875507023}
+  question+evidence+small/large-helps: 15 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.41986961153506125}
+  question/small-fails                     AIQ 0.6436 | op F1 0.651 cost 15084 rate 0.65
+  question+evidence/small-fails            AIQ 0.6619 | op F1 0.659 cost 6927 rate 0.27
+  evidence/small-fails                     AIQ 0.6608 | op F1 0.665 cost 7750 rate 0.30
+  evidence+small/small-fails               AIQ 0.6695 | op F1 0.679 cost 11166 rate 0.44
+  question+evidence+small/small-fails      AIQ 0.6714 | op F1 0.670 cost 8190 rate 0.31
+  question/large-helps                     AIQ 0.6469 | op F1 0.647 cost 12287 rate 0.52
+  question+evidence/large-helps            AIQ 0.6652 | op F1 0.659 cost 5710 rate 0.22
+  evidence/large-helps                     AIQ 0.6623 | op F1 0.667 cost 8619 rate 0.35
+  evidence+small/large-helps               AIQ 0.6713 | op F1 0.669 cost 7565 rate 0.29
+  question+evidence+small/large-helps      AIQ 0.6727 | op F1 0.666 cost 6643 rate 0.25
+tau 0.6
+  question/small-fails: 5 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised'] | {'C': 1.0, 'cv_folds': 5, 'cv_log_loss': 0.6605853582263406}
+  question+evidence/small-fails: 10 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 1.0, 'cv_folds': 5, 'cv_log_loss': 0.6301370675770462}
+  evidence/small-fails: 5 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.03, 'cv_folds': 5, 'cv_log_loss': 0.6467291955709081}
+  evidence+small/small-fails: 10 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.03, 'cv_folds': 5, 'cv_log_loss': 0.589859004096308}
+  question+evidence+small/small-fails: 15 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.57703822535781}
+  question/large-helps: 5 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.4631058511332384}
+  question+evidence/large-helps: 10 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.4443819992567044}
+  evidence/large-helps: 5 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.03, 'cv_folds': 5, 'cv_log_loss': 0.449773695821259}
+  evidence+small/large-helps: 10 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.03, 'cv_folds': 5, 'cv_log_loss': 0.4370007074424945}
+  question+evidence+small/large-helps: 15 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.4295210549237985}
+  question/small-fails                     AIQ 0.6428 | op F1 0.656 cost 16804 rate 0.73
+  question+evidence/small-fails            AIQ 0.6594 | op F1 0.659 cost 8298 rate 0.33
+  evidence/small-fails                     AIQ 0.6607 | op F1 0.666 cost 7983 rate 0.31
+  evidence+small/small-fails               AIQ 0.6682 | op F1 0.677 cost 11232 rate 0.44
+  question+evidence+small/small-fails      AIQ 0.6690 | op F1 0.669 cost 8469 rate 0.32
+  question/large-helps                     AIQ 0.6466 | op F1 0.644 cost 11882 rate 0.50
+  question+evidence/large-helps            AIQ 0.6653 | op F1 0.659 cost 5805 rate 0.22
+  evidence/large-helps                     AIQ 0.6629 | op F1 0.664 cost 19148 rate 0.83
+  evidence+small/large-helps               AIQ 0.6709 | op F1 0.670 cost 7701 rate 0.29
+  question+evidence+small/large-helps      AIQ 0.6721 | op F1 0.669 cost 7056 rate 0.26
+tau 0.7
+  question/small-fails: 5 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised'] | {'C': 1.0, 'cv_folds': 5, 'cv_log_loss': 0.672032202533814}
+  question+evidence/small-fails: 10 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 1.0, 'cv_folds': 5, 'cv_log_loss': 0.6459553933089462}
+  evidence/small-fails: 5 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.03, 'cv_folds': 5, 'cv_log_loss': 0.6643930965261774}
+  evidence+small/small-fails: 10 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.1, 'cv_folds': 5, 'cv_log_loss': 0.6042884552289456}
+  question+evidence+small/small-fails: 15 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.5939226988209694}
+  question/large-helps: 5 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.44958063087612}
+  question+evidence/large-helps: 10 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.4345859327434112}
+  evidence/large-helps: 5 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.03, 'cv_folds': 5, 'cv_log_loss': 0.4392679951145461}
+  evidence+small/large-helps: 10 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.1, 'cv_folds': 5, 'cv_log_loss': 0.4295486253122859}
+  question+evidence+small/large-helps: 15 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.4228284004723811}
+  question/small-fails                     AIQ 0.6413 | op F1 0.657 cost 19104 rate 0.83
+  question+evidence/small-fails            AIQ 0.6564 | op F1 0.661 cost 11395 rate 0.48
+  evidence/small-fails                     AIQ 0.6606 | op F1 0.663 cost 6615 rate 0.25
+  evidence+small/small-fails               AIQ 0.6669 | op F1 0.677 cost 12488 rate 0.50
+  question+evidence+small/small-fails      AIQ 0.6662 | op F1 0.670 cost 9733 rate 0.38
+  question/large-helps                     AIQ 0.6475 | op F1 0.644 cost 10558 rate 0.44
+  question+evidence/large-helps            AIQ 0.6658 | op F1 0.659 cost 5907 rate 0.22
+  evidence/large-helps                     AIQ 0.6624 | op F1 0.666 cost 8994 rate 0.36
+  evidence+small/large-helps               AIQ 0.6715 | op F1 0.667 cost 7154 rate 0.27
+  question+evidence+small/large-helps      AIQ 0.6723 | op F1 0.665 cost 6416 rate 0.24
+tau 0.8
+  question/small-fails: 5 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.6731091566512177}
+  question+evidence/small-fails: 10 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 1.0, 'cv_folds': 5, 'cv_log_loss': 0.6476196313628366}
+  evidence/small-fails: 5 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.03, 'cv_folds': 5, 'cv_log_loss': 0.6653862079827891}
+  evidence+small/small-fails: 10 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.1, 'cv_folds': 5, 'cv_log_loss': 0.6021866821424633}
+  question+evidence+small/small-fails: 15 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.5921558502353625}
+  question/large-helps: 5 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.4474452276974453}
+  question+evidence/large-helps: 10 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.4328879998456688}
+  evidence/large-helps: 5 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.03, 'cv_folds': 5, 'cv_log_loss': 0.43836362927033184}
+  evidence+small/large-helps: 10 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.1, 'cv_folds': 5, 'cv_log_loss': 0.4290510571707008}
+  question+evidence+small/large-helps: 15 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.42150990557306056}
+  question/small-fails                     AIQ 0.6413 | op F1 0.657 cost 19313 rate 0.84
+  question+evidence/small-fails            AIQ 0.6559 | op F1 0.661 cost 11726 rate 0.49
+  evidence/small-fails                     AIQ 0.6606 | op F1 0.663 cost 6645 rate 0.25
+  evidence+small/small-fails               AIQ 0.6664 | op F1 0.676 cost 12657 rate 0.50
+  question+evidence+small/small-fails      AIQ 0.6659 | op F1 0.670 cost 9886 rate 0.39
+  question/large-helps                     AIQ 0.6478 | op F1 0.647 cost 11505 rate 0.48
+  question+evidence/large-helps            AIQ 0.6653 | op F1 0.660 cost 5933 rate 0.23
+  evidence/large-helps                     AIQ 0.6626 | op F1 0.667 cost 8503 rate 0.34
+  evidence+small/large-helps               AIQ 0.6718 | op F1 0.667 cost 7135 rate 0.27
+  question+evidence+small/large-helps      AIQ 0.6724 | op F1 0.665 cost 6340 rate 0.23
+tau 0.9
+  question/small-fails: 5 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised'] | {'C': 1.0, 'cv_folds': 5, 'cv_log_loss': 0.6719411336299063}
+  question+evidence/small-fails: 10 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 1.0, 'cv_folds': 5, 'cv_log_loss': 0.6494063811692762}
+  evidence/small-fails: 5 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.03, 'cv_folds': 5, 'cv_log_loss': 0.6692726227763538}
+  evidence+small/small-fails: 10 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.1, 'cv_folds': 5, 'cv_log_loss': 0.6069002941793527}
+  question+evidence+small/small-fails: 15 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.5959460512038017}
+  question/large-helps: 5 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.42953105543649556}
+  question+evidence/large-helps: 10 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.41814495986978917}
+  evidence/large-helps: 5 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.03, 'cv_folds': 5, 'cv_log_loss': 0.4229682080555057}
+  evidence+small/large-helps: 10 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.1, 'cv_folds': 5, 'cv_log_loss': 0.41421551795139644}
+  question+evidence+small/large-helps: 15 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.4077822526190711}
+  question/small-fails                     AIQ 0.6413 | op F1 0.658 cost 20167 rate 0.88
+  question+evidence/small-fails            AIQ 0.6560 | op F1 0.662 cost 17271 rate 0.74
+  evidence/small-fails                     AIQ 0.6605 | op F1 0.663 cost 6670 rate 0.25
+  evidence+small/small-fails               AIQ 0.6654 | op F1 0.676 cost 13386 rate 0.54
+  question+evidence+small/small-fails      AIQ 0.6647 | op F1 0.667 cost 9031 rate 0.35
+  question/large-helps                     AIQ 0.6487 | op F1 0.646 cost 11060 rate 0.46
+  question+evidence/large-helps            AIQ 0.6660 | op F1 0.659 cost 5832 rate 0.22
+  evidence/large-helps                     AIQ 0.6627 | op F1 0.667 cost 8091 rate 0.32
+  evidence+small/large-helps               AIQ 0.6711 | op F1 0.668 cost 7625 rate 0.29
+  question+evidence+small/large-helps      AIQ 0.6721 | op F1 0.668 cost 6432 rate 0.24
+tau 1.0
+  question/small-fails: 5 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised'] | {'C': 1.0, 'cv_folds': 5, 'cv_log_loss': 0.6713847211596405}
+  question+evidence/small-fails: 10 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 1.0, 'cv_folds': 5, 'cv_log_loss': 0.6487224028187486}
+  evidence/small-fails: 5 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.1, 'cv_folds': 5, 'cv_log_loss': 0.6687328310058405}
+  evidence+small/small-fails: 10 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.1, 'cv_folds': 5, 'cv_log_loss': 0.6052196905708442}
+  question+evidence+small/small-fails: 15 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.5942425149856556}
+  question/large-helps: 5 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.4286950681071396}
+  question+evidence/large-helps: 10 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.4177217686167453}
+  evidence/large-helps: 5 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.01, 'cv_folds': 5, 'cv_log_loss': 0.422468315828813}
+  evidence+small/large-helps: 10 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.4141307948345016}
+  question+evidence+small/large-helps: 15 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.408067378418915}
+  question/small-fails                     AIQ 0.6413 | op F1 0.659 cost 20244 rate 0.88
+  question+evidence/small-fails            AIQ 0.6563 | op F1 0.663 cost 18854 rate 0.82
+  evidence/small-fails                     AIQ 0.6605 | op F1 0.663 cost 6675 rate 0.25
+  evidence+small/small-fails               AIQ 0.6649 | op F1 0.676 cost 13509 rate 0.54
+  question+evidence+small/small-fails      AIQ 0.6644 | op F1 0.667 cost 9131 rate 0.35
+  question/large-helps                     AIQ 0.6490 | op F1 0.650 cost 13848 rate 0.59
+  question+evidence/large-helps            AIQ 0.6659 | op F1 0.660 cost 5927 rate 0.22
+  evidence/large-helps                     AIQ 0.6625 | op F1 0.666 cost 9205 rate 0.37
+  evidence+small/large-helps               AIQ 0.6708 | op F1 0.669 cost 7742 rate 0.29
+  question+evidence+small/large-helps      AIQ 0.6725 | op F1 0.668 cost 6578 rate 0.24
+baseline AIQ (independent of tau): {'random': 0.6413297203270428, 'oracle': 0.7547562409373184, 'small-entropy (post)': 0.6618851114715055}
+Saved runs/gpu-cascade/tau-sweep.csv and runs/gpu-cascade/tau-sweep.json
+DONE

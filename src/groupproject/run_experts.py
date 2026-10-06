@@ -13,6 +13,12 @@ Work is split into stages (evidence, small, large, merge) and saved in chunks un
 `<run>/<name>.parts/`. Rerunning the same command skips finished chunks, so an interrupted
 job resumes where it stopped. On a GPU, run each stage as its own command so only
 one model holds GPU memory at a time.
+
+`--reuse-from <run>` copies finished chunks of a stage from another run instead of recomputing
+them, when that stage's outputs would be identical: same questions and chunks, and the same
+scorer (evidence) or the same expert settings (small, large). An expert that reads the top-k
+paragraphs also needs the same scorer. So a run that changes only the large expert reruns only
+the large expert.
 """
 
 import argparse
@@ -46,10 +52,24 @@ def load_config(path: Path) -> dict:
     return cfg
 
 
+def _strip(d: dict) -> dict:
+    return {k: v for k, v in d.items() if k not in RUNTIME_KEYS}
+
+
 def output_settings(cfg: dict) -> dict:
     """The config without keys that only affect speed or memory."""
-    strip = lambda d: {k: v for k, v in d.items() if k not in RUNTIME_KEYS}
-    return {"scorer": strip(cfg.get("scorer", {})), "experts": [strip(e) for e in cfg["experts"]]}
+    return {"scorer": _strip(cfg.get("scorer", {})), "experts": [_strip(e) for e in cfg["experts"]]}
+
+
+def stage_settings(cfg: dict, stage: str) -> dict | None:
+    """Everything a stage's outputs depend on (None if the config has no such expert)."""
+    scorer = _strip(cfg.get("scorer", {}))
+    if stage == "evidence":
+        return {"scorer": scorer}
+    expert = next((_strip(e) for e in cfg["experts"] if e["name"] == stage), None)
+    if expert is None:
+        return None
+    return {"expert": expert, "scorer": scorer if expert.get("top_k") else None}  # top-k reads the ranking
 
 
 def pin_config(run: Path, config: Path, cfg: dict) -> None:
@@ -61,6 +81,35 @@ def pin_config(run: Path, config: Path, cfg: dict) -> None:
             raise ValueError(f"{config} differs from {saved} in settings that change outputs; "
                              "use a new --run (only batch_size, gpu_memory_utilization, device and max_model_len may change)")
     shutil.copy(config, saved)
+
+
+def reuse_chunks(source: Path, parts: "Parts", cfg: dict, stages: list[str]) -> dict[str, int]:
+    """Copy missing chunks of `stages` from run `source` where they would be identical; returns counts."""
+    src_dir = source / parts.dir.name
+    manifest, src_config = src_dir / "manifest.json", source / "config.toml"
+    if not manifest.exists() or not src_config.exists():
+        log.warning(f"--reuse-from: {src_dir} or its config.toml is missing; nothing reused")
+        return {}
+    if json.loads(manifest.read_text())["chunks"] != parts.chunks:
+        log.warning(f"--reuse-from: {src_dir} has a different question list or chunk size; nothing reused")
+        return {}
+    src_cfg = tomllib.loads(src_config.read_text())
+    copied = {}
+    for stage in stages:
+        if stage == "merge":
+            continue
+        if stage_settings(cfg, stage) != stage_settings(src_cfg, stage):
+            log.info(f"--reuse-from: {stage} settings differ from {source}; recomputing")
+            continue
+        n = 0
+        for i in parts.missing(stage):
+            src = src_dir / parts.path(stage, i).name
+            if src.exists():
+                shutil.copy(src, parts.path(stage, i))
+                n += 1
+        copied[stage] = n
+        log.info(f"--reuse-from: copied {n} {stage} chunks from {source}")
+    return copied
 
 
 def load_questions(data: Path, splits: Path | None, split: str | None, limit: int | None,
@@ -215,6 +264,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--name", required=True, help="cache name: router_train, calib or test")
     parser.add_argument("--stage", choices=["all", *STAGES], default="all")
     parser.add_argument("--chunk-size", type=int, default=500)
+    parser.add_argument("--reuse-from", type=Path, help="run whose identical finished stages are copied (see above)")
     return parser.parse_args(argv)
 
 
@@ -230,6 +280,9 @@ def main(argv: list[str] | None = None) -> None:
     parts = Parts(args.run, args.name, questions["id"].tolist(), args.chunk_size)
     stages = STAGES if args.stage == "all" else [args.stage]
     log.info(f"{args.name}: {len(questions)} questions in {len(parts.chunks)} chunks | stages {stages}")
+    if args.reuse_from:
+        copied = reuse_chunks(args.reuse_from, parts, cfg, stages)
+        provenance.record(args.run, "reuse", source=str(args.reuse_from), name=args.name, copied=copied)
     for stage in stages:
         if stage == "evidence":
             run_evidence(questions, parts, cfg)
