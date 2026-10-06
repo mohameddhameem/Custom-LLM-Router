@@ -11,6 +11,8 @@
 #   nohup bash scripts/run_cluster.sh full > full.log 2>&1 &
 # On omega (PBS), submit the GPU steps as jobs instead: qsub -v STEP=full scripts/omega.pbs (docs/omega-cluster.md).
 # GPU nodes without internet: run `prepare` on the login node, then export HF_HUB_OFFLINE=1.
+# REUSE=runs/gpu copies the stages whose settings match that run (e.g. evidence and small when only
+# the large expert changed) instead of recomputing them: see run-experts --reuse-from.
 set -euo pipefail
 
 STEP=${1:?usage: run_cluster.sh prepare|pilot|full|eval}
@@ -22,12 +24,14 @@ CALIB_SIZE=${CALIB_SIZE:-2000}
 PILOT=${PILOT:-500}
 TAU=${TAU:-0.8}
 BIN=${BIN-uv run}  # "uv run", or BIN="" with the project venv activated
+REUSE=${REUSE:-}
 
 experts() {  # experts <run> <name> <data file> [run-experts options...]; one model on the GPU per command
   local run=$1 name=$2 data=$3
   shift 3
   for stage in evidence small large merge; do
-    $BIN run-experts --config "$CONFIG" --data "$data" --run "$run" --name "$name" --stage "$stage" "$@"
+    $BIN run-experts --config "$CONFIG" --data "$data" --run "$run" --name "$name" --stage "$stage" \
+      ${REUSE:+--reuse-from "$REUSE"} "$@"
   done
 }
 

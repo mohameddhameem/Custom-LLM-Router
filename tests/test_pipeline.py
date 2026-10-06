@@ -220,3 +220,35 @@ def test_end_to_end_smoke(tmp_path):
     at_08 = sweep[sweep["tau"] == 0.8].set_index("router")["aiq"]
     for name, value in at_08.items():  # same data, tau and seed: the sweep reproduces train-router + eval-routing
         assert value == pytest.approx(report["aiq"][f"router:{name}"]), name
+
+
+def test_stage_settings_decide_what_can_be_reused():
+    cfg = {"scorer": {"kind": "cross-encoder", "path": "a"},
+           "experts": [{"name": "small", "model": "s", "top_k": 2, "batch_size": 32}, {"name": "large", "model": "l"}]}
+    other_scorer = {**cfg, "scorer": {"kind": "cross-encoder", "path": "b"}}
+    faster = {**cfg, "experts": [{**cfg["experts"][0], "batch_size": 8}, cfg["experts"][1]]}
+    assert run_experts.stage_settings(cfg, "small") == run_experts.stage_settings(faster, "small")  # runtime only
+    assert run_experts.stage_settings(cfg, "small") != run_experts.stage_settings(other_scorer, "small")  # reads top-k
+    assert run_experts.stage_settings(cfg, "large") == run_experts.stage_settings(other_scorer, "large")  # all paragraphs
+    assert run_experts.stage_settings(cfg, "missing") is None
+
+
+def test_reuse_from_copies_only_identical_stages(tmp_path):
+    make_split(60, seed=4).to_parquet(tmp_path / "val.parquet")
+    variant = tmp_path / "variant.toml"
+    variant.write_text((CONFIGS / "smoke.toml").read_text().replace("hops = 1", "hops = 0"))  # large expert differs
+    first, second = tmp_path / "first", tmp_path / "second"
+    common = ["--data", str(tmp_path / "val.parquet"), "--name", "test", "--chunk-size", "25"]
+    run_experts.main(["--config", str(CONFIGS / "smoke.toml"), "--run", str(first)] + common)
+    for stage in run_experts.STAGES:
+        run_experts.main(["--config", str(variant), "--run", str(second), "--stage", stage,
+                          "--reuse-from", str(first)] + common)
+
+    reused = [json.loads(line) for line in (second / "provenance.jsonl").read_text().splitlines()
+              if json.loads(line)["event"] == "reuse"]
+    assert [r["copied"] for r in reused] == [{"evidence": 3}, {"small": 3}, {}, {}]
+    events = [json.loads(line) for line in (second / "provenance.jsonl").read_text().splitlines()]
+    assert [e["stage"] for e in events if e["event"] == "load"] == ["large"]  # only the large expert ran
+    a, b = pd.read_parquet(first / "test.parquet"), pd.read_parquet(second / "test.parquet")
+    pd.testing.assert_frame_equal(a.filter(regex="^(ev_|small_)"), b.filter(regex="^(ev_|small_)"))
+    assert len(b) == 60 and b["large_pred"].notna().all()
