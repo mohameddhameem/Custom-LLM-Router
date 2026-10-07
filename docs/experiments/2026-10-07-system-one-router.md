@@ -41,6 +41,20 @@ outputs of experiments 1, 4 and 5. **No LLM was rerun.**
 All 36 judges have a `done.json` (the pilot's 3 plus 33 from the full job), and all six reports
 (`report.json`, `report-clean.json` for pairs A, B and C) exist.
 
+**Validation** (checked locally from `results/system-one/`):
+- **Training records:** all 36 have 10,800 training and 1,200 dev questions, 3 epochs, device
+  `cuda`.
+- **Score files:**
+  - every `scores-*.parquet` has the cache's questions in the cache's order, with no missing
+    values;
+  - each judge's score is exactly the mean of its three seeds.
+- **Reuse** of identical inputs worked as designed: every judge's scores are identical on A and
+  B, and identical on A and C only for `q`/`qp`.
+- **Baselines:** the 10 LR routers and the entropy baseline reproduce experiments 2–5 exactly.
+- **AIQ:** recomputed independently from the raw scores, every judge's AIQ matches the reports
+  (difference 0.0).
+- **Code:** the commit `f40b6d4` differs from `master` `04ab6fc` only by a note file.
+
 **Timing:** the 36 trainings took 58 minutes in total (the `q` and `qa` judges about 37 s each, the
 `qp` and `qpa` judges about 107–109 s). Scoring takes 2.1 ms per question for `qp`/`qpa` and 0.4
 ms for `q` on the L40S. Zero-shot scoring takes 4.2 ms per question for both zero-shot judges.
@@ -96,6 +110,19 @@ judge qp, F1 0.660 at 4,882 GFLOPs with 18% of questions sent to the 7B; judge q
 5,995 GFLOPs with 22%; the best cascade LR router (experiment 2), F1 0.665 at 6,340 GFLOPs with
 23%. At these points no judge matches always-large's F1.
 
+At the same F1 (0.660), judge qp costs 18% less than the best "before" LR router at its
+operating point (4,882 against 5,933 GFLOPs). It also has the lowest CPT 80% of any method on
+pair A: 80% of the small-to-large F1 gap is recovered at 5,380 GFLOPs. For comparison:
+
+| Method | CPT 80% (GFLOPs) |
+|---|---|
+| **Judge qp** | **5,380** |
+| LR `evidence / large-helps` | 5,466 |
+| Judge qpa | 5,615 |
+| LR `question+evidence+small / large-helps` | 5,619 |
+| LR `question+evidence / large-helps` | 6,454 |
+| Entropy | 7,861 |
+
 ### Answers to the research questions
 
 - **RQ1, zero-shot:** none of the three zero-shot judges beats the entropy threshold
@@ -130,6 +157,36 @@ On pair B, the best judge beats the best cascade LR router by [+0.000, +0.006] (
 pair C, no judge beats entropy by a clear margin except the C-trained ones, and the best LR
 router (0.681) is above every judge.
 
+The bootstrap compared every judge with two fixed LR routers, `question+evidence / large-helps`
+(before the small model) and `question+evidence+small / large-helps` (after it). Against the
+first, the qp judge trained on the same pair is significantly better on all three pairs:
+
+| Pair | 95% CI |
+|---|---|
+| A | [+0.004, +0.011] |
+| B | [+0.003, +0.008] |
+| C | [+0.005, +0.011] |
+
+On pair C, though, `evidence / large-helps` (0.672) is the stronger "before" LR router, and it
+was not a bootstrap reference.
+
+### Transfer between pairs
+
+AIQ of each judge on each pair. Rows: the pair it was trained on. The diagonal is in-pair.
+
+| Judge | on A | on B | on C |
+|---|---|---|---|
+| qp trained on A | **0.6731** | 0.6971 | 0.6757 |
+| qp trained on B | 0.6719 | **0.6973** | 0.6737 |
+| qp trained on C | 0.6707 | 0.6931 | **0.6770** |
+| qpa trained on A | **0.6726** | 0.6963 | 0.6752 |
+| qpa trained on B | 0.6741 | **0.7000** | 0.6750 |
+| qpa trained on C | 0.6677 | 0.6922 | **0.6787** |
+
+The qp judges stay within 0.004 of the in-pair judge on every pair, because their input does not
+include the small model's answer. The qpa judges lose up to 0.009 when the small model changes
+(A or B ↔ C).
+
 ## Findings
 
 1. **A 33M judge fine-tuned to read the question and the small model's passages is the best router
@@ -162,6 +219,11 @@ router (0.681) is above every judge.
   alone gives a dev NLL of about 0.45. The judges' best 0.42–0.44 is only slightly below it, so
   their value is in ranking questions, which is what AIQ measures.
 - **Not tested here:** judge against judge differences (RQ3), other τ, and other datasets.
+- **Scorer cost:** the nano-jev relevance scoring that picks the small model's passages (about
+  400 GFLOPs per question) is left out of every curve, as in experiments 1–6. It is the same for
+  every policy that uses those passages, and the qp judge needs it anyway to read them.
+- **The bootstrap covers test-set sampling only.** Seed, epoch-selection and calib-threshold
+  variance are not in the intervals. The per-seed spread above gives a sense of the first.
 
 ## Reproducing
 
