@@ -5,6 +5,8 @@
 #   bash scripts/run_cluster.sh pilot     # PILOT random router_train questions, prints F1 and a time estimate
 #   bash scripts/run_cluster.sh full      # router_train, calib and all 7,405 validation questions
 #   bash scripts/run_cluster.sh eval      # routers and reports only (CPU, seconds)
+#   bash scripts/run_cluster.sh judge-pilot  # experiment 7: one System One judge, 3 seeds (GPU, ~15 min)
+#   bash scripts/run_cluster.sh judge        # experiment 7: everything in configs/system-one.toml (GPU, ~3 h)
 #
 # Every step resumes: after a disconnect or a killed job, run the same command again.
 # An SSH disconnect kills foreground jobs, so start long steps inside tmux/screen, or with
@@ -15,7 +17,7 @@
 # the large expert changed) instead of recomputing them: see run-experts --reuse-from.
 set -euo pipefail
 
-STEP=${1:?usage: run_cluster.sh prepare|pilot|full|eval}
+STEP=${1:?usage: run_cluster.sh prepare|pilot|full|eval|judge-pilot|judge}
 CONFIG=${CONFIG:-configs/gpu.toml}
 RUN=${RUN:-runs/gpu}
 DATA=${DATA:-data/hotpotqa}
@@ -71,8 +73,16 @@ EOF
     $BIN eval-routing --run "$RUN"
     $BIN eval-routing --run "$RUN" --exclude "$DATA/nanojev_validation_ids.txt"
     ;;
+  judge-pilot)
+    $BIN judge train --plan "${PLAN:-configs/system-one.toml}" --data-dir "$DATA" --out "${JUDGE_OUT:-runs/system-one}" \
+      --only qpa-large-helps-nanojev-A
+    ;;
+  judge)
+    $BIN judge all --plan "${PLAN:-configs/system-one.toml}" --data-dir "$DATA" --out "${JUDGE_OUT:-runs/system-one}" \
+      --exclude "$DATA/nanojev_validation_ids.txt"
+    ;;
   *)
-    echo "unknown step: $STEP (prepare|pilot|full|eval)" >&2
+    echo "unknown step: $STEP (prepare|pilot|full|eval|judge-pilot|judge)" >&2
     exit 2
     ;;
 esac

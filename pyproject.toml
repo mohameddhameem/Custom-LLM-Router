@@ -25,6 +25,7 @@ eval-routing = "groupproject.evaluate_routing:main"
 prefetch-models = "groupproject.prefetch_models:main"
 tau-sweep = "groupproject.tau_sweep:main"
 cascade = "groupproject.cascade:main"
+judge = "groupproject.judge:main"
 
 [project.optional-dependencies]
 llm = [

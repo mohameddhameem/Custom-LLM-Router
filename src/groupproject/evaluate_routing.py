@@ -141,7 +141,8 @@ def policy_curves(a: dict[str, np.ndarray], scores: dict[str, tuple[np.ndarray, 
 
 
 def bootstrap(a: dict[str, np.ndarray], scores: dict[str, tuple[np.ndarray, bool]],
-              operating: dict[str, tuple[np.ndarray, bool]], n_boot: int, seed: int) -> dict:
+              operating: dict[str, tuple[np.ndarray, bool]], n_boot: int, seed: int,
+              references: tuple[str, ...] = ()) -> dict:
     """Paired bootstrap over questions: AIQ intervals, AIQ differences, operating-point F1 vs always-large."""
     rng = np.random.default_rng(seed)
     n = len(a["small_f1"])
@@ -163,7 +164,7 @@ def bootstrap(a: dict[str, np.ndarray], scores: dict[str, tuple[np.ndarray, bool
 
     aiqs_np = {name: np.asarray(v) for name, v in aiqs.items()}
     diffs = {f"{name} - {base}": summary(aiqs_np[name] - aiqs_np[base])
-             for name in scores for base in BASELINES}
+             for name in scores for base in (*BASELINES, *references) if base != name and base in aiqs_np}
     return {"n": n_boot, "seed": seed, "aiq_ci95": {name: summary(v)["ci95"] for name, v in aiqs_np.items()},
             "aiq_diff": diffs, "op_f1_minus_large": {name: summary(v) for name, v in op_gaps.items()}}
 
@@ -262,7 +263,7 @@ def breakdowns(df: pd.DataFrame, escalate: np.ndarray, post: bool = False) -> di
 
 
 def evaluate(test: pd.DataFrame, calib: pd.DataFrame | None, routers: dict, tau: float, max_drop: float,
-             n_boot: int = 0, seed: int = 0) -> tuple[dict, pd.DataFrame]:
+             n_boot: int = 0, seed: int = 0, references: tuple[str, ...] = ()) -> tuple[dict, pd.DataFrame]:
     n = len(test)
     oracle = (test["large_f1"] > test["small_f1"]).to_numpy()
     cmin, cmax = test["small_cost"].mean(), test["large_cost"].mean()
@@ -305,7 +306,7 @@ def evaluate(test: pd.DataFrame, calib: pd.DataFrame | None, routers: dict, tau:
         for key, value in breakdowns(test, esc).items():
             report.setdefault(key, {})[single] = value
     if n_boot:
-        report["bootstrap"] = bootstrap(a, scores_by_policy, operating, n_boot, seed)
+        report["bootstrap"] = bootstrap(a, scores_by_policy, operating, n_boot, seed, references)
 
     rows = [{"policy": name, **p} for name, pts in curves.items() for p in pts]
     return report, pd.DataFrame(rows)

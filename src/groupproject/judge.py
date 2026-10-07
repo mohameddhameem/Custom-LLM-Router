@@ -1,0 +1,418 @@
+"""System One router (experiment 7, docs/system-one-router.md): a typed-decision judge for small/large routing.
+
+A judge is a nano-jev-style cross-encoder. For one typed question it scores every (question +
+option, state) pair, and softmaxes the option scores together. Here the state is built from a
+cached run's question, the small expert's passages (its top-k nano-jev paragraphs) and,
+optionally, the small expert's answer:
+
+    q    the question                         (decides before the small expert)
+    qp   the passages                         (before)
+    qpa  "Proposed answer: ..." + passages    (after the small expert: a cascade)
+    qa   "Proposed answer: ..."               (after)
+
+Subcommands (all read existing caches and run no LLM):
+
+    zeroshot  nano-jev's `grounded` question and a custom "is the proposed answer correct?" question
+              on the small expert's answer: escalation score P(no)
+    train     fine-tune on "Which model should answer this question" {small model, large model},
+              labelled from a pair's router_train caches; writes P(large model) for calib and test
+              of every --score-pair
+    eval      merge the judges' scores into a copy of a pair's caches and evaluate them with
+              eval-routing's protocol, next to retrained logistic regression routers
+    all       everything in a plan file (configs/system-one.toml), skipping finished steps
+
+Each judge also records its tokens per question, so its own cost (2 x params x tokens) can be
+added to its cost-F1 curve.
+"""
+
+import argparse
+import json
+import logging
+import shutil
+import time
+import tomllib
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+from groupproject import provenance
+from groupproject.evaluate_routing import COST_UNITS, aiq, curve, evaluate, expert_params, with_cost_unit
+from groupproject.evidence import passages_state, resolve_checkpoint
+from groupproject.router import escalation_label, train_routers
+from groupproject.run_experts import paragraphs_of
+
+log = logging.getLogger(__name__)
+
+INPUTS = {"q": False, "qp": False, "qpa": True, "qa": True}  # input set -> needs the small expert's answer
+ROUTE = ("Which model should answer this question: {question}", ("small model", "large model"))
+GROUNDED = ("Is this claim supported by the context? Claim: {claim}", ("yes", "no"))  # nano-jev built-in
+CLAIM = 'The answer to "{question}" is {answer}.'
+CORRECT = ("Is the proposed answer correct? Question: {question} Proposed answer: {answer}", ("yes", "no"))
+ZERO_SHOT = ("zs_grounded", "zs_correct")
+JUDGE_PARAMS_B = 0.0334  # nano-jev / MiniLM-L12-H384, billions
+SPLIT_DATA = {"router_train": "distractor_train.parquet", "calib": "distractor_train.parquet",
+              "test": "distractor_validation.parquet"}
+LR_REFERENCES = ("router:question+evidence/large-helps", "router:question+evidence+small/large-helps")
+
+
+# ---------------------------------------------------------------------------------------------
+# Data
+
+
+def load_pair_split(run: Path, data_dir: Path, split: str) -> pd.DataFrame:
+    """A pair's cached split, plus the small expert's passages rebuilt from the dataset."""
+    cache = pd.read_parquet(run / f"{split}.parquet")
+    cfg = tomllib.loads((run / "config.toml").read_text())
+    k = next(e for e in cfg["experts"] if e["name"] == "small").get("top_k")
+    data = pd.read_parquet(data_dir / SPLIT_DATA[split], columns=["id", "context_titles", "context_sentences"])
+    data = data.set_index("id").loc[cache["id"]]
+    passages = []
+    for scores, (_, row) in zip(cache["para_scores"], data.iterrows()):
+        paragraphs = paragraphs_of(row)
+        order = np.argsort(-np.asarray(scores), kind="stable")  # run-experts' ranking
+        passages.append([paragraphs[i] for i in order][:k] if k else paragraphs)
+    cache["passages"] = passages
+    return cache
+
+
+def state(row, inputs: str) -> str:
+    answer = f"Proposed answer: {row['small_pred']}"
+    return {"q": row["question"], "qp": passages_state(row["passages"]),
+            "qpa": f"{answer}\n{passages_state(row['passages'])}", "qa": answer}[inputs]
+
+
+def route_items(df: pd.DataFrame, inputs: str) -> list[dict]:
+    question, options = ROUTE
+    return [{"question": question.format(question=r["question"]), "options": options, "state": state(r, inputs)}
+            for _, r in df.iterrows()]
+
+
+# ---------------------------------------------------------------------------------------------
+# Model
+
+
+class Judge:
+    """A cross-encoder with one logit per (question + option, state) pair, softmaxed per item."""
+
+    def __init__(self, path: str, device: str | None = None, max_length: int = 512):
+        import torch
+        from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
+        self.torch = torch
+        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+        local = resolve_checkpoint(path)
+        self.tokenizer = AutoTokenizer.from_pretrained(local)
+        self.model = AutoModelForSequenceClassification.from_pretrained(
+            local, num_labels=1, ignore_mismatched_sizes=True).to(self.device)
+        calib = local / "calibration.json"
+        self.temperatures = json.loads(calib.read_text()) if calib.exists() else {}
+        self.max_length = max_length
+
+    def encode(self, items: list[dict]):
+        firsts = [f"question: {it['question']} option: {o}" for it in items for o in it["options"]]
+        seconds = [it["state"] for it in items for _ in it["options"]]
+        enc = self.tokenizer(firsts, seconds, truncation="only_second", max_length=self.max_length,
+                             padding=True, return_tensors="pt")
+        return enc
+
+    def logits(self, items: list[dict]):
+        """[items, options] logits (all items must have the same number of options)."""
+        enc = self.encode(items).to(self.device)
+        with self.torch.autocast(self.device if self.device != "cpu" else "cpu", dtype=self.torch.bfloat16,
+                                 enabled=self.device != "cpu"):
+            flat = self.model(**enc).logits[:, 0].float()
+        return flat.view(len(items), len(items[0]["options"]))
+
+    def probabilities(self, items: list[dict], temperature: float = 1.0, batch_size: int = 64) -> tuple[np.ndarray, np.ndarray]:
+        """[items, options] probabilities and the tokens each item processed (its cost)."""
+        self.model.eval()
+        probs, tokens = [], []
+        with self.torch.no_grad():
+            for i in range(0, len(items), batch_size):
+                batch = items[i: i + batch_size]
+                enc = self.encode(batch)
+                tokens += enc["attention_mask"].view(len(batch), -1).sum(dim=1).tolist()
+                probs.append(self.torch.softmax(self.logits(batch) / temperature, dim=1).cpu().numpy())
+        return np.concatenate(probs), np.asarray(tokens)
+
+
+def fine_tune(judge: Judge, items: list[dict], labels: np.ndarray, dev_items: list[dict], dev_labels: np.ndarray,
+              epochs: int, lr: float, weight_decay: float, warmup: float, batch_size: int, seed: int) -> list[dict]:
+    """Grouped-softmax cross-entropy; keeps the epoch with the lowest dev NLL. Returns the history."""
+    import torch
+    from transformers import get_linear_schedule_with_warmup
+
+    torch.manual_seed(seed)
+    rng = np.random.default_rng(seed)
+    model = judge.model
+    opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
+    steps = epochs * int(np.ceil(len(items) / batch_size))
+    sched = get_linear_schedule_with_warmup(opt, int(warmup * steps), steps)
+    target = torch.as_tensor(labels, dtype=torch.long)
+    history, best, best_state = [], np.inf, None
+    for epoch in range(epochs):
+        model.train()
+        start, losses = time.perf_counter(), []
+        order = rng.permutation(len(items))
+        for i in range(0, len(order), batch_size):
+            b = order[i: i + batch_size]
+            loss = torch.nn.functional.cross_entropy(judge.logits([items[j] for j in b]), target[b].to(judge.device))
+            opt.zero_grad()
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+            opt.step()
+            sched.step()
+            losses.append(loss.item())
+        probs, _ = judge.probabilities(dev_items)
+        nll = float(-np.log(np.clip(probs[np.arange(len(dev_labels)), dev_labels], 1e-12, 1)).mean())
+        history.append({"epoch": epoch + 1, "train_loss": float(np.mean(losses)), "dev_nll": nll,
+                        "seconds": time.perf_counter() - start})
+        log.info(f"    epoch {epoch + 1}: train loss {history[-1]['train_loss']:.4f} dev NLL {nll:.4f}")
+        if nll < best:
+            best, best_state = nll, {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
+    model.load_state_dict(best_state)
+    return history
+
+
+# ---------------------------------------------------------------------------------------------
+# Steps
+
+
+def judge_name(spec: dict) -> str:
+    init = "nanojev" if "nano-jev" in spec["init"] else spec["init"].split("/")[-1].split("@")[0].lower()
+    return f"{spec['inputs']}-{spec['label']}-{init}-{spec['train_pair']}"
+
+
+class Splits:
+    """Loaded pair splits, cached across steps."""
+
+    def __init__(self, pairs: dict[str, Path], data_dir: Path):
+        self.pairs, self.data_dir, self._cache = pairs, data_dir, {}
+
+    def get(self, pair: str, split: str) -> pd.DataFrame:
+        if (pair, split) not in self._cache:
+            self._cache[(pair, split)] = load_pair_split(self.pairs[pair], self.data_dir, split)
+        return self._cache[(pair, split)]
+
+
+def run_zeroshot(splits: Splits, pair: str, judge_path: str, out: Path, device: str | None) -> None:
+    target = out / "zeroshot" / pair
+    if all((target / f"{s}.parquet").exists() for s in ("calib", "test")):
+        log.info(f"zeroshot {pair}: done")
+        return
+    judge = Judge(judge_path, device)
+    target.mkdir(parents=True, exist_ok=True)
+    for split in ("calib", "test"):
+        df = splits.get(pair, split)
+        start = time.perf_counter()
+        ctx = [passages_state(p) for p in df["passages"]]
+        grounded = [{"question": GROUNDED[0].format(claim=CLAIM.format(question=q, answer=a)), "options": GROUNDED[1],
+                     "state": c} for q, a, c in zip(df["question"], df["small_pred"], ctx)]
+        correct = [{"question": CORRECT[0].format(question=q, answer=a), "options": CORRECT[1], "state": c}
+                   for q, a, c in zip(df["question"], df["small_pred"], ctx)]
+        pg, tg = judge.probabilities(grounded, judge.temperatures.get("grounded", 1.0))
+        pc, tc = judge.probabilities(correct)  # a new typed question: no calibrated temperature
+        seconds = (time.perf_counter() - start) / len(df)
+        pd.DataFrame({"id": df["id"], "zs_grounded": pg[:, 1], "zs_grounded_tokens": tg,
+                      "zs_correct": pc[:, 1], "zs_correct_tokens": tc}).to_parquet(target / f"{split}.parquet")
+        log.info(f"zeroshot {pair}/{split}: {len(df)} questions, {seconds * 1000:.1f} ms/question for both judges")
+    (target / "done.json").write_text(json.dumps({"judge": judge_path, "revision": provenance.hub_revision(judge_path),
+                                                  "device": judge.device}, indent=1))
+
+
+def run_train(splits: Splits, spec: dict, seed: int, plan: dict, out: Path, device: str | None, save_model: bool) -> None:
+    from sklearn.model_selection import train_test_split
+
+    name = judge_name(spec)
+    target = out / "judges" / name / f"seed{seed}"
+    if (target / "done.json").exists():
+        log.info(f"train {name} seed {seed}: done")
+        return
+    hp = plan["train"]
+    log.info(f"train {name} seed {seed}")
+    df = splits.get(spec["train_pair"], "router_train")
+    y = escalation_label(df, plan["tau"], spec["label"])
+    tr, dev = train_test_split(np.arange(len(df)), test_size=hp["dev_fraction"], stratify=y, random_state=seed)
+    items = route_items(df, spec["inputs"])
+    judge = Judge(spec["init"], device, hp["max_length"])
+    start = time.perf_counter()
+    history = fine_tune(judge, [items[i] for i in tr], y[tr], [items[i] for i in dev], y[dev], hp["epochs"], hp["lr"],
+                        hp["weight_decay"], hp["warmup"], hp["batch_size"], seed)
+    train_seconds = time.perf_counter() - start
+    target.mkdir(parents=True, exist_ok=True)
+    scoring = {}
+    for pair in plan["pairs"]:
+        for split in ("calib", "test"):
+            d = splits.get(pair, split)
+            start = time.perf_counter()
+            p, tokens = judge.probabilities(route_items(d, spec["inputs"]))
+            scoring[f"{pair}/{split}"] = (time.perf_counter() - start) / len(d)
+            pd.DataFrame({"id": d["id"], "score": p[:, 1], "tokens": tokens}).to_parquet(target / f"{pair}-{split}.parquet")
+    if save_model:
+        judge.model.save_pretrained(target / "model")
+        judge.tokenizer.save_pretrained(target / "model")
+    (target / "done.json").write_text(json.dumps({
+        "judge": name, **spec, "seed": seed, "tau": plan["tau"], "train": hp, "n_train": len(tr), "n_dev": len(dev),
+        "train_label_rate": float(y.mean()), "history": history, "train_seconds": train_seconds,
+        "scoring_seconds_per_question": scoring, "init_revision": provenance.hub_revision(spec["init"]),
+        "device": judge.device}, indent=1))
+
+
+def judge_columns(out: Path, pair: str, split: str, plan: dict) -> tuple[pd.DataFrame, dict]:
+    """Escalation-score columns of every finished judge for one pair and split, plus their specs."""
+    cols, specs = {}, {}
+    zs = out / "zeroshot" / pair / f"{split}.parquet"
+    if zs.exists():
+        z = pd.read_parquet(zs)
+        cols["id"] = z["id"]
+        for c in ZERO_SHOT:
+            cols[c], cols[f"{c}_tokens"] = z[c].to_numpy(), z[f"{c}_tokens"].to_numpy()
+            specs[c] = {"label": "small-fails", "post": True, "zero_shot": True}
+    for spec in plan["judges"]:
+        name = judge_name(spec)
+        files = sorted((out / "judges" / name).glob(f"seed*/{pair}-{split}.parquet"))
+        if not files:
+            continue
+        seeds = [pd.read_parquet(f) for f in files]
+        cols.setdefault("id", seeds[0]["id"])
+        for f, s in zip(files, seeds):
+            if not (s["id"].to_numpy() == np.asarray(cols["id"])).all():
+                raise ValueError(f"{f} has different questions than the other judges")
+            cols[f"judge/{name}#{f.parent.name}"] = s["score"].to_numpy()
+        col = f"judge/{name}"
+        cols[col] = np.mean([s["score"].to_numpy() for s in seeds], axis=0)  # mean over seeds
+        cols[f"{col}_tokens"] = seeds[0]["tokens"].to_numpy()
+        specs[col] = {"label": spec["label"], "post": INPUTS[spec["inputs"]], "zero_shot": False,
+                      "seeds": [f.parent.name for f in files], **spec}
+    return pd.DataFrame(cols), specs
+
+
+def run_eval(pair: str, plan: dict, out: Path, unit: str, n_boot: int, seed: int, exclude: set[str],
+             routers: dict | None = None) -> tuple[dict, dict]:
+    """Evaluate one pair; `routers` are its logistic regression routers (trained here if not given)."""
+    run = Path(plan["pairs"][pair])
+    params = expert_params(tomllib.loads((run / "config.toml").read_text()))
+    data, specs = {}, {}
+    for split in ("calib", "test"):
+        df = pd.read_parquet(run / f"{split}.parquet")
+        cols, specs = judge_columns(out, pair, split, plan)
+        if len(cols):
+            df = df.merge(cols, on="id", how="left", validate="1:1")
+        data[split] = with_cost_unit(df, unit, params)
+    if exclude:
+        data["test"] = data["test"][~data["test"]["id"].isin(exclude)].reset_index(drop=True)
+    test, calib = data["test"], data["calib"]
+    if test["ev_sufficiency"].notna().all() and calib["ev_sufficiency"].notna().all():
+        for df in (test, calib):
+            df["zs_sufficient"] = 1 - df["ev_sufficiency"]  # nano-jev's own `sufficient` question, P(no)
+        specs["zs_sufficient"] = {"label": "small-fails", "post": False, "zero_shot": True}
+    missing = [c for c in specs if test[c].isna().any() or calib[c].isna().any()]
+    if missing:
+        raise ValueError(f"judge scores missing for some questions: {missing}")
+
+    lr_routers = routers or train_routers(pd.read_parquet(run / "router_train.parquet"), plan["tau"], seed)
+    routers = dict(lr_routers)
+    for col, spec in specs.items():
+        routers[col] = {"score_column": col, "label": spec["label"], "post": spec["post"], "tuning": None}
+    report, curves = evaluate(test, calib, routers, plan["tau"], plan.get("max_drop", 0.01), n_boot, seed,
+                              references=LR_REFERENCES)
+
+    cmin, cmax = test["small_cost"].mean(), test["large_cost"].mean()
+    judges = {}
+    for col, spec in specs.items():
+        tokens = test.get(f"{col}_tokens")
+        gflops = 2 * JUDGE_PARAMS_B * float(tokens.mean()) if tokens is not None else 0.0  # sufficiency: already paid
+        pts = [p for p in report_curve(curves, f"router:{col}")]
+        entry = {**spec, "aiq": report["aiq"][f"router:{col}"], "judge_gflops": gflops,
+                 "aiq_with_judge_cost": aiq([{**p, "cost": p["cost"] + gflops} for p in pts], cmin, cmax)}
+        seed_cols = [c for c in test.columns if c.startswith(f"{col}#")]
+        if seed_cols:
+            per_seed = [aiq(curve(test, test[c].to_numpy(), spec["post"]), cmin, cmax) for c in seed_cols]
+            entry |= {"aiq_per_seed": per_seed, "aiq_seed_mean": float(np.mean(per_seed)),
+                      "aiq_seed_sd": float(np.std(per_seed, ddof=1)) if len(per_seed) > 1 else 0.0}
+        judges[col] = entry
+    report = {"pair": pair, "run": str(run), "cost_unit": unit, "excluded": len(exclude), **report, "judges": judges}
+
+    target = out / "eval" / pair
+    target.mkdir(parents=True, exist_ok=True)
+    suffix = "-clean" if exclude else ""
+    (target / f"report{suffix}.json").write_text(json.dumps(report, indent=1, default=str))
+    curves.to_csv(target / f"curves{suffix}.csv", index=False)
+    if not exclude:  # the merged judge scores, so the evaluation can be redone on CPU from results/
+        for split, df in data.items():
+            df[["id", *[c for c in df.columns if c.startswith(("judge/", "zs_"))]]].to_parquet(target / f"scores-{split}.parquet")
+    provenance.record(target, "judge-eval", pair=pair, excluded=len(exclude), **provenance.environment())
+    log.info(f"eval {pair}{suffix}: AIQ entropy {report['aiq']['small-entropy (post)']:.4f}")
+    for col, e in sorted(judges.items(), key=lambda kv: -kv[1]["aiq"]):
+        spread = f" (seeds {e['aiq_seed_mean']:.4f} ± {e['aiq_seed_sd']:.4f})" if "aiq_seed_mean" in e else ""
+        log.info(f"  {col:<45} AIQ {e['aiq']:.4f}{spread} | +judge cost {e['aiq_with_judge_cost']:.4f} "
+                 f"({e['judge_gflops']:.0f} GFLOPs)")
+    return report, lr_routers
+
+
+def report_curve(curves: pd.DataFrame, policy: str) -> list[dict]:
+    return curves[curves["policy"] == policy].drop(columns="policy").to_dict("records")
+
+
+# ---------------------------------------------------------------------------------------------
+# CLI
+
+
+def load_plan(path: Path) -> dict:
+    plan = tomllib.loads(path.read_text())
+    plan["pairs"] = {k: Path(v) for k, v in plan["pairs"].items()}
+    for spec in plan["judges"]:
+        if spec["inputs"] not in INPUTS:
+            raise ValueError(f"unknown inputs {spec['inputs']!r}; expected one of {list(INPUTS)}")
+        if spec["train_pair"] not in plan["pairs"]:
+            raise ValueError(f"judge {spec} trains on unknown pair {spec['train_pair']!r}")
+    return plan
+
+
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("step", choices=["zeroshot", "train", "eval", "all"])
+    parser.add_argument("--plan", type=Path, default=Path("configs/system-one.toml"))
+    parser.add_argument("--data-dir", type=Path, default=Path("data/hotpotqa"))
+    parser.add_argument("--out", type=Path, default=Path("runs/system-one"))
+    parser.add_argument("--device", help="cuda or cpu (default: cuda if available)")
+    parser.add_argument("--only", action="append", default=[], help="train: judge names to run (default all); repeatable")
+    parser.add_argument("--save-model", action="store_true", help="train: also save the fine-tuned weights")
+    parser.add_argument("--cost", choices=COST_UNITS[:2], default="flops")
+    parser.add_argument("--bootstrap", type=int, default=1000)
+    parser.add_argument("--seed", type=int, default=0, help="eval: seed for routers' CV and the bootstrap")
+    parser.add_argument("--exclude", type=Path, action="append", default=[],
+                        help="eval: test ids to drop (e.g. nanojev_validation_ids.txt); writes report-clean.json")
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> None:
+    args = parse_args(argv)
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    plan = load_plan(args.plan)
+    args.out.mkdir(parents=True, exist_ok=True)
+    shutil.copy(args.plan, args.out / "plan.toml")
+    provenance.record(args.out, f"judge-{args.step}", plan=str(args.plan), **provenance.environment())
+    splits = Splits(plan["pairs"], args.data_dir)
+    if args.step in ("zeroshot", "all"):
+        for pair in plan["pairs"]:
+            run_zeroshot(splits, pair, plan["zero_shot_judge"], args.out, args.device)
+    if args.step in ("train", "all"):
+        for spec in plan["judges"]:
+            if args.only and judge_name(spec) not in args.only:
+                continue
+            for seed in plan["seeds"]:
+                run_train(splits, spec, seed, plan, args.out, args.device, args.save_model)
+    if args.step in ("eval", "all"):
+        exclude = set()
+        for path in args.exclude:
+            exclude |= {line.strip() for line in path.read_text().splitlines() if line.strip()}
+        for pair in plan["pairs"]:
+            _, lr = run_eval(pair, plan, args.out, args.cost, args.bootstrap, args.seed, set())
+            if exclude:
+                run_eval(pair, plan, args.out, args.cost, args.bootstrap, args.seed, exclude, lr)
+
+
+if __name__ == "__main__":
+    main()
