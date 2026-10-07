@@ -269,6 +269,29 @@ train_pair = "B"
     assert {"judge/qpa-small-fails-ce-A", "judge/qpa-small-fails-ce-A#seed0", "zs_grounded"} <= set(scores.columns)
     assert json.loads((out / "eval" / "B" / "report-clean.json").read_text())["n_test"] == 50
 
+    assert done["scoring_seconds_per_question"]["B/test"] == "reused"  # pair B has the same inputs as A
+    pd.testing.assert_frame_equal(pd.read_parquet(out / "zeroshot" / "A" / "test.parquet"),
+                                  pd.read_parquet(out / "zeroshot" / "B" / "test.parquet"))
     before = (out / "judges" / "qpa-small-fails-ce-A" / "seed0" / "done.json").stat().st_mtime
     judge.main(["train", "--plan", str(plan), "--data-dir", str(data), "--out", str(out), "--device", "cpu"])
     assert (out / "judges" / "qpa-small-fails-ce-A" / "seed0" / "done.json").stat().st_mtime == before  # resumes
+
+
+def test_micro_batches_give_the_full_batch_gradient(tiny_models):
+    import torch
+
+    from groupproject.judge import Judge, accumulate
+
+    items = [{"question": f"Which model should answer this question: q{i}", "options": ("small model", "large model"),
+              "state": "Film: It was directed by Kalo." * (i + 1)} for i in range(5)]
+    target = torch.tensor([0, 1, 1, 0, 1])
+    grads = []
+    for micro in (5, 2, 1):
+        judge = Judge(str(tiny_models / "ce"), "cpu", 64)
+        judge.model.eval()  # no dropout, so the passes are comparable
+        judge.model.zero_grad()
+        loss = accumulate(judge, items, target, micro)
+        grads.append((loss, torch.cat([p.grad.flatten() for p in judge.model.parameters() if p.grad is not None])))
+    for loss, grad in grads[1:]:
+        assert loss == pytest.approx(grads[0][0], rel=1e-5)
+        assert torch.allclose(grad, grads[0][1], atol=1e-6)

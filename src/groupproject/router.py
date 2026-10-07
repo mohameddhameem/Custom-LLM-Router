@@ -19,6 +19,7 @@ for nothing; `large-helps` (small F1 < tau and large F1 >= tau) escalates only w
 
 import argparse
 import logging
+import os
 import pickle
 from pathlib import Path
 
@@ -52,6 +53,9 @@ ROUTER_INPUTS = {
 }
 C_GRID = (0.01, 0.03, 0.1, 0.3, 1.0, 3.0, 10.0)
 CV_FOLDS = 5
+# Parallel CV workers. Each holds a copy of the data, so one per core on a 20-core machine ran out of
+# memory next to a loaded judge; 8 is still fast. Results do not depend on it. Override with ROUTER_JOBS.
+CV_JOBS = int(os.environ.get("ROUTER_JOBS", min(8, len(os.sched_getaffinity(0)))))
 COMPARATIVE = frozenset("both same first older younger earlier later more larger longer higher".split())
 
 
@@ -127,7 +131,7 @@ def fit_tuned(model: Pipeline, X: pd.DataFrame, y: np.ndarray, seed: int) -> tup
     if folds < 2:
         return model.fit(X, y), {"C": model.get_params()["clf__C"], "cv_folds": 0}
     search = GridSearchCV(model, {"clf__C": list(C_GRID)}, scoring="neg_log_loss",
-                          cv=StratifiedKFold(folds, shuffle=True, random_state=seed), n_jobs=-1)
+                          cv=StratifiedKFold(folds, shuffle=True, random_state=seed), n_jobs=CV_JOBS)
     search.fit(X, y)
     return search.best_estimator_, {"C": search.best_params_["clf__C"], "cv_folds": folds,
                                     "cv_log_loss": -float(search.best_score_)}

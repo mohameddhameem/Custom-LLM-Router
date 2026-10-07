@@ -1,6 +1,8 @@
 # Experiment 7 (planned): a System One router
 
-**Status:** planned. The GPU job sheet is [gpu-jobs-system-one.md](gpu-jobs-system-one.md). This
+**Status:** planned. The GPU job sheet is [gpu-jobs-system-one.md](gpu-jobs-system-one.md). It also
+has a reduced CPU preview, [`configs/system-one-cpu.toml`](../configs/system-one-cpu.toml), which covers
+RQ1 and RQ2 with 1 seed. This
 is the **central research question for the final report** (see
 [final-report-plan.md](final-report-plan.md)). Experiments 1–6 provide its baselines and its
 motivation.
@@ -40,7 +42,7 @@ question: *"Which model should answer this question?"*, with the options {small,
 | **RQ1. Zero-shot** | nano-jev's built-in typed questions, with no routing training: `sufficient` (before the small model runs), `grounded` on the small model's answer, and a custom "is the proposed answer correct?" question (both after it runs) | H1: the `grounded` and `correct` judges beat random and come close to the small-entropy baseline |
 | **RQ2. What the judge reads** (the project's original matched control) | Same judge, training and label, four inputs. **Before the small model:** Q (question only, RouteLLM-style) and QP (question + the small model's passages). **After:** QPA (+ the small model's answer) and QA (question + answer) | H2: QPA > QP > Q, and QPA matches or beats the best logistic regression cascade router (AIQ 0.672) |
 | **RQ3. Label** | `large-helps` vs `small-fails` | H3: `large-helps` wins, as it did for logistic regression in experiments 1–2 |
-| **RQ4. Decision pretraining** | Start from nano-jev, or from its plain base (`microsoft/MiniLM-L12-H384-uncased`) | H4: nano-jev's relevance, sufficiency and grounding pretraining helps, especially for QP |
+| **RQ4. Decision pretraining** | Start from nano-jev, or from the same architecture pretrained only for MS MARCO relevance (`cross-encoder/ms-marco-MiniLM-L12-v2`, MiniLM-L12-H384) | H4: nano-jev's typed-decision pretraining (relevance, sufficiency, grounding) helps, especially for QP |
 | **RQ5. Transfer** | Train on the 1.5B / 7B pair, test on the 1.5B / 14B and 3B / 7B pairs. Compare with judges trained on those pairs | H5: transfer holds when the small model is unchanged (1.5B / 14B) and degrades when it changes (3B) |
 | **RQ6. Cost** | The judge's GFLOPs and ms per question, added to the cost–F1 curves | H6: the judge costs < 5% of the small model, so the ranking of methods does not change |
 
@@ -93,7 +95,7 @@ nano-jev's grouped-softmax cross-encoder, fine-tuned on one typed question.
 |---|---|---|---|---|---|
 | 1–4 | Q, QP, QPA, QA | large-helps | nano-jev | pair A | RQ2, and RQ5 by scoring pairs B and C |
 | 5–6 | QP, QPA | small-fails | nano-jev | pair A | RQ3 |
-| 7–8 | QP, QPA | large-helps | MiniLM-L12 base | pair A | RQ4 |
+| 7–8 | QP, QPA | large-helps | MS MARCO MiniLM-L12 | pair A | RQ4 |
 | 9–12 | QP, QPA | large-helps | nano-jev | pairs B and C | RQ5: in-pair reference for the transfer gap |
 
 ### Evaluation
@@ -122,6 +124,15 @@ The same protocol and code as experiments 1–6 (`eval-routing`):
   - the 10 logistic regression routers of experiment 2;
   - the zero-shot judges;
   - the fine-tuned judges.
+
+**Why not nano-jev's plain base for RQ4.** `microsoft/MiniLM-L12-H384-uncased` was checked on
+2026-10-07: it cannot learn this typed question. Its two option inputs ("small model" / "large
+model") give final hidden states that differ by only ~0.007, so their scores start almost equal
+and move together. Its loss stayed at exactly ln 2 while memorising 32 questions for 15 epochs,
+at learning rates 5e-5, 2e-4 and 5e-4. nano-jev learned the same 32 questions (0.70 → 0.36),
+and so did the MS MARCO cross-encoder (0.68 → 0.61), which already separates its inputs. The
+MS MARCO model is the closer fair comparison: same size and architecture, relevance-trained,
+no typed decisions.
 
 ## What would count as a result
 
