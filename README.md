@@ -40,6 +40,8 @@ uv run train-router --run $R --tau 0.8
 uv run eval-routing --run $R   # writes $R/report.json and $R/curves.csv
 uv run eval-routing --run $R --exclude data/hotpotqa/nanojev_validation_ids.txt   # report-clean.json
 uv run tau-sweep --run $R   # retrain and evaluate at tau 0.5-1.0: $R/tau-sweep.csv
+uv run cascade --expert small=results/gpu:small ... --cascade small,large14 --out results/cascade  # multi-stage
+uv run judge all --plan configs/system-one.toml   # System One router (experiment 7, GPU: docs/gpu-jobs-system-one.md)
 ```
 
 | Config | Scorer | Experts | Use |

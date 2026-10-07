@@ -1,6 +1,7 @@
 """Exercise the transformers code paths with tiny randomly initialised local models."""
 
 import json
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -23,6 +24,7 @@ from groupproject.evidence import CrossEncoderScorer, RerankerScorer  # noqa: E4
 from groupproject.experts import PROMPT, HFExpert  # noqa: E402
 from synthetic import make_split  # noqa: E402
 
+CONFIGS = Path(__file__).parent.parent / "configs"
 SPECIALS = ["[PAD]", "[UNK]", "[CLS]", "[SEP]", "[EOS]"]
 
 
@@ -200,3 +202,73 @@ def test_hf_expert_batches_match_single(tiny_models, model_dir):
     assert [o.answer for o in one] == [o.answer for o in many]
     assert [o.cost for o in one] == [o.cost for o in many]
     assert [o.uncertainty for o in one] == pytest.approx([o.uncertainty for o in many], rel=1e-3)
+
+
+def test_system_one_judges_end_to_end(tiny_models, tmp_path):
+    from groupproject import judge
+
+    data = tmp_path / "data"
+    data.mkdir()
+    make_split(160, seed=7, level="hard").to_parquet(data / "distractor_train.parquet")
+    make_split(60, seed=8, start=5_000).to_parquet(data / "distractor_validation.parquet")
+    make_splits.main(["--train", str(data / "distractor_train.parquet"), "--router-size", "100", "--calib-size", "60",
+                      "--out", str(data / "splits.json")])
+    run = tmp_path / "run"
+    common = ["--config", str(CONFIGS / "smoke.toml"), "--run", str(run)]
+    for split in ("router_train", "calib"):
+        run_experts.main(common + ["--data", str(data / "distractor_train.parquet"), "--splits",
+                                   str(data / "splits.json"), "--split", split, "--name", split])
+    run_experts.main(common + ["--data", str(data / "distractor_validation.parquet"), "--name", "test"])
+
+    ce = tiny_models / "ce"
+    plan = tmp_path / "plan.toml"
+    plan.write_text(f"""
+tau = 0.8
+seeds = [0, 1]
+zero_shot_judge = "{ce}"
+[pairs]
+A = "{run}"
+B = "{run}"
+[train]
+epochs = 2
+lr = 1e-3
+weight_decay = 0.0
+warmup = 0.0
+batch_size = 8
+max_length = 128
+dev_fraction = 0.2
+[[judges]]
+inputs = "qpa"
+label = "small-fails"
+init = "{ce}"
+train_pair = "A"
+[[judges]]
+inputs = "q"
+label = "small-fails"
+init = "{ce}"
+train_pair = "B"
+""")
+    out = tmp_path / "out"
+    exclude = tmp_path / "exclude.txt"
+    exclude.write_text("\n".join(pd.read_parquet(run / "test.parquet")["id"].head(10)))
+    judge.main(["all", "--plan", str(plan), "--data-dir", str(data), "--out", str(out), "--device", "cpu",
+                "--bootstrap", "30", "--exclude", str(exclude)])
+
+    zs = pd.read_parquet(out / "zeroshot" / "A" / "test.parquet")
+    assert len(zs) == 60 and zs["zs_grounded"].between(0, 1).all() and (zs["zs_correct_tokens"] > 0).all()
+    done = json.loads((out / "judges" / "qpa-small-fails-ce-A" / "seed1" / "done.json").read_text())
+    assert len(done["history"]) == 2 and done["n_dev"] == 20 and done["seed"] == 1
+    report = json.loads((out / "eval" / "A" / "report.json").read_text())
+    judges = report["judges"]
+    assert set(judges) == {"zs_grounded", "zs_correct", "judge/qpa-small-fails-ce-A", "judge/q-small-fails-ce-B"}
+    trained = judges["judge/qpa-small-fails-ce-A"]
+    assert trained["post"] is True and len(trained["aiq_per_seed"]) == 2 and trained["judge_gflops"] > 0
+    assert trained["aiq_with_judge_cost"] <= trained["aiq"] + 1e-12  # paying for the judge never helps
+    assert "router:judge/qpa-small-fails-ce-A - router:question+evidence+small/large-helps" in report["bootstrap"]["aiq_diff"]
+    scores = pd.read_parquet(out / "eval" / "A" / "scores-test.parquet")
+    assert {"judge/qpa-small-fails-ce-A", "judge/qpa-small-fails-ce-A#seed0", "zs_grounded"} <= set(scores.columns)
+    assert json.loads((out / "eval" / "B" / "report-clean.json").read_text())["n_test"] == 50
+
+    before = (out / "judges" / "qpa-small-fails-ce-A" / "seed0" / "done.json").stat().st_mtime
+    judge.main(["train", "--plan", str(plan), "--data-dir", str(data), "--out", str(out), "--device", "cpu"])
+    assert (out / "judges" / "qpa-small-fails-ce-A" / "seed0" / "done.json").stat().st_mtime == before  # resumes

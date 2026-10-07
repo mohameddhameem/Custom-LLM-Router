@@ -44,6 +44,10 @@ pair, so compare it only within a run. The per-run outputs are in [results/](../
 Run 6 chains cached experts from runs 1–4 on CPU. Its AIQ is over 1,051–43,906 GFLOPs (1.5B to 14B),
 so it is comparable only within run 6.
 
+**Planned:** experiment 7, a System One router: a fine-tuned nano-jev judge as the small/large router. It is
+the final report's central research question ([system-one-router.md](system-one-router.md), job sheet
+[gpu-jobs-system-one.md](gpu-jobs-system-one.md), report plan [final-report-plan.md](final-report-plan.md)).
+
 ## Published reference points (answer EM / F1)
 
 | System | Type | Split | EM | F1 | Source |

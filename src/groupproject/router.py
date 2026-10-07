@@ -134,7 +134,12 @@ def fit_tuned(model: Pipeline, X: pd.DataFrame, y: np.ndarray, seed: int) -> tup
 
 
 def predict_escalation(router: dict, df: pd.DataFrame) -> np.ndarray:
-    """The router's P(escalate) for each row, under its own label (see escalation_label)."""
+    """The router's P(escalate) for each row, under its own label (see escalation_label).
+
+    A router may instead name a precomputed `score_column` (e.g. a System One judge scored on GPU).
+    """
+    if "score_column" in router:
+        return df[router["score_column"]].to_numpy(dtype=float)
     X = add_features(df)
     X[router["columns"]] = X[router["columns"]].fillna(0.0)
     return router["model"].predict_proba(X)[:, 1]
