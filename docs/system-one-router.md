@@ -1,6 +1,6 @@
-# Experiment 7 (planned): a System One router
+# Experiment 7: a System One router
 
-**Status:** planned. The GPU job sheet is [gpu-jobs-system-one.md](gpu-jobs-system-one.md). It also
+**Status:** done on 2026-10-07; results in [2026-10-07-system-one-router.md](experiments/2026-10-07-system-one-router.md). The GPU job sheet is [gpu-jobs-system-one.md](gpu-jobs-system-one.md). It also
 has a reduced CPU preview, [`configs/system-one-cpu.toml`](../configs/system-one-cpu.toml), which covers
 RQ1 and RQ2 with 1 seed. This
 is the **central research question for the final report** (see

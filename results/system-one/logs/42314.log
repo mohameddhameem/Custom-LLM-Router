@@ -1,0 +1,29 @@
+job 42314.pbs-omega on a-11, step judge-pilot
+name, memory.used [MiB], memory.total [MiB], driver_version
+NVIDIA L40S, 14 MiB, 46068 MiB, 555.58.02
+   Building groupproject @ file:///storage/home/dhameem.m.2025/Custom-LLM-Router
+      Built groupproject @ file:///storage/home/dhameem.m.2025/Custom-LLM-Router
+Uninstalled 1 package in 7ms
+Installed 1 package in 49ms
+torch 2.14.1+cu126 NVIDIA L40S
+train qpa-large-helps-nanojev-A seed 0
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1488.86it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11221.58it/s]
+    epoch 1: train loss 0.4717 dev NLL 0.4407
+    epoch 2: train loss 0.4115 dev NLL 0.4454
+    epoch 3: train loss 0.3319 dev NLL 0.5487
+train qpa-large-helps-nanojev-A seed 1
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1603.40it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11180.66it/s]
+    epoch 1: train loss 0.4681 dev NLL 0.4311
+    epoch 2: train loss 0.4075 dev NLL 0.4346
+    epoch 3: train loss 0.3396 dev NLL 0.5127
+train qpa-large-helps-nanojev-A seed 2
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1409.20it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 10281.54it/s]
+    epoch 1: train loss 0.4711 dev NLL 0.4428
+    epoch 2: train loss 0.4078 dev NLL 0.4422
+    epoch 3: train loss 0.3403 dev NLL 0.5031

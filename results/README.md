@@ -13,6 +13,7 @@ headline numbers are in [docs/experiments.md](../docs/experiments.md).
 | `gpu-large-14b` | 4: 14B replaces the 7B | `configs/gpu-large-14b.toml` |
 | `gpu-small-3b` | 5: 3B replaces the 1.5B | `configs/gpu-small-3b.toml` |
 | `cascade` | 6: multi-stage cascades over the caches above (CPU) | `cascade` command, see `provenance.jsonl` |
+| `system-one` | 7: System One judges (33M nano-jev) routing the pairs of runs 1, 4 and 5 (GPU) | `configs/system-one.toml` |
 
 Each folder has:
 
@@ -25,6 +26,10 @@ Each folder has:
 | `logs/` | The PBS job log |
 | `tau-sweep.csv`, `tau-sweep.json` | `gpu-cascade` only |
 | `run.log` | `cascade` only; it has no caches, config or `routers.pkl` of its own |
+
+`system-one` has its own layout: `eval/<pair>/` (reports, curves and every judge's per-question scores for pairs
+A, B and C), `judges/<judge>/seed<k>/done.json` (each training's curve, dev NLL and timing), `zeroshot/`,
+`plan.toml`, `provenance.jsonl` and `logs/`. See [the write-up](../docs/experiments/2026-10-07-system-one-router.md).
 
 `routers.pkl` is left out: it is about 8 MB, loading a shared pickle is unsafe, and the caches
 rebuild it in minutes. To rerun any CPU analysis, copy a folder back into `runs/`:
