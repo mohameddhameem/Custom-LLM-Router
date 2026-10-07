@@ -23,6 +23,21 @@ Every step skips finished work: zero-shot pairs, seeds with a `done.json`, and s
 or killed job is simply resubmitted. The estimates come from a CPU dry run scaled to the L40S,
 so treat them as rough.
 
+Pairs A and B share the 1.5B's answers, so every judge's inputs on B are identical to A's. The
+question-only and passage judges have identical inputs on all three pairs. Identical inputs are
+scored once and reused, which the training records show as `reused`.
+
+**Memory.** Training uses gradient accumulation (`micro_batch`), so the batch of 16 questions is
+the same on any machine and only the memory changes:
+
+| Machine | `micro_batch` | Peak memory |
+|---|---|---|
+| L40S (default) | 16 | small |
+| CPU (default) | 2 | about 3.5 GB of RAM |
+
+Without accumulation, one batch needs more than 10 GB of RAM on CPU (float32). That crashed a
+15 GB WSL machine on 2026-10-07.
+
 ## 1. Update the code (login node)
 
 ```bash
@@ -40,11 +55,12 @@ experiment 1 used on omega.
 ## 2. Download the judge models (login node, once)
 
 ```bash
-uv run python -c "from huggingface_hub import snapshot_download as d; d('sdmlai/nano-jev', revision='v1.0'); d('microsoft/MiniLM-L12-H384-uncased')"
+uv run python -c "from huggingface_hub import snapshot_download as d; d('sdmlai/nano-jev', revision='v1.0'); d('cross-encoder/ms-marco-MiniLM-L12-v2')"
 ```
 
-nano-jev v1.0 is already cached from experiment 1. MiniLM-L12 is its plain base model, for the
-pretraining ablation (RQ4).
+nano-jev v1.0 is already cached from experiment 1. The MS MARCO MiniLM-L12 cross-encoder is the
+same architecture without typed-decision pretraining, for RQ4. nano-jev's plain base cannot learn
+this task (see [system-one-router.md](system-one-router.md)).
 
 ## 3. Optional pilot (about 15 min)
 
@@ -97,6 +113,32 @@ du -sh results/system-one                                    # about 10-15 MB
 `results/system-one/judges/<judge>/seed<k>/done.json` holds each judge's training curve, dev
 NLL, timing and model revision. Commit `results/system-one/` and the analysis can continue
 locally.
+
+## Running on CPU instead
+
+The full plan is not practical on CPU. Each training takes about 4.3 h on a 20-thread CPU, so 36
+trainings take about 155 h. [`configs/system-one-cpu.toml`](../configs/system-one-cpu.toml)
+is a reduced preview of about 4–5 h:
+
+- all zero-shot judges on all three pairs;
+- the RQ2 input ablation (q, qp, qpa, qa), with 1 seed, 1 epoch and 3,000 training questions.
+
+It also previews transfer, because each judge is scored on pairs B and C too. RQ3–RQ5 and the
+seed spread need the GPU plan, which should provide the final numbers.
+
+```bash
+uv run prepare-hotpotqa --out data/hotpotqa      # the current data format (context_titles / context_sentences)
+uv run nanojev-ids --out data/hotpotqa
+systemd-run --user --scope -p MemoryMax=8G -p MemorySwapMax=0 \
+  uv run judge all --plan configs/system-one-cpu.toml --out runs/system-one-cpu --device cpu \
+  --exclude data/hotpotqa/nanojev_validation_ids.txt
+```
+
+- **Memory cap:** `systemd-run ... MemoryMax=8G` kills only this command if it ever exceeds 8 GB,
+  instead of letting it take WSL down. The measured peak is about 3.5 GB.
+- **Resuming:** the run resumes like the GPU one. Rerun the same command after an interruption.
+- **Results:** they go to `runs/system-one-cpu/`. Bring them into `results/system-one-cpu/` with
+  the rsync line in step 6, replacing `system-one` with `system-one-cpu`.
 
 ## What to look at first
 

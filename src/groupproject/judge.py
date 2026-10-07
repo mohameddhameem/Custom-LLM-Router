@@ -26,6 +26,8 @@ added to its cost-F1 curve.
 """
 
 import argparse
+import gc
+import hashlib
 import json
 import logging
 import shutil
@@ -38,9 +40,8 @@ import pandas as pd
 
 from groupproject import provenance
 from groupproject.evaluate_routing import COST_UNITS, aiq, curve, evaluate, expert_params, with_cost_unit
-from groupproject.evidence import passages_state, resolve_checkpoint
+from groupproject.evidence import paragraph_text, passages_state, resolve_checkpoint
 from groupproject.router import escalation_label, train_routers
-from groupproject.run_experts import paragraphs_of
 
 log = logging.getLogger(__name__)
 
@@ -60,18 +61,40 @@ LR_REFERENCES = ("router:question+evidence/large-helps", "router:question+eviden
 # Data
 
 
-def load_pair_split(run: Path, data_dir: Path, split: str) -> pd.DataFrame:
+def read_paragraphs(path: Path, ids: set[str], batch_size: int = 2048) -> dict[str, list[str]]:
+    """id -> "title: text" paragraphs (run-experts' paragraphs_of) for the given ids only.
+
+    Streams the file in batches: the full HotpotQA train file as pandas objects needs several GB
+    and crashed a 15 GB WSL machine, while the ~21k questions the pairs use need ~100 MB.
+    """
+    import pyarrow as pa
+    import pyarrow.compute as pc
+    import pyarrow.parquet as pq
+
+    wanted = pa.array(sorted(ids), type=pa.string())
+    out = {}
+    for batch in pq.ParquetFile(path).iter_batches(batch_size=batch_size,
+                                                   columns=["id", "context_titles", "context_sentences"]):
+        keep = batch.filter(pc.is_in(batch.column("id").cast(pa.string()), value_set=wanted))
+        for qid, titles, sentences in zip(*(keep.column(c).to_pylist() for c in ("id", "context_titles", "context_sentences"))):
+            out[qid] = [paragraph_text(t, s) for t, s in zip(titles, sentences)]
+    missing = ids - out.keys()
+    if missing:
+        raise ValueError(f"{len(missing)} questions are not in {path}, e.g. {sorted(missing)[:3]}")
+    return out
+
+
+def load_pair_split(run: Path, data_dir: Path, split: str, paragraphs: dict[str, list[str]] | None = None) -> pd.DataFrame:
     """A pair's cached split, plus the small expert's passages rebuilt from the dataset."""
     cache = pd.read_parquet(run / f"{split}.parquet")
     cfg = tomllib.loads((run / "config.toml").read_text())
     k = next(e for e in cfg["experts"] if e["name"] == "small").get("top_k")
-    data = pd.read_parquet(data_dir / SPLIT_DATA[split], columns=["id", "context_titles", "context_sentences"])
-    data = data.set_index("id").loc[cache["id"]]
+    if paragraphs is None:
+        paragraphs = read_paragraphs(data_dir / SPLIT_DATA[split], set(cache["id"]))
     passages = []
-    for scores, (_, row) in zip(cache["para_scores"], data.iterrows()):
-        paragraphs = paragraphs_of(row)
+    for qid, scores in zip(cache["id"], cache["para_scores"]):
         order = np.argsort(-np.asarray(scores), kind="stable")  # run-experts' ranking
-        passages.append([paragraphs[i] for i in order][:k] if k else paragraphs)
+        passages.append([paragraphs[qid][i] for i in order][:k] if k else paragraphs[qid])
     cache["passages"] = passages
     return cache
 
@@ -95,7 +118,7 @@ def route_items(df: pd.DataFrame, inputs: str) -> list[dict]:
 class Judge:
     """A cross-encoder with one logit per (question + option, state) pair, softmaxed per item."""
 
-    def __init__(self, path: str, device: str | None = None, max_length: int = 512):
+    def __init__(self, path: str, device: str | None = None, max_length: int = 512, score_batch: int | None = None):
         import torch
         from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
@@ -108,6 +131,7 @@ class Judge:
         calib = local / "calibration.json"
         self.temperatures = json.loads(calib.read_text()) if calib.exists() else {}
         self.max_length = max_length
+        self.score_batch = score_batch or (64 if self.device != "cpu" else 16)  # questions per inference batch
 
     def encode(self, items: list[dict]):
         firsts = [f"question: {it['question']} option: {o}" for it in items for o in it["options"]]
@@ -124,9 +148,10 @@ class Judge:
             flat = self.model(**enc).logits[:, 0].float()
         return flat.view(len(items), len(items[0]["options"]))
 
-    def probabilities(self, items: list[dict], temperature: float = 1.0, batch_size: int = 64) -> tuple[np.ndarray, np.ndarray]:
+    def probabilities(self, items: list[dict], temperature: float = 1.0) -> tuple[np.ndarray, np.ndarray]:
         """[items, options] probabilities and the tokens each item processed (its cost)."""
         self.model.eval()
+        batch_size = self.score_batch
         probs, tokens = [], []
         with self.torch.no_grad():
             for i in range(0, len(items), batch_size):
@@ -137,9 +162,31 @@ class Judge:
         return np.concatenate(probs), np.asarray(tokens)
 
 
+def accumulate(judge: Judge, items: list[dict], target, micro_batch: int) -> float:
+    """Backpropagate the mean grouped-softmax cross-entropy of `items` in micro-batches; returns the loss.
+
+    The gradient equals one pass over the whole batch, but activation memory is bounded by
+    `micro_batch` questions: 16 questions x 2 options x 512 tokens need > 10 GB in float32 on CPU.
+    """
+    import torch
+
+    total = 0.0
+    for j in range(0, len(items), micro_batch):
+        loss = torch.nn.functional.cross_entropy(judge.logits(items[j: j + micro_batch]),
+                                                 target[j: j + micro_batch].to(judge.device))
+        loss = loss * min(micro_batch, len(items) - j) / len(items)
+        loss.backward()
+        total += loss.item()
+    return total
+
+
 def fine_tune(judge: Judge, items: list[dict], labels: np.ndarray, dev_items: list[dict], dev_labels: np.ndarray,
-              epochs: int, lr: float, weight_decay: float, warmup: float, batch_size: int, seed: int) -> list[dict]:
-    """Grouped-softmax cross-entropy; keeps the epoch with the lowest dev NLL. Returns the history."""
+              epochs: int, lr: float, weight_decay: float, warmup: float, batch_size: int, seed: int,
+              micro_batch: int | None = None) -> list[dict]:
+    """Grouped-softmax cross-entropy; keeps the epoch with the lowest dev NLL. Returns the history.
+
+    `micro_batch` (default: the whole batch on GPU, 2 questions on CPU) only bounds memory.
+    """
     import torch
     from transformers import get_linear_schedule_with_warmup
 
@@ -149,7 +196,8 @@ def fine_tune(judge: Judge, items: list[dict], labels: np.ndarray, dev_items: li
     opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
     steps = epochs * int(np.ceil(len(items) / batch_size))
     sched = get_linear_schedule_with_warmup(opt, int(warmup * steps), steps)
-    target = torch.as_tensor(labels, dtype=torch.long)
+    target = torch.tensor(np.asarray(labels), dtype=torch.long)
+    micro_batch = micro_batch or (batch_size if judge.device != "cpu" else 2)
     history, best, best_state = [], np.inf, None
     for epoch in range(epochs):
         model.train()
@@ -157,13 +205,11 @@ def fine_tune(judge: Judge, items: list[dict], labels: np.ndarray, dev_items: li
         order = rng.permutation(len(items))
         for i in range(0, len(order), batch_size):
             b = order[i: i + batch_size]
-            loss = torch.nn.functional.cross_entropy(judge.logits([items[j] for j in b]), target[b].to(judge.device))
             opt.zero_grad()
-            loss.backward()
+            losses.append(accumulate(judge, [items[j] for j in b], target[b], micro_batch))
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             opt.step()
             sched.step()
-            losses.append(loss.item())
         probs, _ = judge.probabilities(dev_items)
         nll = float(-np.log(np.clip(probs[np.arange(len(dev_labels)), dev_labels], 1e-12, 1)).mean())
         history.append({"epoch": epoch + 1, "train_loss": float(np.mean(losses)), "dev_nll": nll,
@@ -184,44 +230,68 @@ def judge_name(spec: dict) -> str:
     return f"{spec['inputs']}-{spec['label']}-{init}-{spec['train_pair']}"
 
 
+def fingerprint(items: list[dict]) -> str:
+    """Identity of a judge's inputs: pairs that share questions, passages and small answers score the same."""
+    h = hashlib.sha1()
+    for it in items:
+        h.update(f"{it['question']}\x01{it['state']}\x00".encode())
+    return h.hexdigest()
+
+
 class Splits:
-    """Loaded pair splits, cached across steps."""
+    """Loaded pair splits, cached across steps. The pairs share their questions, so each dataset
+    file's paragraphs are read once (only for the questions needed) and reused by every pair."""
 
     def __init__(self, pairs: dict[str, Path], data_dir: Path):
         self.pairs, self.data_dir, self._cache = pairs, data_dir, {}
+        self._paragraphs: dict[str, dict[str, list[str]]] = {}
 
     def get(self, pair: str, split: str) -> pd.DataFrame:
         if (pair, split) not in self._cache:
-            self._cache[(pair, split)] = load_pair_split(self.pairs[pair], self.data_dir, split)
+            file = SPLIT_DATA[split]
+            known = self._paragraphs.setdefault(file, {})
+            ids = set(pd.read_parquet(self.pairs[pair] / f"{split}.parquet", columns=["id"])["id"])
+            if ids - known.keys():
+                known.update(read_paragraphs(self.data_dir / file, ids - known.keys()))
+            self._cache[(pair, split)] = load_pair_split(self.pairs[pair], self.data_dir, split, known)
         return self._cache[(pair, split)]
 
 
-def run_zeroshot(splits: Splits, pair: str, judge_path: str, out: Path, device: str | None) -> None:
-    target = out / "zeroshot" / pair
-    if all((target / f"{s}.parquet").exists() for s in ("calib", "test")):
-        log.info(f"zeroshot {pair}: done")
-        return
-    judge = Judge(judge_path, device)
-    target.mkdir(parents=True, exist_ok=True)
-    for split in ("calib", "test"):
-        df = splits.get(pair, split)
-        start = time.perf_counter()
-        ctx = [passages_state(p) for p in df["passages"]]
-        grounded = [{"question": GROUNDED[0].format(claim=CLAIM.format(question=q, answer=a)), "options": GROUNDED[1],
-                     "state": c} for q, a, c in zip(df["question"], df["small_pred"], ctx)]
-        correct = [{"question": CORRECT[0].format(question=q, answer=a), "options": CORRECT[1], "state": c}
-                   for q, a, c in zip(df["question"], df["small_pred"], ctx)]
-        pg, tg = judge.probabilities(grounded, judge.temperatures.get("grounded", 1.0))
-        pc, tc = judge.probabilities(correct)  # a new typed question: no calibrated temperature
-        seconds = (time.perf_counter() - start) / len(df)
-        pd.DataFrame({"id": df["id"], "zs_grounded": pg[:, 1], "zs_grounded_tokens": tg,
-                      "zs_correct": pc[:, 1], "zs_correct_tokens": tc}).to_parquet(target / f"{split}.parquet")
-        log.info(f"zeroshot {pair}/{split}: {len(df)} questions, {seconds * 1000:.1f} ms/question for both judges")
-    (target / "done.json").write_text(json.dumps({"judge": judge_path, "revision": provenance.hub_revision(judge_path),
-                                                  "device": judge.device}, indent=1))
+def run_zeroshot(splits: Splits, pairs: list[str], judge_path: str, out: Path, device: str | None,
+                 score_batch: int | None = None) -> None:
+    judge, scored = None, {}  # fingerprint -> output frame, reused by pairs with the same small answers
+    for pair in pairs:
+        target = out / "zeroshot" / pair
+        if (target / "done.json").exists():
+            log.info(f"zeroshot {pair}: done")
+            continue
+        target.mkdir(parents=True, exist_ok=True)
+        for split in ("calib", "test"):
+            df = splits.get(pair, split)
+            ctx = [passages_state(p) for p in df["passages"]]
+            grounded = [{"question": GROUNDED[0].format(claim=CLAIM.format(question=q, answer=a)), "options": GROUNDED[1],
+                         "state": c} for q, a, c in zip(df["question"], df["small_pred"], ctx)]
+            correct = [{"question": CORRECT[0].format(question=q, answer=a), "options": CORRECT[1], "state": c}
+                       for q, a, c in zip(df["question"], df["small_pred"], ctx)]
+            key = fingerprint(grounded + correct)
+            if key in scored:
+                log.info(f"zeroshot {pair}/{split}: same inputs as an earlier pair, scores reused")
+            else:
+                judge = judge or Judge(judge_path, device, score_batch=score_batch)
+                start = time.perf_counter()
+                pg, tg = judge.probabilities(grounded, judge.temperatures.get("grounded", 1.0))
+                pc, tc = judge.probabilities(correct)  # a new typed question: no calibrated temperature
+                seconds = (time.perf_counter() - start) / len(df)
+                scored[key] = pd.DataFrame({"id": df["id"], "zs_grounded": pg[:, 1], "zs_grounded_tokens": tg,
+                                            "zs_correct": pc[:, 1], "zs_correct_tokens": tc})
+                log.info(f"zeroshot {pair}/{split}: {len(df)} questions, {seconds * 1000:.1f} ms/question for both judges")
+            scored[key].to_parquet(target / f"{split}.parquet")
+        (target / "done.json").write_text(json.dumps({"judge": judge_path, "revision": provenance.hub_revision(judge_path),
+                                                      "device": judge.device if judge else None}, indent=1))
 
 
-def run_train(splits: Splits, spec: dict, seed: int, plan: dict, out: Path, device: str | None, save_model: bool) -> None:
+def run_train(splits: Splits, spec: dict, seed: int, plan: dict, out: Path, device: str | None, save_model: bool,
+              micro_batch: int | None = None, score_batch: int | None = None) -> None:
     from sklearn.model_selection import train_test_split
 
     name = judge_name(spec)
@@ -234,26 +304,35 @@ def run_train(splits: Splits, spec: dict, seed: int, plan: dict, out: Path, devi
     df = splits.get(spec["train_pair"], "router_train")
     y = escalation_label(df, plan["tau"], spec["label"])
     tr, dev = train_test_split(np.arange(len(df)), test_size=hp["dev_fraction"], stratify=y, random_state=seed)
+    if hp.get("max_questions") and len(tr) > hp["max_questions"]:  # e.g. the CPU plan: a stratified subsample
+        tr, _ = train_test_split(tr, train_size=hp["max_questions"], stratify=y[tr], random_state=seed)
     items = route_items(df, spec["inputs"])
-    judge = Judge(spec["init"], device, hp["max_length"])
+    judge = Judge(spec["init"], device, hp["max_length"], score_batch)
     start = time.perf_counter()
     history = fine_tune(judge, [items[i] for i in tr], y[tr], [items[i] for i in dev], y[dev], hp["epochs"], hp["lr"],
-                        hp["weight_decay"], hp["warmup"], hp["batch_size"], seed)
+                        hp["weight_decay"], hp["warmup"], hp["batch_size"], seed, micro_batch or hp.get("micro_batch"))
     train_seconds = time.perf_counter() - start
     target.mkdir(parents=True, exist_ok=True)
-    scoring = {}
+    scoring, scored = {}, {}  # fingerprint -> scores, reused by pairs whose inputs are identical
     for pair in plan["pairs"]:
         for split in ("calib", "test"):
             d = splits.get(pair, split)
-            start = time.perf_counter()
-            p, tokens = judge.probabilities(route_items(d, spec["inputs"]))
-            scoring[f"{pair}/{split}"] = (time.perf_counter() - start) / len(d)
-            pd.DataFrame({"id": d["id"], "score": p[:, 1], "tokens": tokens}).to_parquet(target / f"{pair}-{split}.parquet")
+            items = route_items(d, spec["inputs"])
+            key = fingerprint(items)
+            if key not in scored:
+                start = time.perf_counter()
+                p, tokens = judge.probabilities(items)
+                scoring[f"{pair}/{split}"] = (time.perf_counter() - start) / len(d)
+                scored[key] = pd.DataFrame({"id": d["id"], "score": p[:, 1], "tokens": tokens})
+            else:
+                scoring[f"{pair}/{split}"] = "reused"
+            scored[key].to_parquet(target / f"{pair}-{split}.parquet")
     if save_model:
         judge.model.save_pretrained(target / "model")
         judge.tokenizer.save_pretrained(target / "model")
     (target / "done.json").write_text(json.dumps({
         "judge": name, **spec, "seed": seed, "tau": plan["tau"], "train": hp, "n_train": len(tr), "n_dev": len(dev),
+        "micro_batch": micro_batch or hp.get("micro_batch"),
         "train_label_rate": float(y.mean()), "history": history, "train_seconds": train_seconds,
         "scoring_seconds_per_question": scoring, "init_revision": provenance.hub_revision(spec["init"]),
         "device": judge.device}, indent=1))
@@ -379,6 +458,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--device", help="cuda or cpu (default: cuda if available)")
     parser.add_argument("--only", action="append", default=[], help="train: judge names to run (default all); repeatable")
     parser.add_argument("--save-model", action="store_true", help="train: also save the fine-tuned weights")
+    parser.add_argument("--micro-batch", type=int,
+                        help="train: questions per forward/backward pass (memory only; default: whole batch on GPU, 2 on CPU)")
+    parser.add_argument("--score-batch", type=int, help="questions per inference batch (default 64 on GPU, 16 on CPU)")
     parser.add_argument("--cost", choices=COST_UNITS[:2], default="flops")
     parser.add_argument("--bootstrap", type=int, default=1000)
     parser.add_argument("--seed", type=int, default=0, help="eval: seed for routers' CV and the bootstrap")
@@ -396,15 +478,17 @@ def main(argv: list[str] | None = None) -> None:
     provenance.record(args.out, f"judge-{args.step}", plan=str(args.plan), **provenance.environment())
     splits = Splits(plan["pairs"], args.data_dir)
     if args.step in ("zeroshot", "all"):
-        for pair in plan["pairs"]:
-            run_zeroshot(splits, pair, plan["zero_shot_judge"], args.out, args.device)
+        run_zeroshot(splits, list(plan["pairs"]), plan["zero_shot_judge"], args.out, args.device, args.score_batch)
     if args.step in ("train", "all"):
         for spec in plan["judges"]:
             if args.only and judge_name(spec) not in args.only:
                 continue
             for seed in plan["seeds"]:
-                run_train(splits, spec, seed, plan, args.out, args.device, args.save_model)
+                run_train(splits, spec, seed, plan, args.out, args.device, args.save_model, args.micro_batch,
+                          args.score_batch)
     if args.step in ("eval", "all"):
+        del splits  # the passages are not needed to evaluate; free them before the routers' CV workers start
+        gc.collect()
         exclude = set()
         for path in args.exclude:
             exclude |= {line.strip() for line in path.read_text().splitlines() if line.strip()}
