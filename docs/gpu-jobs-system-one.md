@@ -1,5 +1,7 @@
 # GPU jobs: experiment 7, the System One router
 
+**Status:** the pilot and the full job ran on 2026-10-07 (jobs 42314 and 42315, 1 h 20 min). See [the results](experiments/2026-10-07-system-one-router.md).
+
 The omega job for [system-one-router.md](system-one-router.md). One job runs everything in
 [`configs/system-one.toml`](../configs/system-one.toml):
 

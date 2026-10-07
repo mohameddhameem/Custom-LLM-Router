@@ -1,0 +1,373 @@
+job 42315.pbs-omega on a-11, step judge
+name, memory.used [MiB], memory.total [MiB], driver_version
+NVIDIA L40S, 14 MiB, 46068 MiB, 555.58.02
+torch 2.14.1+cu126 NVIDIA L40S
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1552.58it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11907.73it/s]
+zeroshot A/calib: 2000 questions, 4.2 ms/question for both judges
+zeroshot A/test: 7405 questions, 4.2 ms/question for both judges
+zeroshot B/calib: same inputs as an earlier pair, scores reused
+zeroshot B/test: same inputs as an earlier pair, scores reused
+zeroshot C/calib: 2000 questions, 4.1 ms/question for both judges
+zeroshot C/test: 7405 questions, 4.2 ms/question for both judges
+train q-large-helps-nanojev-A seed 0
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1401.96it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11067.20it/s]
+    epoch 1: train loss 0.4733 dev NLL 0.4504
+    epoch 2: train loss 0.4514 dev NLL 0.4484
+    epoch 3: train loss 0.4424 dev NLL 0.4553
+train q-large-helps-nanojev-A seed 1
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1880.54it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11561.69it/s]
+    epoch 1: train loss 0.4752 dev NLL 0.4521
+    epoch 2: train loss 0.4501 dev NLL 0.4547
+    epoch 3: train loss 0.4205 dev NLL 0.4834
+train q-large-helps-nanojev-A seed 2
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1727.47it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 10443.03it/s]
+    epoch 1: train loss 0.4774 dev NLL 0.4543
+    epoch 2: train loss 0.4522 dev NLL 0.4494
+    epoch 3: train loss 0.4218 dev NLL 0.4863
+train qp-large-helps-nanojev-A seed 0
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1871.41it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 10723.98it/s]
+    epoch 1: train loss 0.4613 dev NLL 0.4308
+    epoch 2: train loss 0.4115 dev NLL 0.4445
+    epoch 3: train loss 0.3475 dev NLL 0.4994
+train qp-large-helps-nanojev-A seed 1
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1499.10it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11460.94it/s]
+    epoch 1: train loss 0.4662 dev NLL 0.4401
+    epoch 2: train loss 0.4140 dev NLL 0.4309
+    epoch 3: train loss 0.3500 dev NLL 0.5055
+train qp-large-helps-nanojev-A seed 2
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1729.61it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11309.80it/s]
+    epoch 1: train loss 0.4617 dev NLL 0.4461
+    epoch 2: train loss 0.4063 dev NLL 0.4654
+    epoch 3: train loss 0.3394 dev NLL 0.5709
+train qpa-large-helps-nanojev-A seed 0: done
+train qpa-large-helps-nanojev-A seed 1: done
+train qpa-large-helps-nanojev-A seed 2: done
+train qa-large-helps-nanojev-A seed 0
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1703.18it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 10913.62it/s]
+    epoch 1: train loss 0.4716 dev NLL 0.4497
+    epoch 2: train loss 0.4477 dev NLL 0.4493
+    epoch 3: train loss 0.4164 dev NLL 0.4825
+train qa-large-helps-nanojev-A seed 1
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1946.20it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 9868.14it/s]
+    epoch 1: train loss 0.4719 dev NLL 0.4524
+    epoch 2: train loss 0.4488 dev NLL 0.4567
+    epoch 3: train loss 0.4251 dev NLL 0.4750
+train qa-large-helps-nanojev-A seed 2
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1876.86it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 10390.64it/s]
+    epoch 1: train loss 0.4724 dev NLL 0.4512
+    epoch 2: train loss 0.4503 dev NLL 0.4498
+    epoch 3: train loss 0.4188 dev NLL 0.4667
+train qp-small-fails-nanojev-A seed 0
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 2111.94it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11830.19it/s]
+    epoch 1: train loss 0.6745 dev NLL 0.6316
+    epoch 2: train loss 0.6127 dev NLL 0.6669
+    epoch 3: train loss 0.5316 dev NLL 0.6970
+train qp-small-fails-nanojev-A seed 1
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1846.29it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11915.80it/s]
+    epoch 1: train loss 0.6638 dev NLL 0.6375
+    epoch 2: train loss 0.5956 dev NLL 0.6282
+    epoch 3: train loss 0.4941 dev NLL 0.7468
+train qp-small-fails-nanojev-A seed 2
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1648.38it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 10375.94it/s]
+    epoch 1: train loss 0.6804 dev NLL 0.6530
+    epoch 2: train loss 0.6129 dev NLL 0.6341
+    epoch 3: train loss 0.5335 dev NLL 0.7021
+train qpa-small-fails-nanojev-A seed 0
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1756.78it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11055.45it/s]
+    epoch 1: train loss 0.6811 dev NLL 0.6456
+    epoch 2: train loss 0.6061 dev NLL 0.6747
+    epoch 3: train loss 0.4994 dev NLL 0.7026
+train qpa-small-fails-nanojev-A seed 1
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1693.98it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 10728.49it/s]
+    epoch 1: train loss 0.6692 dev NLL 0.6304
+    epoch 2: train loss 0.5850 dev NLL 0.6611
+    epoch 3: train loss 0.4758 dev NLL 0.7683
+train qpa-small-fails-nanojev-A seed 2
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1663.42it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11216.36it/s]
+    epoch 1: train loss 0.6697 dev NLL 0.6566
+    epoch 2: train loss 0.5849 dev NLL 0.6266
+    epoch 3: train loss 0.4793 dev NLL 0.7014
+train qp-large-helps-ms-marco-minilm-l12-v2-A seed 0
+HTTP Request: GET https://huggingface.co/api/models/cross-encoder/ms-marco-MiniLM-L12-v2/revision/main "HTTP/1.1 200 OK"
+Fetching 23 files:   0%|          | 0/23 [00:00<?, ?it/s]Fetching 23 files: 100%|██████████| 23/23 [00:00<00:00, 2425.43it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 3106.07it/s]
+    epoch 1: train loss 0.4930 dev NLL 0.4456
+    epoch 2: train loss 0.4432 dev NLL 0.4438
+    epoch 3: train loss 0.4135 dev NLL 0.4590
+train qp-large-helps-ms-marco-minilm-l12-v2-A seed 1
+HTTP Request: GET https://huggingface.co/api/models/cross-encoder/ms-marco-MiniLM-L12-v2/revision/main "HTTP/1.1 200 OK"
+Fetching 23 files:   0%|          | 0/23 [00:00<?, ?it/s]Fetching 23 files: 100%|██████████| 23/23 [00:00<00:00, 2423.36it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11333.82it/s]
+    epoch 1: train loss 0.4927 dev NLL 0.4482
+    epoch 2: train loss 0.4427 dev NLL 0.4465
+    epoch 3: train loss 0.4103 dev NLL 0.4561
+train qp-large-helps-ms-marco-minilm-l12-v2-A seed 2
+HTTP Request: GET https://huggingface.co/api/models/cross-encoder/ms-marco-MiniLM-L12-v2/revision/main "HTTP/1.1 200 OK"
+Fetching 23 files:   0%|          | 0/23 [00:00<?, ?it/s]Fetching 23 files: 100%|██████████| 23/23 [00:00<00:00, 2460.32it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11328.95it/s]
+    epoch 1: train loss 0.4895 dev NLL 0.4614
+    epoch 2: train loss 0.4419 dev NLL 0.4402
+    epoch 3: train loss 0.4038 dev NLL 0.4727
+train qpa-large-helps-ms-marco-minilm-l12-v2-A seed 0
+HTTP Request: GET https://huggingface.co/api/models/cross-encoder/ms-marco-MiniLM-L12-v2/revision/main "HTTP/1.1 200 OK"
+Fetching 23 files:   0%|          | 0/23 [00:00<?, ?it/s]Fetching 23 files: 100%|██████████| 23/23 [00:00<00:00, 2681.48it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11036.05it/s]
+    epoch 1: train loss 0.4889 dev NLL 0.4479
+    epoch 2: train loss 0.4466 dev NLL 0.4523
+    epoch 3: train loss 0.4134 dev NLL 0.4697
+train qpa-large-helps-ms-marco-minilm-l12-v2-A seed 1
+HTTP Request: GET https://huggingface.co/api/models/cross-encoder/ms-marco-MiniLM-L12-v2/revision/main "HTTP/1.1 200 OK"
+Fetching 23 files:   0%|          | 0/23 [00:00<?, ?it/s]Fetching 23 files: 100%|██████████| 23/23 [00:00<00:00, 2706.23it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11735.01it/s]
+    epoch 1: train loss 0.4890 dev NLL 0.4476
+    epoch 2: train loss 0.4423 dev NLL 0.4496
+    epoch 3: train loss 0.4056 dev NLL 0.4603
+train qpa-large-helps-ms-marco-minilm-l12-v2-A seed 2
+HTTP Request: GET https://huggingface.co/api/models/cross-encoder/ms-marco-MiniLM-L12-v2/revision/main "HTTP/1.1 200 OK"
+Fetching 23 files:   0%|          | 0/23 [00:00<?, ?it/s]Fetching 23 files: 100%|██████████| 23/23 [00:00<00:00, 2541.07it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11289.35it/s]
+    epoch 1: train loss 0.4903 dev NLL 0.4635
+    epoch 2: train loss 0.4439 dev NLL 0.4405
+    epoch 3: train loss 0.4096 dev NLL 0.4624
+train qp-large-helps-nanojev-B seed 0
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1599.81it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 10967.85it/s]
+    epoch 1: train loss 0.4938 dev NLL 0.4683
+    epoch 2: train loss 0.4386 dev NLL 0.4887
+    epoch 3: train loss 0.3657 dev NLL 0.5473
+train qp-large-helps-nanojev-B seed 1
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1763.42it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 12771.05it/s]
+    epoch 1: train loss 0.4968 dev NLL 0.4604
+    epoch 2: train loss 0.4384 dev NLL 0.4694
+    epoch 3: train loss 0.3572 dev NLL 0.5492
+train qp-large-helps-nanojev-B seed 2
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1822.62it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 10788.62it/s]
+    epoch 1: train loss 0.4970 dev NLL 0.4720
+    epoch 2: train loss 0.4414 dev NLL 0.4802
+    epoch 3: train loss 0.3689 dev NLL 0.5246
+train qpa-large-helps-nanojev-B seed 0
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1824.70it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 10756.68it/s]
+    epoch 1: train loss 0.5078 dev NLL 0.4646
+    epoch 2: train loss 0.4347 dev NLL 0.4746
+    epoch 3: train loss 0.3532 dev NLL 0.5579
+train qpa-large-helps-nanojev-B seed 1
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1807.21it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 10504.31it/s]
+    epoch 1: train loss 0.5031 dev NLL 0.4536
+    epoch 2: train loss 0.4441 dev NLL 0.4406
+    epoch 3: train loss 0.3627 dev NLL 0.5192
+train qpa-large-helps-nanojev-B seed 2
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1770.31it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11693.35it/s]
+    epoch 1: train loss 0.5060 dev NLL 0.4737
+    epoch 2: train loss 0.4446 dev NLL 0.4618
+    epoch 3: train loss 0.3728 dev NLL 0.5082
+train qp-large-helps-nanojev-C seed 0
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1750.73it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 10945.78it/s]
+    epoch 1: train loss 0.4488 dev NLL 0.4310
+    epoch 2: train loss 0.3928 dev NLL 0.4558
+    epoch 3: train loss 0.3260 dev NLL 0.5353
+train qp-large-helps-nanojev-C seed 1
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1527.84it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11161.41it/s]
+    epoch 1: train loss 0.4508 dev NLL 0.4243
+    epoch 2: train loss 0.4005 dev NLL 0.4623
+    epoch 3: train loss 0.3471 dev NLL 0.5345
+train qp-large-helps-nanojev-C seed 2
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1526.87it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11379.57it/s]
+    epoch 1: train loss 0.4470 dev NLL 0.4214
+    epoch 2: train loss 0.3942 dev NLL 0.4925
+    epoch 3: train loss 0.3193 dev NLL 0.5608
+train qpa-large-helps-nanojev-C seed 0
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1506.10it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11200.56it/s]
+    epoch 1: train loss 0.4580 dev NLL 0.4590
+    epoch 2: train loss 0.3981 dev NLL 0.4514
+    epoch 3: train loss 0.3330 dev NLL 0.4894
+train qpa-large-helps-nanojev-C seed 1
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1835.38it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11749.73it/s]
+    epoch 1: train loss 0.4511 dev NLL 0.4237
+    epoch 2: train loss 0.3862 dev NLL 0.4520
+    epoch 3: train loss 0.3199 dev NLL 0.5023
+train qpa-large-helps-nanojev-C seed 2
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1422.46it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 12980.66it/s]
+    epoch 1: train loss 0.4505 dev NLL 0.4252
+    epoch 2: train loss 0.3903 dev NLL 0.4827
+    epoch 3: train loss 0.3071 dev NLL 0.5814
+  question/small-fails: 5 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.6731091566472196}
+  question+evidence/small-fails: 10 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 1.0, 'cv_folds': 5, 'cv_log_loss': 0.6476198212455446}
+  evidence/small-fails: 5 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.03, 'cv_folds': 5, 'cv_log_loss': 0.6653862079827891}
+  evidence+small/small-fails: 10 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.1, 'cv_folds': 5, 'cv_log_loss': 0.6021866821424633}
+  question+evidence+small/small-fails: 15 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.5921558502333263}
+  question/large-helps: 5 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.44744522769745076}
+  question+evidence/large-helps: 10 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.43288799984565884}
+  evidence/large-helps: 5 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.03, 'cv_folds': 5, 'cv_log_loss': 0.43836362927033184}
+  evidence+small/large-helps: 10 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.1, 'cv_folds': 5, 'cv_log_loss': 0.4290510571707008}
+  question+evidence+small/large-helps: 15 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.4215099055732151}
+eval A: AIQ entropy 0.6619
+  judge/qpa-large-helps-nanojev-B               AIQ 0.6741 (seeds 0.6718 ± 0.0010) | +judge cost 0.6740 (33 GFLOPs)
+  judge/qp-large-helps-nanojev-A                AIQ 0.6731 (seeds 0.6713 ± 0.0004) | +judge cost 0.6730 (32 GFLOPs)
+  judge/qpa-large-helps-nanojev-A               AIQ 0.6726 (seeds 0.6690 ± 0.0035) | +judge cost 0.6725 (33 GFLOPs)
+  judge/qp-large-helps-nanojev-B                AIQ 0.6719 (seeds 0.6694 ± 0.0006) | +judge cost 0.6718 (32 GFLOPs)
+  judge/qp-large-helps-nanojev-C                AIQ 0.6707 (seeds 0.6681 ± 0.0008) | +judge cost 0.6706 (32 GFLOPs)
+  judge/qpa-small-fails-nanojev-A               AIQ 0.6680 (seeds 0.6662 ± 0.0036) | +judge cost 0.6679 (33 GFLOPs)
+  judge/qpa-large-helps-nanojev-C               AIQ 0.6677 (seeds 0.6646 ± 0.0031) | +judge cost 0.6676 (33 GFLOPs)
+  judge/qp-small-fails-nanojev-A                AIQ 0.6666 (seeds 0.6647 ± 0.0011) | +judge cost 0.6665 (32 GFLOPs)
+  zs_correct                                    AIQ 0.6644 | +judge cost 0.6644 (33 GFLOPs)
+  zs_sufficient                                 AIQ 0.6612 | +judge cost 0.6612 (0 GFLOPs)
+  zs_grounded                                   AIQ 0.6607 | +judge cost 0.6606 (34 GFLOPs)
+  judge/qp-large-helps-ms-marco-minilm-l12-v2-A AIQ 0.6595 (seeds 0.6583 ± 0.0008) | +judge cost 0.6594 (32 GFLOPs)
+  judge/qpa-large-helps-ms-marco-minilm-l12-v2-A AIQ 0.6593 (seeds 0.6555 ± 0.0026) | +judge cost 0.6592 (33 GFLOPs)
+  judge/qa-large-helps-nanojev-A                AIQ 0.6487 (seeds 0.6477 ± 0.0007) | +judge cost 0.6487 (6 GFLOPs)
+  judge/q-large-helps-nanojev-A                 AIQ 0.6470 (seeds 0.6468 ± 0.0013) | +judge cost 0.6469 (7 GFLOPs)
+eval A-clean: AIQ entropy 0.6624
+  judge/qpa-large-helps-nanojev-B               AIQ 0.6751 (seeds 0.6727 ± 0.0009) | +judge cost 0.6750 (33 GFLOPs)
+  judge/qp-large-helps-nanojev-A                AIQ 0.6747 (seeds 0.6727 ± 0.0004) | +judge cost 0.6746 (32 GFLOPs)
+  judge/qpa-large-helps-nanojev-A               AIQ 0.6740 (seeds 0.6704 ± 0.0033) | +judge cost 0.6739 (33 GFLOPs)
+  judge/qp-large-helps-nanojev-B                AIQ 0.6730 (seeds 0.6709 ± 0.0005) | +judge cost 0.6729 (32 GFLOPs)
+  judge/qp-large-helps-nanojev-C                AIQ 0.6723 (seeds 0.6698 ± 0.0007) | +judge cost 0.6722 (32 GFLOPs)
+  judge/qpa-small-fails-nanojev-A               AIQ 0.6693 (seeds 0.6677 ± 0.0035) | +judge cost 0.6692 (33 GFLOPs)
+  judge/qpa-large-helps-nanojev-C               AIQ 0.6691 (seeds 0.6662 ± 0.0030) | +judge cost 0.6690 (33 GFLOPs)
+  judge/qp-small-fails-nanojev-A                AIQ 0.6682 (seeds 0.6663 ± 0.0012) | +judge cost 0.6681 (32 GFLOPs)
+  zs_correct                                    AIQ 0.6654 | +judge cost 0.6653 (33 GFLOPs)
+  zs_sufficient                                 AIQ 0.6622 | +judge cost 0.6622 (0 GFLOPs)
+  zs_grounded                                   AIQ 0.6620 | +judge cost 0.6619 (34 GFLOPs)
+  judge/qp-large-helps-ms-marco-minilm-l12-v2-A AIQ 0.6607 (seeds 0.6595 ± 0.0010) | +judge cost 0.6606 (32 GFLOPs)
+  judge/qpa-large-helps-ms-marco-minilm-l12-v2-A AIQ 0.6606 (seeds 0.6564 ± 0.0029) | +judge cost 0.6605 (33 GFLOPs)
+  judge/qa-large-helps-nanojev-A                AIQ 0.6502 (seeds 0.6492 ± 0.0009) | +judge cost 0.6502 (6 GFLOPs)
+  judge/q-large-helps-nanojev-A                 AIQ 0.6490 (seeds 0.6480 ± 0.0013) | +judge cost 0.6489 (7 GFLOPs)
+  question/small-fails: 5 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.6731091566472196}
+  question+evidence/small-fails: 10 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 1.0, 'cv_folds': 5, 'cv_log_loss': 0.6476198212455446}
+  evidence/small-fails: 5 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.03, 'cv_folds': 5, 'cv_log_loss': 0.6653862079827891}
+  evidence+small/small-fails: 10 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.1, 'cv_folds': 5, 'cv_log_loss': 0.6021866821424633}
+  question+evidence+small/small-fails: 15 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.5921558502333263}
+  question/large-helps: 5 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.48626949506473166}
+  question+evidence/large-helps: 10 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.4691531058262723}
+  evidence/large-helps: 5 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.03, 'cv_folds': 5, 'cv_log_loss': 0.4763096470158453}
+  evidence+small/large-helps: 10 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.1, 'cv_folds': 5, 'cv_log_loss': 0.46687792432996333}
+  question+evidence+small/large-helps: 15 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.45785804007236913}
+eval B: AIQ entropy 0.6869
+  judge/qpa-large-helps-nanojev-B               AIQ 0.7000 (seeds 0.6977 ± 0.0005) | +judge cost 0.6999 (33 GFLOPs)
+  judge/qp-large-helps-nanojev-B                AIQ 0.6973 (seeds 0.6949 ± 0.0012) | +judge cost 0.6972 (32 GFLOPs)
+  judge/qp-large-helps-nanojev-A                AIQ 0.6971 (seeds 0.6952 ± 0.0012) | +judge cost 0.6970 (32 GFLOPs)
+  judge/qpa-large-helps-nanojev-A               AIQ 0.6963 (seeds 0.6932 ± 0.0035) | +judge cost 0.6962 (33 GFLOPs)
+  judge/qpa-small-fails-nanojev-A               AIQ 0.6932 (seeds 0.6911 ± 0.0038) | +judge cost 0.6931 (33 GFLOPs)
+  judge/qp-large-helps-nanojev-C                AIQ 0.6931 (seeds 0.6912 ± 0.0011) | +judge cost 0.6930 (32 GFLOPs)
+  judge/qpa-large-helps-nanojev-C               AIQ 0.6922 (seeds 0.6895 ± 0.0023) | +judge cost 0.6922 (33 GFLOPs)
+  judge/qp-small-fails-nanojev-A                AIQ 0.6902 (seeds 0.6890 ± 0.0015) | +judge cost 0.6901 (32 GFLOPs)
+  zs_correct                                    AIQ 0.6865 | +judge cost 0.6864 (33 GFLOPs)
+  judge/qp-large-helps-ms-marco-minilm-l12-v2-A AIQ 0.6860 (seeds 0.6851 ± 0.0007) | +judge cost 0.6859 (32 GFLOPs)
+  judge/qpa-large-helps-ms-marco-minilm-l12-v2-A AIQ 0.6848 (seeds 0.6809 ± 0.0034) | +judge cost 0.6847 (33 GFLOPs)
+  zs_grounded                                   AIQ 0.6844 | +judge cost 0.6843 (34 GFLOPs)
+  zs_sufficient                                 AIQ 0.6840 | +judge cost 0.6840 (0 GFLOPs)
+  judge/qa-large-helps-nanojev-A                AIQ 0.6758 (seeds 0.6746 ± 0.0012) | +judge cost 0.6758 (6 GFLOPs)
+  judge/q-large-helps-nanojev-A                 AIQ 0.6728 (seeds 0.6729 ± 0.0014) | +judge cost 0.6728 (7 GFLOPs)
+eval B-clean: AIQ entropy 0.6864
+  judge/qpa-large-helps-nanojev-B               AIQ 0.7001 (seeds 0.6978 ± 0.0003) | +judge cost 0.7000 (33 GFLOPs)
+  judge/qp-large-helps-nanojev-B                AIQ 0.6977 (seeds 0.6954 ± 0.0011) | +judge cost 0.6976 (32 GFLOPs)
+  judge/qp-large-helps-nanojev-A                AIQ 0.6973 (seeds 0.6953 ± 0.0010) | +judge cost 0.6972 (32 GFLOPs)
+  judge/qpa-large-helps-nanojev-A               AIQ 0.6966 (seeds 0.6935 ± 0.0034) | +judge cost 0.6965 (33 GFLOPs)
+  judge/qpa-small-fails-nanojev-A               AIQ 0.6936 (seeds 0.6917 ± 0.0035) | +judge cost 0.6936 (33 GFLOPs)
+  judge/qp-large-helps-nanojev-C                AIQ 0.6936 (seeds 0.6918 ± 0.0011) | +judge cost 0.6935 (32 GFLOPs)
+  judge/qpa-large-helps-nanojev-C               AIQ 0.6927 (seeds 0.6900 ± 0.0025) | +judge cost 0.6926 (33 GFLOPs)
+  judge/qp-small-fails-nanojev-A                AIQ 0.6910 (seeds 0.6898 ± 0.0013) | +judge cost 0.6910 (32 GFLOPs)
+  zs_correct                                    AIQ 0.6868 | +judge cost 0.6867 (33 GFLOPs)
+  judge/qp-large-helps-ms-marco-minilm-l12-v2-A AIQ 0.6863 (seeds 0.6854 ± 0.0009) | +judge cost 0.6862 (32 GFLOPs)
+  zs_grounded                                   AIQ 0.6852 | +judge cost 0.6851 (34 GFLOPs)
+  judge/qpa-large-helps-ms-marco-minilm-l12-v2-A AIQ 0.6849 (seeds 0.6810 ± 0.0035) | +judge cost 0.6848 (33 GFLOPs)
+  zs_sufficient                                 AIQ 0.6844 | +judge cost 0.6844 (0 GFLOPs)
+  judge/qa-large-helps-nanojev-A                AIQ 0.6766 (seeds 0.6750 ± 0.0008) | +judge cost 0.6766 (6 GFLOPs)
+  judge/q-large-helps-nanojev-A                 AIQ 0.6734 (seeds 0.6731 ± 0.0013) | +judge cost 0.6734 (7 GFLOPs)
+  question/small-fails: 5 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.6668135292610282}
+  question+evidence/small-fails: 10 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 1.0, 'cv_folds': 5, 'cv_log_loss': 0.6318247148569808}
+  evidence/small-fails: 5 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.1, 'cv_folds': 5, 'cv_log_loss': 0.6527891657535136}
+  evidence+small/small-fails: 10 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.1, 'cv_folds': 5, 'cv_log_loss': 0.5927908786946102}
+  question+evidence+small/small-fails: 15 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.5836335558680376}
+  question/large-helps: 5 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.43988706280318757}
+  question+evidence/large-helps: 10 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.420387515124261}
+  evidence/large-helps: 5 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.03, 'cv_folds': 5, 'cv_log_loss': 0.42216838427187636}
+  evidence+small/large-helps: 10 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.1, 'cv_folds': 5, 'cv_log_loss': 0.41124619158641706}
+  question+evidence+small/large-helps: 15 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.4084989661465519}
+eval C: AIQ entropy 0.6713
+  judge/qpa-large-helps-nanojev-C               AIQ 0.6787 (seeds 0.6736 ± 0.0028) | +judge cost 0.6786 (33 GFLOPs)
+  judge/qp-large-helps-nanojev-C                AIQ 0.6770 (seeds 0.6746 ± 0.0010) | +judge cost 0.6769 (32 GFLOPs)
+  judge/qp-large-helps-nanojev-A                AIQ 0.6757 (seeds 0.6735 ± 0.0009) | +judge cost 0.6756 (32 GFLOPs)
+  judge/qp-small-fails-nanojev-A                AIQ 0.6752 (seeds 0.6730 ± 0.0022) | +judge cost 0.6751 (32 GFLOPs)
+  judge/qpa-large-helps-nanojev-A               AIQ 0.6752 (seeds 0.6710 ± 0.0039) | +judge cost 0.6751 (33 GFLOPs)
+  judge/qpa-large-helps-nanojev-B               AIQ 0.6750 (seeds 0.6717 ± 0.0015) | +judge cost 0.6749 (33 GFLOPs)
+  judge/qp-large-helps-nanojev-B                AIQ 0.6737 (seeds 0.6711 ± 0.0014) | +judge cost 0.6736 (32 GFLOPs)
+  zs_grounded                                   AIQ 0.6735 | +judge cost 0.6734 (34 GFLOPs)
+  judge/qpa-small-fails-nanojev-A               AIQ 0.6724 (seeds 0.6699 ± 0.0015) | +judge cost 0.6723 (33 GFLOPs)
+  zs_sufficient                                 AIQ 0.6711 | +judge cost 0.6711 (0 GFLOPs)
+  zs_correct                                    AIQ 0.6706 | +judge cost 0.6705 (33 GFLOPs)
+  judge/qp-large-helps-ms-marco-minilm-l12-v2-A AIQ 0.6597 (seeds 0.6584 ± 0.0004) | +judge cost 0.6596 (32 GFLOPs)
+  judge/qpa-large-helps-ms-marco-minilm-l12-v2-A AIQ 0.6591 (seeds 0.6562 ± 0.0019) | +judge cost 0.6590 (33 GFLOPs)
+  judge/q-large-helps-nanojev-A                 AIQ 0.6462 (seeds 0.6465 ± 0.0010) | +judge cost 0.6461 (7 GFLOPs)
+  judge/qa-large-helps-nanojev-A                AIQ 0.6432 (seeds 0.6448 ± 0.0032) | +judge cost 0.6432 (6 GFLOPs)
+eval C-clean: AIQ entropy 0.6729
+  judge/qpa-large-helps-nanojev-C               AIQ 0.6811 (seeds 0.6757 ± 0.0031) | +judge cost 0.6810 (33 GFLOPs)
+  judge/qp-large-helps-nanojev-C                AIQ 0.6791 (seeds 0.6766 ± 0.0006) | +judge cost 0.6789 (32 GFLOPs)
+  judge/qp-large-helps-nanojev-A                AIQ 0.6779 (seeds 0.6754 ± 0.0011) | +judge cost 0.6777 (32 GFLOPs)
+  judge/qp-small-fails-nanojev-A                AIQ 0.6770 (seeds 0.6748 ± 0.0022) | +judge cost 0.6769 (32 GFLOPs)
+  judge/qpa-large-helps-nanojev-A               AIQ 0.6769 (seeds 0.6727 ± 0.0046) | +judge cost 0.6768 (33 GFLOPs)
+  judge/qpa-large-helps-nanojev-B               AIQ 0.6768 (seeds 0.6734 ± 0.0017) | +judge cost 0.6766 (33 GFLOPs)
+  judge/qp-large-helps-nanojev-B                AIQ 0.6755 (seeds 0.6733 ± 0.0013) | +judge cost 0.6754 (32 GFLOPs)
+  zs_grounded                                   AIQ 0.6752 | +judge cost 0.6751 (34 GFLOPs)
+  judge/qpa-small-fails-nanojev-A               AIQ 0.6744 (seeds 0.6721 ± 0.0013) | +judge cost 0.6743 (33 GFLOPs)
+  zs_sufficient                                 AIQ 0.6723 | +judge cost 0.6723 (0 GFLOPs)
+  zs_correct                                    AIQ 0.6720 | +judge cost 0.6719 (33 GFLOPs)
+  judge/qp-large-helps-ms-marco-minilm-l12-v2-A AIQ 0.6618 (seeds 0.6604 ± 0.0006) | +judge cost 0.6617 (32 GFLOPs)
+  judge/qpa-large-helps-ms-marco-minilm-l12-v2-A AIQ 0.6610 (seeds 0.6577 ± 0.0018) | +judge cost 0.6609 (33 GFLOPs)
+  judge/q-large-helps-nanojev-A                 AIQ 0.6482 (seeds 0.6483 ± 0.0014) | +judge cost 0.6482 (7 GFLOPs)
+  judge/qa-large-helps-nanojev-A                AIQ 0.6448 (seeds 0.6463 ± 0.0027) | +judge cost 0.6448 (6 GFLOPs)

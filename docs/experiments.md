@@ -32,6 +32,9 @@ Cost is GFLOPs per question.
 | | | Router, evidence+small / large-helps (7B on all 10) | 53.6 | 67.1 | 6,384 | 19% | 0.681 |
 | [6](experiments/2026-10-06-multi-stage-cascade.md) | 2026-10-06 | Cascade 1.5B (top 2) → 7B (top 3) → 14B (all 10) | **58.4** | **72.6** | 14,243 | 15% to 14B | 0.721 |
 | | | Cascade 1.5B (top 2) → 14B (all 10), same procedure | 57.8 | 72.3 | 35,202 | 78% | 0.695 |
+| [7](experiments/2026-10-07-system-one-router.md) | 2026-10-07 | System One judge qp (33M, reads question + top-2 passages, decides before the small model), 1.5B / 7B | 52.5 | 66.0 | 4,882 | 18% | **0.673** |
+| | | System One judge qpa (adds the small model's answer; decides after it) | 53.0 | 66.5 | 5,995 | 22% | **0.673** |
+| | | Zero-shot nano-jev judges (best: "is the answer correct?") | 52.7 | 66.4 | 7,202 | 27% | 0.664 |
 
 Both experts are instruction-tuned and not fine-tuned on HotpotQA, prompted with two
 answer-format examples. Routers are logistic regression, with τ = 0.8.
@@ -44,9 +47,11 @@ pair, so compare it only within a run. The per-run outputs are in [results/](../
 Run 6 chains cached experts from runs 1–4 on CPU. Its AIQ is over 1,051–43,906 GFLOPs (1.5B to 14B),
 so it is comparable only within run 6.
 
-**Planned:** experiment 7, a System One router: a fine-tuned nano-jev judge as the small/large router. It is
-the final report's central research question ([system-one-router.md](system-one-router.md), job sheet
-[gpu-jobs-system-one.md](gpu-jobs-system-one.md), report plan [final-report-plan.md](final-report-plan.md)).
+Run 7 is the final report's central research question ([system-one-router.md](system-one-router.md), report plan
+[final-report-plan.md](final-report-plan.md)). Its judges reuse the caches of runs 1, 4 and 5 and cost about 3% of the
+small model (32 GFLOPs). The qp judge beats the best logistic regression router that decides before the small model
+(AIQ 0.673 against 0.665, paired interval [+0.004, +0.011]) and the entropy baseline, and the qpa judge ties the best
+cascade router (0.672). Like every router so far, none reaches always-large's F1 (66.9) at its operating point.
 
 ## Published reference points (answer EM / F1)
 
