@@ -51,3 +51,18 @@ def test_recall_at_k():
     r = pools.recall_at(scores, gold, ks=(1, 2, 4))
     assert r[2]["all_gold"] == 0.5 and r[2]["gold_share"] == 0.75
     assert r[1]["all_gold"] == 0 and r[4]["all_gold"] == 1
+
+
+def test_agenttts_prompts_and_scoring():
+    from stair import pool_answer as pa
+
+    p = pa.qa_prompt("Who?", ["A text.", "B text."])
+    assert p == ("You will be provided with a set of references related to the query. Your task is to answer the query "
+                 "using the provided references. If the references are insufficient, supplement your response with your "
+                 "own knowledge. Here is the query and references: \n Query: Who?\nReferences:\n[1] A text.\n[2] B text.\n.")
+    f = pa.fuser_prompt(p, ["x", "y"])
+    assert f.count(p) == 2 and f.endswith("Responses from models:\n1. x\n2. y")
+    assert pa.lenient("It was directed by Kalo Mer.", "kalo mer") == 1.0
+    assert pa.lenient("Kalomer", "kalo") == 0.0  # whole words only
+    assert pa.lenient("anything", "") == 0.0
+    assert pa.agreement(["Kalo", "Kalo", "Mer"]) == pytest.approx(1 / 3)

@@ -1,7 +1,15 @@
 # Experiment 8 (plan): cheap retrieval + System One routing on the AgentTTS setting
 
-**Status:** phase 0 done on 2026-10-11 (CPU, local). Results are below: **go** for phase 1. Phases
-1–2 run on the omega GPU, the default for anything heavy. It extends the central research question ([system-one-router.md](system-one-router.md))
+**Status:** phase 0 done on 2026-10-11 (CPU, local). Results are below: **go** for phase 1. Phase
+1 is built and ready for the omega GPU: the `pool-answer` command, the cells in
+[`configs/exp8.toml`](../configs/exp8.toml) and the job sheet [gpu-jobs-exp8.md](gpu-jobs-exp8.md).
+Phase 2 also runs on the GPU, the default for anything heavy.
+
+**Found while building phase 1:** AgentTTS's fusion call (Archon's fuser) repeats the whole user
+message twice, and that message holds all ~100 candidate passages. So the call reads roughly 26k+
+tokens plus the sampled answers, not the 3 units of one 3B pass. The AgentTTS recipe probably costs
+well above the ~101% of strong-everything on the team's slide. Our fusion carries only the
+answerer's prompt and the samples, and our costs use measured tokens. It extends the central research question ([system-one-router.md](system-one-router.md))
 to a published benchmark, and joins three threads:
 
 - our System One judge (experiment 7);

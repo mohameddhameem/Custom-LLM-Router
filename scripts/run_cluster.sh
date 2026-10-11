@@ -7,6 +7,10 @@
 #   bash scripts/run_cluster.sh eval      # routers and reports only (CPU, seconds)
 #   bash scripts/run_cluster.sh judge-pilot  # experiment 7: one System One judge, 3 seeds (GPU, ~15 min)
 #   bash scripts/run_cluster.sh judge        # experiment 7: everything in configs/system-one.toml (GPU, ~3 h)
+#   bash scripts/run_cluster.sh exp8-prepare # experiment 8: AgentTTS-style pools + model downloads (login node)
+#   bash scripts/run_cluster.sh exp8-score   # experiment 8: nano-jev scores every pool (GPU, minutes)
+#   bash scripts/run_cluster.sh exp8-pilot   # experiment 8: every answering cell on 20 test questions (GPU)
+#   bash scripts/run_cluster.sh exp8-answer  # experiment 8: the cells in CELLS (default all) on all splits (GPU)
 #
 # Every step resumes: after a disconnect or a killed job, run the same command again.
 # An SSH disconnect kills foreground jobs, so start long steps inside tmux/screen, or with
@@ -17,7 +21,7 @@
 # the large expert changed) instead of recomputing them: see run-experts --reuse-from.
 set -euo pipefail
 
-STEP=${1:?usage: run_cluster.sh prepare|pilot|full|eval|judge-pilot|judge}
+STEP=${1:?usage: run_cluster.sh prepare|pilot|full|eval|judge-pilot|judge|exp8-prepare|exp8-score|exp8-pilot|exp8-answer}
 CONFIG=${CONFIG:-configs/gpu.toml}
 RUN=${RUN:-runs/gpu}
 DATA=${DATA:-data/hotpotqa}
@@ -81,8 +85,30 @@ EOF
     $BIN judge all --plan "${PLAN:-configs/system-one.toml}" --data-dir "$DATA" --out "${JUDGE_OUT:-runs/system-one}" \
       --exclude "$DATA/nanojev_validation_ids.txt"
     ;;
+  exp8-prepare)
+    [ -f runs/exp8/pools/test.parquet ] || $BIN pools build --source validation --start 500 --count 500 --name test
+    [ -f runs/exp8/pools/router_train.parquet ] || $BIN pools build --source train --ids results/gpu/router_train.parquet --count 3000 --name router_train
+    [ -f runs/exp8/pools/calib.parquet ] || $BIN pools build --source train --ids results/gpu/calib.parquet --count 1000 --name calib
+    [ -f runs/exp8/nanojev_validation_ids.txt ] || $BIN nanojev-ids --out runs/exp8
+    $BIN python -c "from huggingface_hub import snapshot_download as d; d('sdmlai/nano-jev', revision='v1.0'); [d(m) for m in ('meta-llama/Llama-3.2-3B-Instruct', 'meta-llama/Llama-3.1-70B-Instruct')]"
+    ;;
+  exp8-score)
+    for split in test calib router_train; do $BIN pools score --name "$split" --device cuda; done
+    $BIN pools recall --name test --exclude runs/exp8/nanojev_validation_ids.txt
+    ;;
+  exp8-pilot)
+    $BIN pool-answer run --plan "${PLAN:-configs/exp8.toml}" --split test --limit "${PILOT:-20}" --chunk-size 10
+    $BIN pool-answer summary --plan "${PLAN:-configs/exp8.toml}"
+    ;;
+  exp8-answer)
+    only=(); for c in ${CELLS:-}; do only+=(--only "$c"); done
+    for split in ${SPLITS:-test calib router_train}; do
+      $BIN pool-answer run --plan "${PLAN:-configs/exp8.toml}" --split "$split" "${only[@]}"
+    done
+    $BIN pool-answer summary --plan "${PLAN:-configs/exp8.toml}"
+    ;;
   *)
-    echo "unknown step: $STEP (prepare|pilot|full|eval|judge-pilot|judge)" >&2
+    echo "unknown step: $STEP (prepare|pilot|full|eval|judge-pilot|judge|exp8-prepare|exp8-score|exp8-pilot|exp8-answer)" >&2
     exit 2
     ;;
 esac

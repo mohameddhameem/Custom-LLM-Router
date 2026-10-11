@@ -213,6 +213,8 @@ def cmd_recall(args) -> None:
     if exclude:
         subsets["clean"] = df[~df["id"].isin(exclude)]
     for name, d in subsets.items():
+        if d.empty:
+            continue
         report["subsets"][name] = {"n": len(d), **{ranker: recall_at(d[col].tolist(), d["gold_idx"].tolist())
                                                    for ranker, col in (("nanojev", "nanojev"), ("bm25", "bm25"))}}
     target = args.out / f"recall-{args.name}.json"
