@@ -26,6 +26,7 @@ prefetch-models = "stair.prefetch_models:main"
 tau-sweep = "stair.tau_sweep:main"
 cascade = "stair.cascade:main"
 judge = "stair.judge:main"
+pools = "stair.pools:main"
 
 [project.optional-dependencies]
 llm = [

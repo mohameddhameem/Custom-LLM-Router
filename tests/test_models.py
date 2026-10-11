@@ -295,3 +295,23 @@ def test_micro_batches_give_the_full_batch_gradient(tiny_models):
     for loss, grad in grads[1:]:
         assert loss == pytest.approx(grads[0][0], rel=1e-5)
         assert torch.allclose(grad, grads[0][1], atol=1e-6)
+
+
+def test_pools_score_and_recall(tiny_models, tmp_path):
+    from stair import pools
+
+    rows = [{"id": f"q{i}", "question": "Who directed the film?", "answer": "Kalo", "type": "bridge", "level": "hard",
+             "titles": ["Film", "Other", "Kalo"], "texts": ["It was directed by Kalo.", "Unrelated.", "Kalo was born."],
+             "gold_idx": [0, 2], "n_gold": 2, "bm25": [2.0, 1.0, 0.5]} for i in range(5)]
+    (tmp_path / "pools").mkdir()
+    pd.DataFrame(rows).to_parquet(tmp_path / "pools" / "t.parquet")
+    args = ["--name", "t", "--out", str(tmp_path)]
+    pools.main(["score", *args, "--scorer", str(tiny_models / "ce"), "--device", "cpu", "--chunk-size", "2", "--batch", "2"])
+    scores = pd.read_parquet(tmp_path / "scores" / "t.parquet")
+    assert len(scores) == 5 and all(len(s) == 3 for s in scores["nanojev"]) and (scores["tokens"] > 0).all()
+    (tmp_path / "ex.txt").write_text("q0\nq1\n")
+    pools.main(["recall", *args, "--exclude", str(tmp_path / "ex.txt")])
+    report = json.loads((tmp_path / "recall-t.json").read_text())
+    assert report["subsets"]["clean"]["n"] == 3
+    assert report["subsets"]["all"]["bm25"]["2"]["all_gold"] == 0.0  # BM25 ranks the distractor second
+    assert report["subsets"]["all"]["bm25"]["3"]["all_gold"] == 1.0
