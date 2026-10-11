@@ -1,5 +1,5 @@
 [project]
-name = "groupproject"
+name = "stair"
 version = "0.1.0"
 description = "Cost-aware routing between QA models on HotpotQA"
 readme = "README.md"
@@ -16,16 +16,16 @@ dependencies = [
 ]
 
 [project.scripts]
-prepare-hotpotqa = "groupproject.prepare_hotpotqa:main"
-make-splits = "groupproject.make_splits:main"
-nanojev-ids = "groupproject.nanojev_ids:main"
-run-experts = "groupproject.run_experts:main"
-train-router = "groupproject.router:main"
-eval-routing = "groupproject.evaluate_routing:main"
-prefetch-models = "groupproject.prefetch_models:main"
-tau-sweep = "groupproject.tau_sweep:main"
-cascade = "groupproject.cascade:main"
-judge = "groupproject.judge:main"
+prepare-hotpotqa = "stair.prepare_hotpotqa:main"
+make-splits = "stair.make_splits:main"
+nanojev-ids = "stair.nanojev_ids:main"
+run-experts = "stair.run_experts:main"
+train-router = "stair.router:main"
+eval-routing = "stair.evaluate_routing:main"
+prefetch-models = "stair.prefetch_models:main"
+tau-sweep = "stair.tau_sweep:main"
+cascade = "stair.cascade:main"
+judge = "stair.judge:main"
 
 [project.optional-dependencies]
 llm = [

@@ -5,11 +5,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from groupproject import cascade, evaluate_routing, make_splits, router, run_experts, tau_sweep
-from groupproject.evaluate_routing import aiq, as_arrays, curve, escalate_top, expert_params, outcome, with_cost_unit
-from groupproject.evidence import passages_state
-from groupproject.router import escalation_label
-from groupproject.metrics import exact_match, f1_score
+from stair import cascade, evaluate_routing, make_splits, router, run_experts, tau_sweep
+from stair.evaluate_routing import aiq, as_arrays, curve, escalate_top, expert_params, outcome, with_cost_unit
+from stair.evidence import passages_state
+from stair.router import escalation_label
+from stair.metrics import exact_match, f1_score
 from synthetic import make_split
 
 CONFIGS = Path(__file__).parent.parent / "configs"

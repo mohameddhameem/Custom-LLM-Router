@@ -41,9 +41,9 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import minimize_scalar
 
-from groupproject import provenance
-from groupproject.metrics import normalize_answer
-from groupproject.router import LABELS, escalation_label, predict_escalation
+from stair import provenance
+from stair.metrics import normalize_answer
+from stair.router import LABELS, escalation_label, predict_escalation
 
 log = logging.getLogger(__name__)
 

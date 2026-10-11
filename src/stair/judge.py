@@ -38,10 +38,10 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from groupproject import provenance
-from groupproject.evaluate_routing import COST_UNITS, aiq, curve, evaluate, expert_params, with_cost_unit
-from groupproject.evidence import paragraph_text, passages_state, resolve_checkpoint
-from groupproject.router import escalation_label, train_routers
+from stair import provenance
+from stair.evaluate_routing import COST_UNITS, aiq, curve, evaluate, expert_params, with_cost_unit
+from stair.evidence import paragraph_text, passages_state, resolve_checkpoint
+from stair.router import escalation_label, train_routers
 
 log = logging.getLogger(__name__)
 

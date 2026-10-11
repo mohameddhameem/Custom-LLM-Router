@@ -32,10 +32,10 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from groupproject import provenance
-from groupproject.evaluate_routing import COST_UNITS, RATES, aiq, expert_params
-from groupproject.metrics import f1_score
-from groupproject.router import EVIDENCE_COLUMNS, add_answer_cues, answer_columns, build_router, fit_tuned
+from stair import provenance
+from stair.evaluate_routing import COST_UNITS, RATES, aiq, expert_params
+from stair.metrics import f1_score
+from stair.router import EVIDENCE_COLUMNS, add_answer_cues, answer_columns, build_router, fit_tuned
 
 log = logging.getLogger(__name__)
 

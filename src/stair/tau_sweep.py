@@ -15,9 +15,9 @@ from pathlib import Path
 
 import pandas as pd
 
-from groupproject import provenance
-from groupproject.evaluate_routing import COST_UNITS, evaluate, expert_params, with_cost_unit
-from groupproject.router import LABELS, escalation_label, train_routers
+from stair import provenance
+from stair.evaluate_routing import COST_UNITS, evaluate, expert_params, with_cost_unit
+from stair.router import LABELS, escalation_label, train_routers
 
 log = logging.getLogger(__name__)
 

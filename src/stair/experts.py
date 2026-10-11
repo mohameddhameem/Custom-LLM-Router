@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from groupproject.evidence import content_words, tokenize
+from stair.evidence import content_words, tokenize
 
 AUX_VERBS = frozenset("is are was were do does did can could has have had will would".split())
 
