@@ -6,7 +6,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from groupproject import experts, run_experts
+from stair import experts, run_experts
 from synthetic import make_split
 
 SMOKE = Path(__file__).parent.parent / "configs" / "smoke.toml"

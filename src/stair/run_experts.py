@@ -32,10 +32,10 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from groupproject import provenance
-from groupproject.evidence import evidence_features, make_scorer, paragraph_text
-from groupproject.experts import answer_batch, make_expert
-from groupproject.metrics import exact_match, f1_score
+from stair import provenance
+from stair.evidence import evidence_features, make_scorer, paragraph_text
+from stair.experts import answer_batch, make_expert
+from stair.metrics import exact_match, f1_score
 
 log = logging.getLogger(__name__)
 

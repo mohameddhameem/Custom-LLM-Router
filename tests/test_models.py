@@ -19,9 +19,9 @@ from transformers import (  # noqa: E402
     PreTrainedTokenizerFast,
 )
 
-from groupproject import evaluate_routing, make_splits, router, run_experts  # noqa: E402
-from groupproject.evidence import CrossEncoderScorer, RerankerScorer  # noqa: E402
-from groupproject.experts import PROMPT, HFExpert  # noqa: E402
+from stair import evaluate_routing, make_splits, router, run_experts  # noqa: E402
+from stair.evidence import CrossEncoderScorer, RerankerScorer  # noqa: E402
+from stair.experts import PROMPT, HFExpert  # noqa: E402
 from synthetic import make_split  # noqa: E402
 
 CONFIGS = Path(__file__).parent.parent / "configs"
@@ -205,7 +205,7 @@ def test_hf_expert_batches_match_single(tiny_models, model_dir):
 
 
 def test_system_one_judges_end_to_end(tiny_models, tmp_path):
-    from groupproject import judge
+    from stair import judge
 
     data = tmp_path / "data"
     data.mkdir()
@@ -280,7 +280,7 @@ train_pair = "B"
 def test_micro_batches_give_the_full_batch_gradient(tiny_models):
     import torch
 
-    from groupproject.judge import Judge, accumulate
+    from stair.judge import Judge, accumulate
 
     items = [{"question": f"Which model should answer this question: q{i}", "options": ("small model", "large model"),
               "state": "Film: It was directed by Kalo." * (i + 1)} for i in range(5)]

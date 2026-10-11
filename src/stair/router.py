@@ -32,10 +32,10 @@ from sklearn.model_selection import GridSearchCV, StratifiedKFold
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-from groupproject import provenance
-from groupproject.evidence import tokenize
-from groupproject.experts import AUX_VERBS
-from groupproject.metrics import normalize_answer
+from stair import provenance
+from stair.evidence import tokenize
+from stair.experts import AUX_VERBS
+from stair.metrics import normalize_answer
 
 log = logging.getLogger(__name__)
 

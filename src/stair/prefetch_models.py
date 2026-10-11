@@ -9,7 +9,7 @@ import logging
 import tomllib
 from pathlib import Path
 
-from groupproject.provenance import hub_revision
+from stair.provenance import hub_revision
 
 log = logging.getLogger(__name__)
 

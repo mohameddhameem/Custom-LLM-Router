@@ -4,7 +4,7 @@ import random
 
 import pandas as pd
 
-from groupproject.prepare_hotpotqa import flatten_example
+from stair.prepare_hotpotqa import flatten_example
 
 SYLLABLES = "ka lo mer vin sa tor el ban ri qua dos fen lu mar ot is ren gal".split()
 

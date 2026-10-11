@@ -3,8 +3,8 @@ import json
 import pandas as pd
 import pytest
 
-from groupproject import make_splits
-from groupproject.prepare_hotpotqa import count_invalid_supporting_facts, flatten_example
+from stair import make_splits
+from stair.prepare_hotpotqa import count_invalid_supporting_facts, flatten_example
 
 EXAMPLE = {
     "id": "q1",
@@ -87,7 +87,7 @@ def test_make_splits_cli(tmp_path):
 def test_nanojev_ids_follow_its_shuffle_not_row_order():
     from datasets import Dataset
 
-    from groupproject.nanojev_ids import shuffled_ids
+    from stair.nanojev_ids import shuffled_ids
 
     split = Dataset.from_dict({"id": [f"q{i}" for i in range(50)]})
     ids = shuffled_ids(split, seed=0, n=10)
