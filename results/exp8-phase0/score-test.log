@@ -1,0 +1,26 @@
+test: 500 pools, 20 chunks, 20 to score
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1288.87it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights:  51%|█████     | 103/201 [00:00<00:00, 1026.39it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 1433.59it/s]
+  chunk 1/20: 12.78 s/question
+  chunk 2/20: 13.39 s/question
+  chunk 3/20: 12.50 s/question
+  chunk 4/20: 12.79 s/question
+  chunk 5/20: 12.67 s/question
+  chunk 6/20: 12.70 s/question
+  chunk 7/20: 11.88 s/question
+  chunk 8/20: 13.25 s/question
+  chunk 9/20: 13.23 s/question
+  chunk 10/20: 12.26 s/question
+  chunk 11/20: 12.28 s/question
+  chunk 12/20: 12.03 s/question
+  chunk 13/20: 12.15 s/question
+  chunk 14/20: 12.00 s/question
+  chunk 15/20: 11.78 s/question
+  chunk 16/20: 11.62 s/question
+  chunk 17/20: 11.89 s/question
+  chunk 18/20: 12.87 s/question
+  chunk 19/20: 11.33 s/question
+  chunk 20/20: 12.31 s/question
+saved runs/exp8/scores/test.parquet
+exit 0

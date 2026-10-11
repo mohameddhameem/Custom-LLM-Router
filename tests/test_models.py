@@ -295,3 +295,73 @@ def test_micro_batches_give_the_full_batch_gradient(tiny_models):
     for loss, grad in grads[1:]:
         assert loss == pytest.approx(grads[0][0], rel=1e-5)
         assert torch.allclose(grad, grads[0][1], atol=1e-6)
+
+
+def test_pools_score_and_recall(tiny_models, tmp_path):
+    from stair import pools
+
+    rows = [{"id": f"q{i}", "question": "Who directed the film?", "answer": "Kalo", "type": "bridge", "level": "hard",
+             "titles": ["Film", "Other", "Kalo"], "texts": ["It was directed by Kalo.", "Unrelated.", "Kalo was born."],
+             "gold_idx": [0, 2], "n_gold": 2, "bm25": [2.0, 1.0, 0.5]} for i in range(5)]
+    (tmp_path / "pools").mkdir()
+    pd.DataFrame(rows).to_parquet(tmp_path / "pools" / "t.parquet")
+    args = ["--name", "t", "--out", str(tmp_path)]
+    pools.main(["score", *args, "--scorer", str(tiny_models / "ce"), "--device", "cpu", "--chunk-size", "2", "--batch", "2"])
+    scores = pd.read_parquet(tmp_path / "scores" / "t.parquet")
+    assert len(scores) == 5 and all(len(s) == 3 for s in scores["nanojev"]) and (scores["tokens"] > 0).all()
+    (tmp_path / "ex.txt").write_text("q0\nq1\n")
+    pools.main(["recall", *args, "--exclude", str(tmp_path / "ex.txt")])
+    report = json.loads((tmp_path / "recall-t.json").read_text())
+    assert report["subsets"]["clean"]["n"] == 3
+    assert report["subsets"]["all"]["bm25"]["2"]["all_gold"] == 0.0  # BM25 ranks the distractor second
+    assert report["subsets"]["all"]["bm25"]["3"]["all_gold"] == 1.0
+
+
+def test_entropy_recorder_matches_raw_logits(tiny_models):
+    import torch
+
+    from stair.pool_answer import EntropyRecorder, Generator
+
+    gen = Generator(str(tiny_models / "chat-lm"), "cpu", dtype="float32")
+    enc = gen.tokenizer([gen.chat("sys", "Who directed the film?")], return_tensors="pt", add_special_tokens=False)
+    rec = EntropyRecorder()
+    out = gen.model.generate(**enc, max_new_tokens=4, do_sample=False, logits_processor=[rec], output_logits=True,
+                             return_dict_in_generate=True, pad_token_id=gen.tokenizer.pad_token_id)
+    logp = torch.stack([torch.log_softmax(s.float(), dim=-1) for s in out.logits], dim=1)
+    assert torch.allclose(torch.stack(rec.steps, dim=1), -(logp.exp() * logp).sum(-1), atol=1e-5)
+
+
+def test_pool_answer_end_to_end(tiny_models, tmp_path):
+    from stair import pool_answer
+
+    out = tmp_path / "exp8"
+    (out / "pools").mkdir(parents=True)
+    (out / "scores").mkdir()
+    rows = [{"id": f"q{i}", "question": "Who directed the film?", "answer": "Kalo",
+             "titles": ["Film", "Other", "Kalo"], "texts": ["It was directed by Kalo.", "Unrelated.", "Kalo was born."],
+             "gold_idx": [0, 2]} for i in range(5)]
+    pd.DataFrame(rows).to_parquet(out / "pools" / "test.parquet")
+    pd.DataFrame({"id": [r["id"] for r in rows], "nanojev": [[0.9, 0.1, 0.8]] * 5, "tokens": [300] * 5}).to_parquet(
+        out / "scores" / "test.parquet")
+    lm = tiny_models / "chat-lm"
+    plan = tmp_path / "plan.toml"
+    plan.write_text(f'out = "{out}"\nseed = 0\n'
+                    f'[[cells]]\nname = "one"\nmodel = "{lm}"\nparams = 1.0\ntop_k = 2\nsamples = 1\ntemperature = 0.3\n'
+                    f'max_new_tokens = 4\nbatch_size = 2\n'
+                    f'[[cells]]\nname = "fuse"\nmodel = "{lm}"\nparams = 1.0\ntop_k = 2\nsamples = 3\ntemperature = 0.9\n'
+                    f'fuse = true\nmax_new_tokens = 4\nfuse_max_new_tokens = 4\nbatch_size = 2\n')
+    args = ["--plan", str(plan), "--split", "test", "--device", "cpu", "--chunk-size", "2"]
+    pool_answer.main(["run", *args])
+    one, fuse = (pd.read_parquet(out / "answers" / "test" / f"{n}.parquet") for n in ("one", "fuse"))
+    assert len(one) == len(fuse) == 5
+    assert one["samples"].isna().all() and fuse["samples"].map(len).eq(3).all()
+    assert (fuse["fuse_prompt_tokens"] > fuse["prompt_tokens"]).all()  # the fuser reads the prompt twice + answers
+    nanojev = 2 * pool_answer.NANOJEV_PARAMS_B * 300
+    tokens = 3 * fuse["prompt_tokens"] + fuse["gen_tokens"] + fuse["fuse_prompt_tokens"] + fuse["fuse_gen_tokens"]
+    assert np.allclose(fuse["gflops"], 2 * 1.0 * tokens + nanojev)
+    first = pd.read_parquet(out / "answers" / "test" / "one.parquet")
+    pool_answer.main(["run", *args])  # resumes: nothing recomputed
+    pd.testing.assert_frame_equal(first, pd.read_parquet(out / "answers" / "test" / "one.parquet"))
+    pool_answer.main(["summary", "--plan", str(plan)])
+    summary = pd.read_csv(out / "answers" / "summary.csv")
+    assert set(summary["cell"]) == {"one", "fuse", "oracle"}

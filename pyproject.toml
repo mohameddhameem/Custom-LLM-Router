@@ -26,11 +26,15 @@ prefetch-models = "stair.prefetch_models:main"
 tau-sweep = "stair.tau_sweep:main"
 cascade = "stair.cascade:main"
 judge = "stair.judge:main"
+pools = "stair.pools:main"
+pool-answer = "stair.pool_answer:main"
 
 [project.optional-dependencies]
 llm = [
     "torch>=2.14.0",
     "transformers>=5.17.0",
+    "bitsandbytes>=0.45; sys_platform == 'linux'",  # 4-bit 70B answerer (experiment 8)
+    "accelerate>=1.0",  # device_map for quantised / multi-GPU loading
 ]
 
 # omega's GPU node has driver 555 (CUDA 12.5): the default cu130 wheels cannot use it, cu126 can.

@@ -14,6 +14,7 @@ headline numbers are in [docs/experiments.md](../docs/experiments.md).
 | `gpu-small-3b` | 5: 3B replaces the 1.5B | `configs/gpu-small-3b.toml` |
 | `cascade` | 6: multi-stage cascades over the caches above (CPU) | `cascade` command, see `provenance.jsonl` |
 | `system-one` | 7: System One judges (33M nano-jev) routing the pairs of runs 1, 4 and 5 (GPU) | `configs/system-one.toml` |
+| `exp8-phase0` | 8, phase 0: nano-jev ranking of AgentTTS-style 100-candidate pools (CPU) | `pools` command, see [the plan](../docs/experiment-8-plan.md) |
 
 Each folder has:
 
