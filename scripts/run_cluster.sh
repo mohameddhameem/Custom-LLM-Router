@@ -9,7 +9,7 @@
 #   bash scripts/run_cluster.sh judge        # experiment 7: everything in configs/system-one.toml (GPU, ~3 h)
 #   bash scripts/run_cluster.sh exp8-prepare # experiment 8: AgentTTS-style pools + model downloads (login node)
 #   bash scripts/run_cluster.sh exp8-score   # experiment 8: nano-jev scores every pool (GPU, minutes)
-#   bash scripts/run_cluster.sh exp8-pilot   # experiment 8: every answering cell on 20 test questions (GPU)
+#   bash scripts/run_cluster.sh exp8-pilot   # experiment 8: every answering cell on EXP8_PILOT (default 20) test questions (GPU)
 #   bash scripts/run_cluster.sh exp8-answer  # experiment 8: the cells in CELLS (default all) on all splits (GPU)
 #   bash scripts/run_cluster.sh exp8-judge   # experiment 8, phase 2: train and evaluate the option-choosing judge (GPU, <1 h)
 #
@@ -98,7 +98,7 @@ EOF
     $BIN pools recall --name test --exclude runs/exp8/nanojev_validation_ids.txt
     ;;
   exp8-pilot)
-    $BIN pool-answer run --plan "${PLAN:-configs/exp8.toml}" --split test --limit "${PILOT:-20}" --chunk-size 10
+    $BIN pool-answer run --plan "${PLAN:-configs/exp8.toml}" --split test --limit "${EXP8_PILOT:-20}" --chunk-size 10
     $BIN pool-answer summary --plan "${PLAN:-configs/exp8.toml}"
     ;;
   exp8-answer)
