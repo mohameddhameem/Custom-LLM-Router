@@ -28,6 +28,7 @@ cascade = "stair.cascade:main"
 judge = "stair.judge:main"
 pools = "stair.pools:main"
 pool-answer = "stair.pool_answer:main"
+exp8-judge = "stair.exp8_judge:main"
 
 [project.optional-dependencies]
 llm = [

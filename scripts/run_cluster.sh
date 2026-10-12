@@ -11,6 +11,7 @@
 #   bash scripts/run_cluster.sh exp8-score   # experiment 8: nano-jev scores every pool (GPU, minutes)
 #   bash scripts/run_cluster.sh exp8-pilot   # experiment 8: every answering cell on 20 test questions (GPU)
 #   bash scripts/run_cluster.sh exp8-answer  # experiment 8: the cells in CELLS (default all) on all splits (GPU)
+#   bash scripts/run_cluster.sh exp8-judge   # experiment 8, phase 2: train and evaluate the option-choosing judge (GPU, <1 h)
 #
 # Every step resumes: after a disconnect or a killed job, run the same command again.
 # An SSH disconnect kills foreground jobs, so start long steps inside tmux/screen, or with
@@ -21,7 +22,7 @@
 # the large expert changed) instead of recomputing them: see run-experts --reuse-from.
 set -euo pipefail
 
-STEP=${1:?usage: run_cluster.sh prepare|pilot|full|eval|judge-pilot|judge|exp8-prepare|exp8-score|exp8-pilot|exp8-answer}
+STEP=${1:?usage: run_cluster.sh prepare|pilot|full|eval|judge-pilot|judge|exp8-prepare|exp8-score|exp8-pilot|exp8-answer|exp8-judge}
 CONFIG=${CONFIG:-configs/gpu.toml}
 RUN=${RUN:-runs/gpu}
 DATA=${DATA:-data/hotpotqa}
@@ -107,8 +108,11 @@ EOF
     done
     $BIN pool-answer summary --plan "${PLAN:-configs/exp8.toml}"
     ;;
+  exp8-judge)
+    $BIN exp8-judge all --plan "${PLAN:-configs/exp8-judge.toml}" --exclude runs/exp8/nanojev_validation_ids.txt
+    ;;
   *)
-    echo "unknown step: $STEP (prepare|pilot|full|eval|judge-pilot|judge|exp8-prepare|exp8-score|exp8-pilot|exp8-answer)" >&2
+    echo "unknown step: $STEP (prepare|pilot|full|eval|judge-pilot|judge|exp8-prepare|exp8-score|exp8-pilot|exp8-answer|exp8-judge)" >&2
     exit 2
     ;;
 esac

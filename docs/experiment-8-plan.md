@@ -3,7 +3,8 @@
 **Status:** phase 0 done on 2026-10-11 (CPU, local). Results are below: **go** for phase 1. Phase
 1 is built and ready for the omega GPU: the `pool-answer` command, the cells in
 [`configs/exp8.toml`](../configs/exp8.toml) and the job sheet [gpu-jobs-exp8.md](gpu-jobs-exp8.md).
-Phase 2 also runs on the GPU, the default for anything heavy.
+Phase 2 (`exp8-judge`, [`configs/exp8-judge.toml`](../configs/exp8-judge.toml)) and the phase 3 evaluation are built
+and unit-tested; they wait for phase 1's answers.
 
 **Found while building phase 1:** AgentTTS's fusion call (Archon's fuser) repeats the whole user
 message twice, and that message holds all ~100 candidate passages. So the call reads roughly 26k+

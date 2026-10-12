@@ -26,6 +26,13 @@ Everything resumes from finished chunks, so a failed job is simply resubmitted.
    uv run hf auth login        # older huggingface_hub: uv run huggingface-cli login
    ```
 
+   Or put a read token in `~/.bashrc` as `export HF_TOKEN="hf_..."` (with `export`, or subprocesses do not
+   see it). Hugging Face rejects a revoked or mistyped token with "Invalid user token", so check it first:
+   `uv run python -c "from huggingface_hub import HfApi; print(HfApi().whoami()['name'])"`.
+   The token is only needed on the login node, to download. The PBS jobs run with `HF_HUB_OFFLINE=1`
+   (set in `scripts/omega.pbs` for the `exp8-*` steps) and read the cache, so the token never reaches a
+   compute node or `qstat -f`.
+
 2. **Code, pools and models:**
 
    ```bash
@@ -108,3 +115,23 @@ identically.
   parameters, as the paper's Table 5 does.
 - **Lenient scoring** is a placeholder (gold answer contained in the response, whole words) until the
   team's scorer is shared.
+
+## 5. Phase 2: the option-choosing System One judge (GPU, under an hour)
+
+After step 4, with all of `llama3b-top5`, `llama3b-s10fuse-top5` and `llama70b-top5` answered on all three splits:
+
+```bash
+qsub -v STEP=exp8-judge scripts/omega.pbs
+```
+
+This runs `exp8-judge all` ([`configs/exp8-judge.toml`](../configs/exp8-judge.toml)): 2 judge inputs (`qp`, `qpa`) × 3
+seeds, trained on `router_train`, then the evaluation on `calib` and `test` with the baselines (fixed-policy hull, oracle,
+entropy threshold, logistic regression) and a 1,000-sample paired bootstrap. It writes
+`runs/exp8/judge/{qp,qpa}/seed<k>/`, `runs/exp8/judge/eval/report.json`, `report-clean.json` and `curves.csv`. To redo only
+the evaluation, on CPU: `uv run exp8-judge eval --plan configs/exp8-judge.toml --exclude runs/exp8/nanojev_validation_ids.txt`.
+
+The judge picks the cheapest option whose cumulative probability reaches a threshold `t`, so one judge gives a whole
+cost-accuracy curve. Its label is the cheapest option that answered correctly (the cheapest option when none did).
+Bring `runs/exp8/judge/` back without the per-seed score files you do not need: `report*.json`, `curves*.csv`,
+`*/seed*/done.json` and `*/seed*/{calib,test}.parquet`.
+

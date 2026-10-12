@@ -365,3 +365,48 @@ def test_pool_answer_end_to_end(tiny_models, tmp_path):
     pool_answer.main(["summary", "--plan", str(plan)])
     summary = pd.read_csv(out / "answers" / "summary.csv")
     assert set(summary["cell"]) == {"one", "fuse", "oracle"}
+
+
+def test_exp8_judge_trains_and_evaluates(tiny_models, tmp_path):
+    from stair import exp8_judge
+
+    rng = np.random.default_rng(0)
+    base = make_split(60, seed=5)
+
+    def table(n, offset):
+        df = base.iloc[offset: offset + n].reset_index(drop=True)
+        ok = rng.random((n, 3)) < [0.3, 0.5, 0.8]
+        cost = np.tile([3.0, 13.0, 120.0], (n, 1)) + rng.random((n, 3))
+        out = pd.DataFrame({"id": df["id"], "question": df["question"],
+                            "passages": [c.split(". ")[:3] for c in df["full_context"]],
+                            "pred0": ["alpha beta"] * n, "entropy0": rng.random(n),
+                            "nanojev": [rng.random(100) for _ in range(n)]})
+        return out, ok, cost
+
+    tables = {"router_train": table(30, 0), "calib": table(15, 30), "test": table(15, 45)}
+    plan = {"options": [{"label": "small, one"}, {"label": "small, fused"}, {"label": "large, one"}],
+            "seeds": [0, 1], "inputs": ["qp", "qpa"], "init": str(tiny_models / "ce"), "strong_units": 929,
+            "budget_fraction": 0.25, "max_drop": 0.01, "bootstrap": 20, "agenttts_lenient": 0.746,
+            "agenttts_units": 938,
+            "train": {"epochs": 1, "lr": 1e-3, "weight_decay": 0.0, "warmup": 0.0, "batch_size": 8, "max_length": 64,
+                      "dev_fraction": 0.2}}
+    out = tmp_path / "exp8"
+    (out / "judge" / "eval").mkdir(parents=True)
+    for inputs in plan["inputs"]:
+        for seed in plan["seeds"]:
+            exp8_judge.run_train(tables, plan, inputs, seed, out, "cpu")
+    done = json.loads((out / "judge" / "qpa" / "seed1" / "done.json").read_text())
+    assert done["n_train"] + done["n_dev"] == 30 and len(done["history"]) == 1 and sum(done["label_counts"]) == 30
+    before = (out / "judge" / "qp" / "seed0" / "done.json").stat().st_mtime
+    exp8_judge.run_train(tables, plan, "qp", 0, out, "cpu")
+    assert (out / "judge" / "qp" / "seed0" / "done.json").stat().st_mtime == before  # resumes
+
+    report = exp8_judge.run_eval(tables, plan, out)
+    assert {"judge qp", "judge qpa", "entropy threshold", "LR evidence (before)", "LR evidence+answer (after)",
+            "hull of fixed policies"} <= set(report["aiq"])
+    assert len(report["judges"]["judge qp"]["aiq_per_seed"]) == 2 and report["judges"]["judge qp"]["judge_units"] > 0
+    assert report["operating"]["judge qp"]["budget"]["calib"]["cost"] <= report["budget_units"]  # all fit the budget here
+    assert "judge qp - entropy threshold" in report["aiq_diff"]
+    clean = exp8_judge.run_eval(tables, plan, out, set(tables["test"][0]["id"][:5]), "-clean")
+    assert clean["n_test"] == 10 and (out / "judge" / "eval" / "report-clean.json").exists()
+    assert (out / "judge" / "eval" / "curves.csv").exists()
