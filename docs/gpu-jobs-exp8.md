@@ -29,6 +29,9 @@ Everything resumes from finished chunks, so a failed job is simply resubmitted.
    Or put a read token in `~/.bashrc` as `export HF_TOKEN="hf_..."` (with `export`, or subprocesses do not
    see it). Hugging Face rejects a revoked or mistyped token with "Invalid user token", so check it first:
    `uv run python -c "from huggingface_hub import HfApi; print(HfApi().whoami()['name'])"`.
+   The download skips each repo's `original/` folder, a second copy of the weights (141 GB for the 70B) that
+   transformers does not load; the 70B needs about 141 GB and the 3B about 13 GB. If a download is interrupted, rerun
+   `exp8-prepare`: it resumes. To clean up afterwards, delete `*.incomplete` files in the model's `blobs/` folder.
    The token is only needed on the login node, to download. The PBS jobs run with `HF_HUB_OFFLINE=1`
    (set in `scripts/omega.pbs` for the `exp8-*` steps) and read the cache, so the token never reaches a
    compute node or `qstat -f`.

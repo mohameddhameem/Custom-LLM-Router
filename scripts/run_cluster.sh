@@ -91,7 +91,7 @@ EOF
     [ -f runs/exp8/pools/router_train.parquet ] || $BIN pools build --source train --ids results/gpu/router_train.parquet --count 3000 --name router_train
     [ -f runs/exp8/pools/calib.parquet ] || $BIN pools build --source train --ids results/gpu/calib.parquet --count 1000 --name calib
     [ -f runs/exp8/nanojev_validation_ids.txt ] || $BIN nanojev-ids --out runs/exp8
-    $BIN python -c "from huggingface_hub import snapshot_download as d; d('sdmlai/nano-jev', revision='v1.0'); [d(m) for m in ('meta-llama/Llama-3.2-3B-Instruct', 'meta-llama/Llama-3.1-70B-Instruct')]"
+    $BIN python -c "from huggingface_hub import snapshot_download as d; d('sdmlai/nano-jev', revision='v1.0'); [d(m, ignore_patterns=['original/*']) for m in ('meta-llama/Llama-3.2-3B-Instruct', 'meta-llama/Llama-3.1-70B-Instruct')]  # original/ is a second copy of the weights (141 GB for the 70B) that transformers does not load"
     ;;
   exp8-score)
     for split in test calib router_train; do $BIN pools score --name "$split" --device cuda; done

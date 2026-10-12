@@ -13,6 +13,9 @@ from stair.provenance import hub_revision
 
 log = logging.getLogger(__name__)
 
+# Llama repos ship a second copy of the weights in original/ (141 GB for the 70B) that transformers never loads.
+IGNORE = ["original/*"]
+
 
 def models_of(cfg: dict) -> list[tuple[str, str | None]]:
     """(repo id, revision) for the scorer and each expert that loads from the Hub."""
@@ -41,7 +44,7 @@ def main(argv: list[str] | None = None) -> None:
     for config in args.config:
         for repo, revision in models_of(tomllib.loads(config.read_text())):
             log.info(f"{repo}@{revision or 'main'} ...")
-            snapshot_download(repo, revision=revision)
+            snapshot_download(repo, revision=revision, ignore_patterns=IGNORE)
             log.info(f"  cached at commit {hub_revision(repo, revision)}")
 
 
