@@ -125,6 +125,9 @@ identically.
 
 ## 5. Phase 2: the option-choosing System One judge (GPU, under an hour)
 
+**Status:** ran on 2026-10-14 (job 42609, 6 min 38 s, exit 0). Results: [the write-up](experiments/2026-10-14-experiment-8.md)
+and `results/exp8-phase2/`.
+
 After step 4, with all of `llama3b-top5`, `llama3b-s10fuse-top5` and `llama70b-top5` answered on all three splits:
 
 ```bash

@@ -2,8 +2,9 @@
 
 **Status:** phase 0 done on 2026-10-11 (CPU, local): **go**. Phase 1 (the GPU answer runs) done on
 2026-10-12 to 2026-10-14; results are below and in [`results/exp8-phase1/`](../results/exp8-phase1/). Phases 2 and 3
-(the option-choosing judge, [`configs/exp8-judge.toml`](../configs/exp8-judge.toml), and its evaluation) are built and
-unit-tested, and are the next step: `qsub -v STEP=exp8-judge scripts/omega.pbs`.
+(the option-choosing judge, [`configs/exp8-judge.toml`](../configs/exp8-judge.toml), and its evaluation) ran on
+2026-10-14; see [the write-up](experiments/2026-10-14-experiment-8.md) and `results/exp8-phase2/`. **H3 was not
+met:** the judge reaches 73.2 lenient at 6.6% of the cost, against 74.6 for AgentTTS, a gap inside the noise.
 
 **Found while building phase 1:** AgentTTS's fusion call (Archon's fuser) repeats the whole user
 message twice, and that message holds all ~100 candidate passages. So the call reads roughly 26k+

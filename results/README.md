@@ -15,6 +15,7 @@ headline numbers are in [docs/experiments.md](../docs/experiments.md).
 | `cascade` | 6: multi-stage cascades over the caches above (CPU) | `cascade` command, see `provenance.jsonl` |
 | `system-one` | 7: System One judges (33M nano-jev) routing the pairs of runs 1, 4 and 5 (GPU) | `configs/system-one.toml` |
 | `exp8-phase0` | 8, phase 0: nano-jev ranking of AgentTTS-style 100-candidate pools (CPU) | `pools` command, see [the plan](../docs/experiment-8-plan.md) |
+| `exp8-phase2` | 8, phases 2-3: the option-choosing System One judge (3 seeds, qp / qpa) and its evaluation on the phase 1 answers (GPU, 7 min) | `configs/exp8-judge.toml` |
 | `exp8-phase1` | 8, phase 1: five answering cells (Llama-3.2-3B, Llama-3.1-70B 4-bit) on nano-jev top-k passages; per-question answers, scores and job logs (GPU) | `configs/exp8.toml` |
 
 Each folder has:

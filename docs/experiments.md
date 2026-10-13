@@ -53,6 +53,25 @@ small model (32 GFLOPs). The qp judge beats the best logistic regression router 
 (AIQ 0.673 against 0.665, paired interval [+0.004, +0.011]) and the entropy baseline, and the qpa judge ties the best
 cascade router (0.672). Like every router so far, none reaches always-large's F1 (66.9) at its operating point.
 
+## Experiment 8: the AgentTTS setting (lenient accuracy, 500 test questions)
+
+Different questions, models and metric from runs 1-7: AgentTTS's 100-candidate pools, Llama-3.2-3B and Llama-3.1-70B
+reading nano-jev's top 5 passages, scored by lenient accuracy (the gold answer contained in the response). Cost is in
+AgentTTS units, as a share of its strong-everything cost (929). Details: [experiments/2026-10-14-experiment-8.md](experiments/2026-10-14-experiment-8.md); retrieval and answer cells: [experiment-8-plan.md](experiment-8-plan.md).
+
+| Policy | Lenient | Units | % of 929 | AIQ |
+|---|---|---|---|---|
+| 3B, one answer | 0.608 | 7.3 | 0.8% | |
+| 70B (4-bit), one answer | 0.680 | 93.6 | 10.1% | |
+| 3B, 10 samples fused | 0.726 | 64.7 | 7.0% | |
+| Entropy threshold / logistic regression (best operating point) | 0.680 | 92-97 | 10% | 0.652-0.657 |
+| **System One judge (qp, decides before any answer)** | **0.732** | **61.3** | **6.6%** | **0.695** |
+| Oracle (cheapest correct option) | 0.796 | 19.4 | 2.1% | 0.783 |
+| *AgentTTS recipe, team's re-score* | *0.746* | *~938* | *~101%* | |
+
+The judge beats the best fixed mixture (AIQ +0.008) and the entropy and logistic regression routers (+0.02 to +0.06),
+all significant, but does not reach AgentTTS's 74.6 (73.2 at best); the gap is within the noise of 500 questions.
+
 ## Published reference points (answer EM / F1)
 
 | System | Type | Split | EM | F1 | Source |
