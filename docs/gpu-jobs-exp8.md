@@ -1,5 +1,9 @@
 # GPU jobs: experiment 8, phase 1
 
+**Status:** phase 1 ran on 2026-10-12 to 2026-10-14 (seven jobs, all exit 0; the 70B needs 2 GPUs).
+Results: [experiment-8-plan.md](experiment-8-plan.md#phase-1-results-2026-10-12-to-2026-10-14), files in
+`results/exp8-phase1/`.
+
 The omega jobs for phase 1 of [experiment-8-plan.md](experiment-8-plan.md). Phase 0 found that nano-jev's
 top 2 picks AgentTTS's gold passages better than its 7B and 32B LLM retrievers (retrieval F1 0.74, at 2.9
 AgentTTS units per question). Phase 1 answers from nano-jev's passages with AgentTTS's answer models and

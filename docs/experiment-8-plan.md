@@ -1,10 +1,9 @@
 # Experiment 8 (plan): cheap retrieval + System One routing on the AgentTTS setting
 
-**Status:** phase 0 done on 2026-10-11 (CPU, local). Results are below: **go** for phase 1. Phase
-1 is built and ready for the omega GPU: the `pool-answer` command, the cells in
-[`configs/exp8.toml`](../configs/exp8.toml) and the job sheet [gpu-jobs-exp8.md](gpu-jobs-exp8.md).
-Phase 2 (`exp8-judge`, [`configs/exp8-judge.toml`](../configs/exp8-judge.toml)) and the phase 3 evaluation are built
-and unit-tested; they wait for phase 1's answers.
+**Status:** phase 0 done on 2026-10-11 (CPU, local): **go**. Phase 1 (the GPU answer runs) done on
+2026-10-12 to 2026-10-14; results are below and in [`results/exp8-phase1/`](../results/exp8-phase1/). Phases 2 and 3
+(the option-choosing judge, [`configs/exp8-judge.toml`](../configs/exp8-judge.toml), and its evaluation) are built and
+unit-tested, and are the next step: `qsub -v STEP=exp8-judge scripts/omega.pbs`.
 
 **Found while building phase 1:** AgentTTS's fusion call (Archon's fuser) repeats the whole user
 message twice, and that message holds all ~100 candidate passages. So the call reads roughly 26k+
@@ -183,6 +182,62 @@ needed.
 - **Cost:** nano-jev (2.9) + a 70B answer is about 13% of strong-everything (929).
 - **Optional variant: hop-2 re-scoring.** Re-rank with the question + the top-1 passage, to recover
   bridge questions. It costs one more nano-jev pass, minutes on the GPU.
+
+## Phase 1 results (2026-10-12 to 2026-10-14)
+
+**Execution.** Seven PBS jobs, all exit 0 on the first attempt with no retries (the backups never ran). The 70B in 4-bit
+did not fit one 46 GB L40S, so its jobs ran on 2 GPUs (`device_map="auto"`).
+
+| Job | Cell(s) | GPUs | Wall time |
+|---|---|---|---|
+| 42567 | `llama70b-top5`, all splits | 2 | 4 h 40 min |
+| 42569 | `llama70b-top3`, test only | 2 | 27 min |
+| 42584 | `llama3b-top5`, all splits | 1 | 56 min |
+| 42585 | `llama3b-top3`, all splits | 1 | 38 min |
+| 42586 | `llama3b-s10fuse-top5`, test | 1 | 1 h 28 min |
+| 42587 | `llama3b-s10fuse-top5`, calib | 1 | 2 h 52 min |
+| 42588 | `llama3b-s10fuse-top5`, router_train | 1 | 8 h 44 min |
+
+Before them, the nano-jev scores of all 4,500 pools (job 42496) reproduced phase 0's recall exactly, and a 20-question
+pilot (jobs 42498, 42499) found the 2-GPU requirement. The logs have no errors, and every answer file has the expected
+rows (500, 1,000, 3,000), unique ids and no empty answers.
+
+**Test set (500 questions).** Lenient accuracy is the primary metric. Cost is in AgentTTS units and as a share of
+strong-everything (929 units).
+
+| Cell | Lenient | Units | % of 929 | s per question |
+|---|---|---|---|---|
+| 3B, top 3, once | 0.584 | 5.9 | 0.6% | 0.5 |
+| 3B, top 5, once | 0.608 | 7.3 | 0.8% | 0.8 |
+| **3B, top 5, 10 samples fused** | **0.726** | **64.7** | **7.0%** | 10.6 |
+| 70B, top 3, once | 0.628 | 63.7 | 6.9% | 3.2 |
+| 70B, top 5, once | 0.680 | 93.6 | 10.1% | 3.7 |
+| Oracle (cheapest correct cell) | 0.814 | 14.2 | 1.5% | |
+| *AgentTTS recipe, as re-scored by the team* | *0.746* | *~938* | *~101%* | |
+
+The calib and router_train splits give the same picture (3B fused 0.722 and 0.718, 70B top 5 0.677 and 0.666, oracle
+0.815 and 0.803).
+
+**Reading the table.**
+
+- **H2 is not met at the 2-point margin.** The 70B reading nano-jev's top 5 scores 68.0, which is 4.2 below the 72.2 of
+  72B retrieval + 70B answering, at 10% of its cost. With 500 questions the sampling noise is about ±4 points, so this
+  is not a clear shortfall either.
+- **Ten fused samples of the 3B beat one 70B answer** (72.6 against 68.0) at 69% of its cost, and sit 2 points under
+  AgentTTS's 74.6 at 7% of its cost. A paired test is part of phase 3; I do not claim significance yet.
+- **More passages help both models:** top 5 beats top 3 by 2.4 points for the 3B and 5.2 for the 70B.
+- **The oracle is the headroom for H3.** Always picking the cheapest correct cell reaches 81.4 lenient at 14 units. A
+  judge needs 74.6 at no more than 232 units (25%); the fused 3B alone is already at 72.6 for 65 units.
+
+**Caveats.**
+
+- **Strict EM is about 0** (F1 0.02–0.13), because both models answer in full sentences. That is why lenient is the
+  primary metric. The lenient scorer is a placeholder until the team's is shared. The answers are cached, so only
+  scoring reruns.
+- **10 samples, not AgentTTS's 40,** to keep the GPU time down; and the 70B is 4-bit NF4, while the team's reproduction
+  used AWQ.
+- **The 3B top-5 costs 7.3 units against AgentTTS's 3,** because it reads five full passages rather than a short
+  prompt. Costs are measured tokens, so they are comparable only within our own cells.
 
 ## Dependencies
 
