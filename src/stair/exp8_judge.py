@@ -15,7 +15,7 @@ threshold t, so one judge gives a whole cost-accuracy curve.
     exp8-judge all --plan configs/exp8-judge.toml       # train every (inputs, seed), then evaluate
     exp8-judge train|eval --plan configs/exp8-judge.toml
 
-Training resumes: a (inputs, seed) with a done.json is skipped. Outputs in `<out>/judge/`:
+Training resumes: a (inputs, seed) with a done.json is skipped. Outputs in `<out>/<judge_dir>/` (default `judge`):
 `<inputs>/seed<k>/{calib,test}.parquet` (judge probabilities), `done.json` (training curve, timing),
 and `eval/report.json`, `eval/curves.csv`.
 """
@@ -63,7 +63,7 @@ def load_all(plan: dict) -> dict[str, tuple]:
 def run_train(tables: dict, plan: dict, inputs: str, seed: int, out: Path, device: str | None) -> None:
     from sklearn.model_selection import train_test_split
 
-    target = out / "judge" / inputs / f"seed{seed}"
+    target = out / plan.get("judge_dir", "judge") / inputs / f"seed{seed}"
     if (target / "done.json").exists():
         log.info(f"train {inputs} seed {seed}: done")
         return
@@ -96,11 +96,11 @@ def run_train(tables: dict, plan: dict, inputs: str, seed: int, out: Path, devic
         "device": judge.device}, indent=1))
 
 
-def judge_probs(out: Path, inputs: str, seeds: list[int], split: str, ids: list[str]):
+def judge_probs(root: Path, inputs: str, seeds: list[int], split: str, ids: list[str]):
     """Mean probabilities over the seeds, the judge's cost in units per question, and the per-seed arrays."""
     per_seed, tokens = [], None
     for s in seeds:
-        d = pd.read_parquet(out / "judge" / inputs / f"seed{s}" / f"{split}.parquet").set_index("id").loc[ids]
+        d = pd.read_parquet(root / inputs / f"seed{s}" / f"{split}.parquet").set_index("id").loc[ids]
         per_seed.append(d[[c for c in d.columns if c.startswith("p")]].to_numpy())
         tokens = d["tokens"].to_numpy()
     units = 2 * JUDGE_PARAMS_B * tokens * len(seeds) / UNIT_GFLOPS  # GFLOPs of every seed's pass, in units
@@ -109,6 +109,7 @@ def judge_probs(out: Path, inputs: str, seeds: list[int], split: str, ids: list[
 
 def run_eval(tables: dict, plan: dict, out: Path, exclude: set[str] | None = None, tag: str = "") -> dict:
     seeds, labels = plan["seeds"], [o["label"] for o in plan["options"]]
+    root = out / plan.get("judge_dir", "judge")
     (df_c, ok_c, cost_c), (df_t, ok_t, cost_t) = tables["calib"], tables["test"]
     keep = None
     if exclude:
@@ -146,8 +147,8 @@ def run_eval(tables: dict, plan: dict, out: Path, exclude: set[str] | None = Non
 
     judges = {}
     for inputs in plan["inputs"]:
-        pc, uc, _ = judge_probs(out, inputs, seeds, "calib", df_c["id"].tolist())
-        pt, ut, per_seed = judge_probs(out, inputs, seeds, "test", tables["test"][0]["id"].tolist())
+        pc, uc, _ = judge_probs(root, inputs, seeds, "calib", df_c["id"].tolist())
+        pt, ut, per_seed = judge_probs(root, inputs, seeds, "test", tables["test"][0]["id"].tolist())
         if exclude:
             pt, ut, per_seed = pt[keep], ut[keep], [p[keep] for p in per_seed]
         name = f"judge {inputs}"
@@ -170,8 +171,8 @@ def run_eval(tables: dict, plan: dict, out: Path, exclude: set[str] | None = Non
     report["aiq_diff"] = {f"{a} - {b}": ev.diff(boot, a, b) for a in judges for b in boot["aiq_ci95"] if b != a}
     report["judges"] = judges
     rows = [{"policy": name, **p} for name, (_, test_pts) in scored.items() for p in test_pts]
-    pd.DataFrame(rows).to_csv(out / "judge" / "eval" / f"curves{tag}.csv", index=False)
-    (out / "judge" / "eval" / f"report{tag}.json").write_text(json.dumps(report, indent=1))
+    pd.DataFrame(rows).to_csv(root / "eval" / f"curves{tag}.csv", index=False)
+    (root / "eval" / f"report{tag}.json").write_text(json.dumps(report, indent=1))
     return report
 
 
@@ -195,10 +196,11 @@ def main(argv: list[str] | None = None) -> None:
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     plan = tomllib.loads(args.plan.read_text())
     out = Path(plan.get("out", "runs/exp8"))
-    (out / "judge" / "eval").mkdir(parents=True, exist_ok=True)
+    root = out / plan.get("judge_dir", "judge")
+    (root / "eval").mkdir(parents=True, exist_ok=True)
     tables = load_all(plan)
     if args.step in ("train", "all"):
-        provenance.record(out / "judge", "exp8-judge", plan=str(args.plan), **provenance.environment())
+        provenance.record(root, "exp8-judge", plan=str(args.plan), **provenance.environment())
         for inputs in plan["inputs"]:
             for seed in plan["seeds"]:
                 run_train(tables, plan, inputs, seed, out, args.device)

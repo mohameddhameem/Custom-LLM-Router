@@ -145,3 +145,21 @@ cost-accuracy curve. Its label is the cheapest option that answered correctly (t
 Bring `runs/exp8/judge/` back without the per-seed score files you do not need: `report*.json`, `curves*.csv`,
 `*/seed*/done.json` and `*/seed*/{calib,test}.parquet`.
 
+## 6. Phase 2 again, with 20- and 40-sample fused options
+
+`configs/exp8.toml` also has `llama3b-s20fuse-top5` and `llama3b-s40fuse-top5` (measured 15-17 s per question, about 21 h and
+18.5 h for the 4,500 questions on one GPU; 116 and 221 cost units). Their batch sizes keep 40 sequences in flight, as the
+10-sample cell does. Run each split as its own job so the two cells use the two GPUs:
+
+```bash
+sub() { qsub "$@" scripts/omega.pbs; }
+A1=$(sub -N e8-s20-test  -v STEP=exp8-answer,CELLS=llama3b-s20fuse-top5,SPLITS=test)
+A2=$(sub -N e8-s20-calib -W depend=afterany:$A1 -v STEP=exp8-answer,CELLS=llama3b-s20fuse-top5,SPLITS=calib)
+A3=$(sub -N e8-s20-train -W depend=afterany:$A2 -v STEP=exp8-answer,CELLS=llama3b-s20fuse-top5,SPLITS=router_train)
+# the same chain for llama3b-s40fuse-top5, and a -W depend=afternotok backup for each long job
+```
+
+Then `qsub -v STEP=exp8-judge scripts/omega.pbs` runs [`configs/exp8-judge.toml`](../configs/exp8-judge.toml), now with five options in
+cost order (3B once, 3B x10, 70B, 3B x20, 3B x40), writing to `runs/exp8/judge-5opt/`. The three-option plan is kept as
+`configs/exp8-judge-3opt.toml` and writes to `runs/exp8/judge/`.
+
