@@ -163,3 +163,6 @@ Then `qsub -v STEP=exp8-judge scripts/omega.pbs` runs [`configs/exp8-judge.toml`
 cost order (3B once, 3B x10, 70B, 3B x20, 3B x40), writing to `runs/exp8/judge-5opt/`. The three-option plan is kept as
 `configs/exp8-judge-3opt.toml` and writes to `runs/exp8/judge/`.
 
+**Status:** ran 2026-10-14 to 2026-10-15 (answer jobs 42613-42615 and 42617-42619, all exit 0; judge job 42681, exit 0 in 17 min). The
+chained judge job 42621 was dropped by PBS and did not run, so the judge was submitted again without dependencies. Results:
+[the write-up](experiments/2026-10-15-experiment-8-more-samples.md).

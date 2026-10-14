@@ -64,13 +64,20 @@ AgentTTS units, as a share of its strong-everything cost (929). Details: [experi
 | 3B, one answer | 0.608 | 7.3 | 0.8% | |
 | 70B (4-bit), one answer | 0.680 | 93.6 | 10.1% | |
 | 3B, 10 samples fused | 0.726 | 64.7 | 7.0% | |
+| 3B, 20 samples fused | 0.736 | 116.3 | 12.5% | |
+| 3B, 40 samples fused | **0.756** | 219.8 | 23.7% | |
 | Entropy threshold / logistic regression (best operating point) | 0.680 | 92-97 | 10% | 0.652-0.657 |
-| **System One judge (qp, decides before any answer)** | **0.732** | **61.3** | **6.6%** | **0.695** |
-| Oracle (cheapest correct option) | 0.796 | 19.4 | 2.1% | 0.783 |
+| **System One judge (qp, decides before any answer), 3 options** | **0.732** | **61.3** | **6.6%** | **0.695** |
+| **System One judge (qp), 5 options, budget point** | **0.754** | **180.3** | **19.4%** | **0.727** (own range) |
+| Oracle (cheapest correct option), 3 / 5 options | 0.796 / 0.850 | 19.4 / 28.2 | 2.1% / 3.0% | 0.783 / 0.838 |
 | *AgentTTS recipe, team's re-score* | *0.746* | *~938* | *~101%* | |
 
 The judge beats the best fixed mixture (AIQ +0.008) and the entropy and logistic regression routers (+0.02 to +0.06),
-all significant, but does not reach AgentTTS's 74.6 (73.2 at best); the gap is within the noise of 500 questions.
+all significant. With three options it did not reach AgentTTS's 74.6 (73.2 at best; H3 not met). Adding the 20- and 40-sample
+fused options ([experiments/2026-10-15-experiment-8-more-samples.md](experiments/2026-10-15-experiment-8-more-samples.md))
+meets H3: the 40-sample cell alone scores 75.6 at 23.7% of the cost and the judge 75.4 at 19.4%. The judge's AIQ gain over
+the fixed hull is no longer significant (p = 0.10), and the 40-sample gain is seen on test only (calib: 72.4 against 72.2 for 10 samples).
+AIQ is over each table's own cost range, so 0.727 and 0.695 are not comparable.
 
 ## Published reference points (answer EM / F1)
 
