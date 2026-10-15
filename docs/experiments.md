@@ -84,6 +84,20 @@ cascade router (0.672). Like every router so far, none reaches always-large's F1
 >
 > Re-scoring with an LLM grader and short-answer extraction is in [gpu-jobs-exp8-rescore.md](gpu-jobs-exp8-rescore.md).
 
+> **Re-scored with an LLM grader on 2026-10-15:** see [experiments/2026-10-15-experiment-8-rescored.md](experiments/2026-10-15-experiment-8-rescored.md). Under the grader the 70B (0.748 test) leads the 40-sample fused 3B (0.632); the judge sends nearly every question to the 70B; H3 is not assessed because AgentTTS's 74.6 is lenient.
+
+Graded accuracy on test (500 questions; grader Qwen2.5-14B on each model's committed short answer):
+
+| Cell | Lenient | Graded | Units | % of 929 |
+|---|---|---|---|---|
+| 3B, one answer (top 5) | 0.608 | 0.524 | 7.5 | 0.8% |
+| 3B, 10 samples fused | 0.726 | 0.588 | 64.9 | 7.0% |
+| 3B, 20 samples fused | 0.736 | 0.618 | 116.5 | 12.5% |
+| 3B, 40 samples fused | 0.756 | 0.632 | 220.0 | 23.7% |
+| 70B (4-bit), one answer (top 5) | 0.680 | **0.748** | 96.0 | 10.3% |
+| Judge qp / qpa, budget point (picks the 70B) | | 0.748 | 96.4 / 96.5 | 10.4% |
+
+
 Different questions, models and metric from runs 1-7: AgentTTS's 100-candidate pools, Llama-3.2-3B and Llama-3.1-70B
 reading nano-jev's top 5 passages, scored by lenient accuracy (the gold answer contained in the response). Cost is in
 AgentTTS units, as a share of its strong-everything cost (929). Details: [experiments/2026-10-14-experiment-8.md](experiments/2026-10-14-experiment-8.md); retrieval and answer cells: [experiment-8-plan.md](experiment-8-plan.md).

@@ -29,6 +29,8 @@
 >
 > Re-scoring with an LLM grader and short-answer extraction is in [gpu-jobs-exp8-rescore.md](gpu-jobs-exp8-rescore.md).
 
+> **Re-scored with an LLM grader on 2026-10-15:** see [experiments/2026-10-15-experiment-8-rescored.md](experiments/2026-10-15-experiment-8-rescored.md). Under the grader the 70B (0.748 test) leads the 40-sample fused 3B (0.632); the judge sends nearly every question to the 70B; H3 is not assessed because AgentTTS's 74.6 is lenient.
+
 **Status:** phase 0 done on 2026-10-11 (CPU, local): **go**. Phase 1 (the GPU answer runs) done on
 2026-10-12 to 2026-10-14; results are below and in [`results/exp8-phase1/`](../results/exp8-phase1/). Phases 2 and 3
 (the option-choosing judge, [`configs/exp8-judge.toml`](../configs/exp8-judge.toml), and its evaluation) ran on
