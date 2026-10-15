@@ -1,0 +1,31 @@
+job 42683.pbs-omega on a-11, step exp8-rescore-validate
+name, memory.used [MiB], memory.total [MiB], driver_version
+NVIDIA L40S, 14 MiB, 46068 MiB, 555.58.02
+   Building stair @ file:///storage/home/dhameem.m.2025/Custom-LLM-Router
+      Built stair @ file:///storage/home/dhameem.m.2025/Custom-LLM-Router
+Uninstalled 1 package in 7ms
+Installed 1 package in 59ms
+torch 2.14.1+cu126 NVIDIA L40S
+Loading weights:   0%|          | 0/579 [00:00<?, ?it/s]Loading weights:   6%|▌         | 36/579 [00:00<00:02, 250.17it/s]Loading weights:  11%|█         | 62/579 [00:00<00:03, 143.72it/s]Loading weights:  18%|█▊        | 104/579 [00:00<00:02, 199.12it/s]Loading weights:  22%|██▏       | 127/579 [00:00<00:03, 144.57it/s]Loading weights:  29%|██▉       | 169/579 [00:00<00:02, 198.68it/s]Loading weights:  38%|███▊      | 221/579 [00:01<00:01, 269.02it/s]Loading weights:  44%|████▍     | 255/579 [00:01<00:01, 276.86it/s]Loading weights:  50%|████▉     | 288/579 [00:01<00:02, 111.72it/s]Loading weights:  54%|█████▍    | 313/579 [00:01<00:02, 128.33it/s]Loading weights:  60%|██████    | 348/579 [00:02<00:01, 154.49it/s]Loading weights:  64%|██████▍   | 373/579 [00:02<00:01, 135.98it/s]Loading weights:  68%|██████▊   | 394/579 [00:02<00:01, 140.65it/s]Loading weights:  71%|███████▏  | 413/579 [00:02<00:01, 134.83it/s]Loading weights:  74%|███████▍  | 430/579 [00:02<00:01, 125.63it/s]Loading weights:  77%|███████▋  | 445/579 [00:02<00:01, 122.71it/s]Loading weights: 100%|██████████| 579/579 [00:03<00:00, 192.32it/s]
+{
+ "grader": "Qwen/Qwen2.5-14B-Instruct",
+ "revision": "cf98f3b3bbb457ad9e2bb7baf9a0125b6b88caa8",
+ "known_n": 500,
+ "known_em1_n": 267,
+ "known_f10_n": 112,
+ "agree_em1_correct": 0.850187265917603,
+ "agree_f10_incorrect": 0.7946428571428571,
+ "known_graded_correct": 0.656,
+ "known_em": 0.534,
+ "known_f1": 0.6785821361644891,
+ "dump_n": 500,
+ "dump_graded_correct": 0.662,
+ "thresholds": {
+  "min_agree_em1": 0.9,
+  "min_agree_f10": 0.9,
+  "max_dump_correct": 0.1
+ },
+ "seconds": 196.55448812432587,
+ "passed": false
+}
+VALIDATION FAILED (see runs/exp8/rescore/validation.json)
