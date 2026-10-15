@@ -436,37 +436,53 @@ def test_grader_verdict_mass_batched_matches_single(tiny_models):
     assert written.shape == (1,)
 
 
-def test_rescore_validate_and_run(tiny_models, tmp_path):
+def test_rescore_validate_commit_and_run(tiny_models, tmp_path):
     from stair import rescore
 
     out = tmp_path / "exp8"
-    for d in ("pools", "scores", "answers/test"):
+    for d in ("pools", "scores", "answers/test", "answers/calib"):
         (out / d).mkdir(parents=True)
     ids = [f"q{i}" for i in range(6)]
-    pd.DataFrame({"id": ids, "question": "Who directed the film?", "answer": "Kalo",
-                  "titles": [["Film", "Other"]] * 6, "texts": [["It was directed by Kalo.", "Unrelated."]] * 6,
-                  "gold_idx": [[0]] * 6}).to_parquet(out / "pools" / "test.parquet")
-    pd.DataFrame({"id": ids, "nanojev": [[0.9, 0.1]] * 6, "tokens": [100] * 6}).to_parquet(out / "scores" / "test.parquet")
-    pd.DataFrame({"id": ids, "pred": ["Kalo", "Rimer"] * 3, "lenient": [1.0, 0.0] * 3, "units": 2.0}).to_parquet(
-        out / "answers" / "test" / "cell.parquet")
+    for split in ("test", "calib"):
+        pd.DataFrame({"id": ids, "question": "Who directed the film?", "answer": "Kalo",
+                      "titles": [["Film", "Other"]] * 6, "texts": [["It was directed by Kalo.", "Unrelated."]] * 6,
+                      "gold_idx": [[0]] * 6}).to_parquet(out / "pools" / f"{split}.parquet")
+        pd.DataFrame({"id": ids, "nanojev": [[0.9, 0.1]] * 6, "tokens": [100] * 6}).to_parquet(out / "scores" / f"{split}.parquet")
+        pd.DataFrame({"id": ids, "pred": ["Kalo directed it.", "Rimer"] * 3, "samples": None, "lenient": [1.0, 0.0] * 3,
+                      "units": 2.0}).to_parquet(out / "answers" / split / "single.parquet")
+        pd.DataFrame({"id": ids, "pred": ["Kalo", "Rimer or Kalo"] * 3, "samples": [["Kalo", "Rimer"]] * 6,
+                      "lenient": 1.0, "units": 9.0}).to_parquet(out / "answers" / split / "fused.parquet")
+    plan = tmp_path / "answers.toml"
+    plan.write_text('[[cells]]\nname = "single"\nmodel = "m"\nparams = 3.0\ntop_k = 1\n'
+                    '[[cells]]\nname = "fused"\nmodel = "m"\nparams = 3.0\ntop_k = 2\nfuse = true\nsamples = 2\n')
     known = tmp_path / "known.parquet"
     pd.DataFrame({"id": ids, "question": "Who directed the film?", "answer": "Kalo", "large_pred": ["Kalo", "Rimer"] * 3,
                   "large_em": [1.0, 0.0] * 3, "large_f1": [1.0, 0.0] * 3}).to_parquet(known)
-    common = ["--out", str(out), "--grader", str(tiny_models / "chat-lm"), "--device", "cpu", "--batch", "2"]
-    with pytest.raises(SystemExit):
-        rescore.main(["run", *common])  # no validation yet: refuses
+    common = ["--out", str(out), "--grader", str(tiny_models / "chat-lm"), "--device", "cpu", "--batch", "2",
+              "--answer-plan", str(plan), "--commit-model", str(tiny_models / "chat-lm")]
+    for step in ("commit", "run"):
+        with pytest.raises(SystemExit):
+            rescore.main([step, *common])  # no validation yet: refuses
     rescore.main(["validate", *common, "--known", str(known), "--known-start", "0", "--known-count", "6",
-                  "--dump-split", "test", "--diagnostic-start", "0"])
+                  "--diagnostic-start", "0", "--commit-cells", "single", "--commit-cells", "fused", "--commit-count", "4"])
     v = json.loads((out / "rescore" / "validation.json").read_text())
-    assert v["gate"]["known_n"] == 6 and v["gate"]["dump_n"] == 6 and isinstance(v["passed"], bool)  # a tiny model may fail
-    assert 0 <= v["gate"]["written_agreement"] <= 1 and "diagnostic_not_gating" in v
-    assert 0 <= v["gate"]["extract_faithful"] <= 1 and v["method"].startswith("v3")
-    rescore.main(["run", *common, "--skip-validation-check", "--chunk-size", "4"])
-    d = pd.read_parquet(out / "rescore" / "test" / "cell.parquet")
+    assert v["method"].startswith("v4") and isinstance(v["passed"], bool)  # a tiny model may fail
+    assert v["gate"]["known_n"] == 6 and 0 <= v["gate"]["written_agreement"] <= 1 and "diagnostic_not_gating" in v
+    assert set(v["commit"]) == {"single", "fused"} and v["commit"]["fused"]["n"] == 4
+    assert 0 <= v["commit"]["single"]["grounded"] <= 1 and 0 <= v["commit"]["single"]["grounded_when_correct"] <= 1
+    assert "p_correct" in pd.read_csv(out / "rescore" / "validation-commits.csv").columns
+    with pytest.raises(SystemExit):
+        rescore.main(["run", *common, "--skip-validation-check"])  # no committed answers yet
+    rescore.main(["commit", *common, "--skip-validation-check", "--chunk-size", "4"])
+    c = pd.read_parquet(out / "commit" / "test" / "fused.parquet")
+    assert c["id"].tolist() == ids and (c["commit_units"] > 0).all() and c["grounded"].isin([0.0, 1.0]).all()
+    rescore.main(["run", *common, "--skip-validation-check"])
+    d = pd.read_parquet(out / "rescore" / "test" / "single.parquet")
     assert d["id"].tolist() == ids and d["p_correct"].between(0, 1).all()
-    assert set(d.columns) >= {"correct", "verdict_mass", "extracted", "ext_none", "ext_em", "ext_f1", "lenient",
-                              "correct_first", "correct_full"}
-    assert (d.loc[d["ext_none"] == 1, "correct"] == 0).all()  # "none" is never correct
+    assert set(d.columns) >= {"committed", "correct", "verdict_mass", "commit_em", "commit_f1", "grounded",
+                              "commit_units", "lenient"}
+    assert (d.loc[d["committed"] == "", "correct"] == 0).all()  # an empty commit is never correct
     rescore.main(["summary", "--out", str(out)])
-    s = pd.read_csv(out / "rescore" / "summary.csv")
-    assert s.loc[0, "n"] == 6 and s.loc[0, "units"] == 2.0
+    s = pd.read_csv(out / "rescore" / "summary.csv").set_index("cell")
+    assert s.loc["single", "n"] == 6 and s.loc["single", "answer_units"] == 2.0
+    assert s.loc["single", "units"] == pytest.approx(2.0 + d["commit_units"].mean())

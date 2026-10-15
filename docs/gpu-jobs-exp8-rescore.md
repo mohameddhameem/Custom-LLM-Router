@@ -17,17 +17,19 @@ See the "Metric caveat" at the top of [experiments/2026-10-14-experiment-8.md](e
 - **Many credited hits are wrong.** Most of those that appear only after the first sentence are hedges, or
   wrong first answers that later quote a passage.
 
-This job re-scores every cached answer with one grader model (`Qwen/Qwen2.5-14B-Instruct`, bf16, one
-answer per forward pass), version 3: **extract, then grade.**
+This job re-scores every cached answer, version 4: **self-commit, then grade.**
 
-1. **Extraction.** The model states the response's committed final answer in a few words, or "none".
-   The official HotpotQA EM/F1 on it are the secondary metric, comparable with experiments 1–7.
-2. **Grading.** The model grades that *short* answer against the gold. P(CORRECT) comes from the
-   next-token mass of the CORRECT-prefix against the INCORRECT-prefix tokens, and "none" is wrong. This is
-   the primary metric, `correct` = P ≥ 0.5.
-3. **Diagnostics.** `correct_first` grades the response's first sentence (a length control).
-   `correct_full` grades the whole response (version 2's metric). It is recorded only, because it accepts
-   long responses that merely contain the gold.
+1. **Commit.** The model that wrote each response finishes its own turn. The job replays the response's
+   exact final conversation (the answering prompt with its passages, or, for a fused cell, the fuser
+   prompt with its samples), then the response, then the cue "So, in as few words as possible, the final
+   answer is:". The same model (Llama-3.2-3B, or Llama-3.1-70B in 4-bit) continues greedily. Its short
+   answer is the system's committed answer, and the official HotpotQA EM/F1 on it are comparable with
+   experiments 1–7. The commit's own cost (the cue plus the generated tokens) is added to each option's
+   cost.
+2. **Grade.** `Qwen/Qwen2.5-14B-Instruct` (bf16, one answer per forward pass) grades the committed short
+   answer against the gold. P(CORRECT) comes from the next-token mass of the CORRECT-prefix against the
+   INCORRECT-prefix tokens. This is the primary metric, `correct` = P ≥ 0.5. The grader prompt is
+   version 2's, which passed on short answers.
 
 Then the five-option System One judge is retrained and re-evaluated on the grader's labels.
 
@@ -38,11 +40,13 @@ No answers are regenerated. The code is in `src/stair/rescore.py`; read its docs
 - **MUST** work on branch `feat/exp8-rescore` (`git fetch && git switch feat/exp8-rescore && git pull`).
 - **MUST** run `exp8-rescore-validate` first, and **STOP** if `runs/exp8/rescore/validation.json` has
   `"passed": false`. If that happens:
-  1. Report the numbers and the first 20 rows of `runs/exp8/rescore/validation-disagreements.csv`.
+  1. Report the numbers, the first 20 rows of `runs/exp8/rescore/validation-disagreements.csv`, and 10
+     ungrounded but correct rows of `runs/exp8/rescore/validation-commits.csv` (`grounded` = 0,
+     `p_correct` ≥ 0.5).
   2. Do not continue to `exp8-rescore`.
-  3. Do not change the thresholds or the grader prompt to make it pass.
+  3. Do not change the thresholds, the commit cue or the grader prompt to make it pass.
 - **MUST NOT** edit the cached answers (`runs/exp8/answers/**`, `results/exp8-phase1/**`), the prompts in
-  `rescore.py`, the validation thresholds (every `MIN_*` / `MAX_*` constant), or
+  `rescore.py` (`GRADE_*`, `COMMIT_CUE`), the validation thresholds (every `MIN_*` constant), or
   `configs/exp8.toml`.
 - **MUST NOT** tune anything on the test split. The operating points are chosen on calib by the existing
   code.
@@ -50,12 +54,12 @@ No answers are regenerated. The code is in `src/stair/rescore.py`; read its docs
   re-scored write-up (step 6).
 - **If a job fails:**
   - **Twice for the same reason:** stop and report the error and the log path.
-  - **Trivial fixes are allowed:** a path, an out-of-memory error (lower `--extract-batch`), a missing
+  - **Trivial fixes are allowed:** a path, an out-of-memory error (lower `--batch`, or `commit_batch` for the 3B single cells), a missing
     download. Describe every fix in the write-up's Execution section.
   - **Do not rewrite the logic.**
 - **Report numbers as they come out,** with their intervals. Do not round in a way that changes a
   comparison. Write "not significant" when an interval includes zero.
-- **The model must be downloaded on the login node** (step 1). The GPU jobs run with `HF_HUB_OFFLINE=1`.
+- **The models must be in the cache before a job starts** (step 1). The GPU jobs run with `HF_HUB_OFFLINE=1`.
 - **MUST NOT run compute on the login node.** The login node is for git, downloads, reading files and `qsub`
   (SMU OMEGA user guide; [omega-cluster.md](omega-cluster.md), "Good practice on OMEGA"). Everything else runs as a
   job:
@@ -74,12 +78,14 @@ cd ~/Custom-LLM-Router
 git fetch && git switch feat/exp8-rescore && git pull
 uv sync --extra llm
 uv run python -c "from huggingface_hub import snapshot_download as d; print(d('Qwen/Qwen2.5-14B-Instruct'))"   # ~30 GB, ungated
+ls ~/.cache/huggingface/hub | grep -E "Llama-3.2-3B-Instruct|Llama-3.1-70B-Instruct"   # both from phase 1: the commit step needs them
 ls runs/exp8/answers/test runs/exp8/answers/calib runs/exp8/answers/router_train
 ls runs/exp8/pools/test.parquet runs/exp8/scores/test.parquet results/gpu/test.parquet
 project_summary                                  # check the CPU/GPU-hour allocation before a multi-hour run
 ```
 
-**Check:** the three `answers/` folders list the cells below, and the other files exist. If
+**Check:** the three `answers/` folders list the cells below, the other files exist, and both Llama models
+are cached. If a Llama model is missing, STOP and report it: re-downloading the 70B is ~141 GB. If
 `runs/exp8/answers` is missing, copy it from `results/exp8-phase1/answers` (`cp -r`). If the pools are
 missing, rebuild them with a CPU job, `qsub -v STEP=exp8-pools scripts/omega-cpu.pbs` (about 5 min): they rebuild
 identically. Do not run that step on the login node.
@@ -90,77 +96,76 @@ identically. Do not run that step on the login node.
 | calib | the same, without llama70b-top3 | 1,000 |
 | router_train | the same, without llama70b-top3 | 3,000 |
 
-## Step 2: validate the grader (GPU, about 10 min)
+## Step 2: validate the commit step and the grader (GPU, about 40 min)
 
 ```bash
-qsub -l walltime=01:00:00 -v STEP=exp8-rescore-validate scripts/omega.pbs
+qsub -l walltime=01:30:00 -v STEP=exp8-rescore-validate scripts/omega.pbs
 ```
 
-**History: versions 1 and 2 of the grader failed this step.** Job 42683 on 2026-10-15 is recorded in
-`results/exp8-rescore/README.md`.
+It loads three models in turn on one GPU: the 3B, the 70B in 4-bit, then the 14B grader.
 
-- **The failure.** Its prompt asked whether the response answered "correctly". The 14B graded identical
-  answers INCORRECT when it doubted the gold answer itself (for example "Ephedrine" against "Ephedrine",
-  P = 0.00001), and it passed 66% of the pasted-passage dumps.
-- **Version 2, now in `src/stair/rescore.py`, was written by the project owner's local session.** Its
-  changes:
-  - the gold answer is correct by definition;
-  - a response with no committed final answer is INCORRECT;
-  - P(CORRECT) comes from the next-token mass of all CORRECT-prefix against INCORRECT-prefix tokens, so
-    it is independent of tokenisation;
-  - a written-verdict self-check;
-  - the gate now uses a **fresh** slice, not the one the failure was diagnosed on.
+**History: versions 1–3 failed this step on 2026-10-15.** See `results/exp8-rescore/README.md`, `v2/README.md`
+and `v3/README.md`.
+- **Version 1:** the grader judged against its own knowledge.
+- **Version 2:** good on short answers, but passed 62% of pasted-passage dumps when grading whole responses.
+- **Version 3:** the 14B extractor dropped 24% of correct bare answers as "none", and read answers out of
+  dumps.
 
-- **Version 2 failed too** (job 42685, `results/exp8-rescore/v2/README.md`). It passed on short answers
-  (0.996 / 0.917), but graded 0.619 of the pasted-passage dumps CORRECT: the 14B treats "the gold is stated
-  somewhere" as an answer.
-- **Version 3, now in the code,** grades only the extracted short answer, where version 2 was reliable.
-  The checks below run that full extract-then-grade pipeline. Version 3's thresholds were fixed before any
-  version 3 run. You MUST NOT change the prompts or the thresholds.
+The project owner chose version 4. It keeps version 2's grader prompt and its thresholds, and grades only
+short answers that the answering model itself commits to. The pasted-passage control is dropped, because a
+dump is not a conversation that can be continued. Version 4's thresholds were fixed before any version 4
+run. You MUST NOT change the prompts, the cue or the thresholds.
 
-When the job finishes (`qstat -u $USER` no longer lists it), read `runs/exp8/rescore/validation.json`.
-The pass/fail fields are under `gate`. That is experiment 1's 7B answers to dev items 1000–1499, plus the
-pasted-passage control on the calib pools:
+When the job finishes, read `runs/exp8/rescore/validation.json` (`"method"` must start with `v4`):
 
-| `gate` field | Meaning | Must be |
+| Field | Meaning | Must be |
 |---|---|---|
-| `agree_em1_correct` | Share of the short answers with official EM = 1 that the grader calls CORRECT | ≥ 0.95 |
-| `agree_f10_incorrect` | Share of those with F1 = 0 that it calls INCORRECT (HotpotQA gold strings have aliases, such as "AdScam" for "The sponsorship scandal", so this cannot reach 1.0) | ≥ 0.80 |
-| `extract_faithful` | Share of the short answers that extraction leaves unchanged (official EM between the extracted and the original answer) | ≥ 0.90 |
-| `dump_graded_correct` | Share of "responses" made of nano-jev's top-5 passages pasted together whose extracted answer is graded CORRECT (lenient gave 0.798, version 2 0.619). Some dumps open with a sentence that states the answer, so this need not be 0 | ≤ 0.10 |
-| `dump_extracted_none` | Share of dumps extracted as "none" (reported, not gating) | |
-| `written_agreement` | Share where the grader's written greedy verdict agrees with its scored P(CORRECT) ≥ 0.5. Lower means a computation or format bug | ≥ 0.95 |
-| `verdict_mass_mean` | Mean next-token probability on the two verdicts (format adherence) | ≥ 0.90 |
-| `passed` (top level) | All six thresholds hold | `true` |
+| `gate.agree_em1_correct` | Experiment 1's 7B short answers to dev items 1000–1499 with official EM = 1 that the grader calls CORRECT | ≥ 0.95 |
+| `gate.agree_f10_incorrect` | Those with F1 = 0 that it calls INCORRECT (gold strings have aliases, such as "AdScam" for "The sponsorship scandal", so this cannot reach 1.0) | ≥ 0.80 |
+| `gate.written_agreement` | The grader's written greedy verdict agrees with its scored P(CORRECT) ≥ 0.5 | ≥ 0.95 |
+| `gate.verdict_mass_mean` | Mean next-token probability on the two verdicts | ≥ 0.90 |
+| `commit.<cell>.grounded_when_correct`, for each of `llama3b-top5`, `llama3b-s40fuse-top5`, `llama70b-top5` (200 calib answers each) | Of the commits graded CORRECT, the share grounded in the response (≥ 60% of the commit's normalised tokens appear in it; yes/no exempt). Lower means the continuation added right answers the response did not give | ≥ 0.90 |
+| `commit.<cell>.nonempty` | Committed answers that are not empty | ≥ 0.98 |
+| `passed` | All of the above hold | `true` |
 
-`diagnostic_not_gating` repeats the checks on the slice where version 1 failed (dev items 500–999, with
-dumps from the test pools). Report it, but it does not decide pass or fail.
+Also reported, not gating:
+- `commit.<cell>.grounded` (over all commits; honest abstentions are often ungrounded paraphrases),
+  `graded_correct`, `commit_em`, `lenient_of_response` and `mean_commit_units`;
+- `diagnostic_not_gating`, the grader on dev items 500–999.
 
-Also read 10 rows of `runs/exp8/rescore/validation-disagreements.csv` yourself and note, in one line each,
-whether the grader or the official EM looks right. EM is strict, so some "EM = 0 but grader says correct"
-cases are fine: aliases and formats. **If `passed` is false: STOP** (see Rules). Report all `gate` numbers
-and 10 disagreement rows.
+**Also read:**
+- 10 rows of `validation-disagreements.csv`: note in one line each whether the grader or the official EM
+  looks right;
+- 10 random rows of `validation-commits.csv`: does `committed` state what the `response` concluded? Quote
+  2 in your report.
 
-## Step 3: re-score every answer (GPU, about 3–5 h; two jobs in parallel)
+**If `passed` is false: STOP** (see Rules). Report every gating number.
+
+## Step 3: re-score every answer (GPU, about 2 h and 6–9 h; two jobs in parallel)
 
 ```bash
-J1=$(qsub -l walltime=03:00:00 -v STEP=exp8-rescore,SPLITS=test scripts/omega.pbs)                    # 3,500 answers
-J2=$(qsub -l walltime=10:00:00 -v "STEP=exp8-rescore,SPLITS=calib router_train" scripts/omega.pbs)   # 24,000 answers
+J1=$(qsub -l walltime=04:00:00 -v STEP=exp8-rescore,SPLITS=test scripts/omega.pbs)                    # 3,500 answers
+J2=$(qsub -l walltime=16:00:00 -v "STEP=exp8-rescore,SPLITS=calib router_train" scripts/omega.pbs)   # 24,000 answers
 ```
 
-- **Resuming:** each answer file is scored in resumable chunks of 250 into
-  `runs/exp8/rescore/<split>/<cell>.parts/`, then merged into `runs/exp8/rescore/<split>/<cell>.parquet`.
-  If a job dies, resubmit the same line.
+For each split, the step runs `rescore commit` (the cells' own models: the 3B, then the 70B in 4-bit)
+and then `rescore run` (the 14B grader). The fused cells replay their fuser conversations, up to 16k
+tokens, one at a time, and they take most of the time.
+
+- **Resuming:** commits are written in resumable chunks of 250 into `runs/exp8/commit/<split>/<cell>.parts/`,
+  then merged into `runs/exp8/commit/<split>/<cell>.parquet`. Grades go to
+  `runs/exp8/rescore/<split>/<cell>.parquet`. If a job dies, resubmit the same line.
 - **Summary:** each job ends with `rescore summary`, which writes `runs/exp8/rescore/summary.csv`, one row
-  per split and cell, with `lenient`, `graded_correct` (primary), `graded_first_sentence`,
-  `graded_whole_v2` (diagnostic), `ext_em`, `ext_f1`, `ext_none` and `units`.
+  per split and cell, with `lenient`, `graded_correct` (primary), `commit_em`, `commit_f1`, `grounded`,
+  `answer_units`, `commit_units` and `units` (their sum, the cost the judge uses).
 - **After both jobs:** each job's summary only saw the files done by then, so rewrite the full table
   with a short CPU job: `qsub -l walltime=00:15:00 -v STEP=exp8-rescore-summary scripts/omega-cpu.pbs`.
 
 **Checks** (write the results down for the write-up):
 
 1. **Completeness:** there are 19 files under `runs/exp8/rescore/{test,calib,router_train}/` (7 + 6 + 6),
-   each with the row count above, unique ids, and no missing `p_correct`.
+   each with the row count above, unique ids, and no missing `p_correct`. Report `grounded` per cell. It is
+   not a pass/fail check here, because abstentions lower it.
 2. **Consistency with the lenient scorer:** `graded_correct` ≤ `lenient` + 0.05 for most cells. The grader
    is stricter but also accepts format variants. A cell where `graded_correct` is far *above* `lenient` is
    suspicious: inspect 5 of its rows.
@@ -204,7 +209,8 @@ same for `report-clean.json`. There are 6 `done.json` files (qp and qpa × 3 see
 
 ```bash
 mkdir -p results/exp8-rescore
-cp runs/exp8/rescore/validation.json runs/exp8/rescore/validation-disagreements.csv runs/exp8/rescore/summary.csv results/exp8-rescore/
+cp runs/exp8/rescore/validation.json runs/exp8/rescore/validation-disagreements.csv runs/exp8/rescore/validation-commits.csv runs/exp8/rescore/summary.csv results/exp8-rescore/
+rsync -a --exclude='*.parts/' --include='*/' --include='*.parquet' --exclude='*' runs/exp8/commit/ results/exp8-rescore/commit/
 rsync -a --exclude='*.parts/' --include='*/' --include='*.parquet' --exclude='*' runs/exp8/rescore/ results/exp8-rescore/graded/
 mkdir -p results/exp8-phase2c && rsync -a --exclude='*.parts/' runs/exp8/judge-5opt-graded/ results/exp8-phase2c/
 cp configs/exp8-judge-graded.toml results/exp8-phase2c/plan.toml
@@ -224,15 +230,15 @@ this order. Be factual. Every number comes from the files above.
      the paired AIQ intervals from `report.json` → `bootstrap`.
    - What is the judge's accuracy and cost at its operating points?
 2. **Setup:** the grader (model, revision from `validation.json`, bf16, one answer per pass), the prompts
-   (point to `rescore.py`), extract-then-grade (version 3; say why versions 1 and 2 were dropped, with
-   their results READMEs), `correct` = P ≥ 0.5 on the extracted answer, and the judge settings (unchanged
-   except the labels).
+   (point to `rescore.py`), self-commit then grade (version 4; say in a sentence each why versions 1–3
+   were dropped, with their results READMEs), `correct` = P ≥ 0.5 on the committed answer, the commit
+   cost added to each option, and the judge settings (unchanged except the labels and the commit cost).
 3. **Validation:** the table of step 2, plus your notes on the disagreements.
 4. **Execution:** job ids, durations, exit codes, any fix you made, and the checks of steps 3–4.
 5. **Results.**
-   - **Per-cell table on test:** lenient, graded, extracted EM, extracted F1, units and % of 929. Put the
-     passage-dump control in a row. Do the same in short for calib and router_train, to show whether test
-     is representative.
+   - **Per-cell table on test:** lenient, graded, committed EM, committed F1, grounded, units (with the
+     commit) and % of 929. Do the same in short for calib and router_train, to show whether test is
+     representative.
    - **Policy table:** fixed hull, entropy, logistic regression before and after, judge qp and qpa at the
      budget point and the near-best point, and the oracle, with AIQ and intervals.
    - **What-the-judge-picks table**, as in the earlier write-ups.

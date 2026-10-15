@@ -13,8 +13,8 @@
 #   bash scripts/run_cluster.sh exp8-pilot   # experiment 8: every answering cell on EXP8_PILOT (default 20) test questions (GPU)
 #   bash scripts/run_cluster.sh exp8-answer  # experiment 8: the cells in CELLS (default all) on all splits (GPU)
 #   bash scripts/run_cluster.sh exp8-judge   # experiment 8, phase 2: train and evaluate the option-choosing judge (GPU, <1 h)
-#   bash scripts/run_cluster.sh exp8-rescore-validate  # experiment 8 re-scoring: check the LLM grader on controls (GPU, ~10 min)
-#   bash scripts/run_cluster.sh exp8-rescore           # grade + extract every cached answer in SPLITS (GPU, ~2-3 h)
+#   bash scripts/run_cluster.sh exp8-rescore-validate  # experiment 8 re-scoring: check the commit step and the grader (GPU, ~30 min)
+#   bash scripts/run_cluster.sh exp8-rescore           # self-commit, then grade, every cached answer in SPLITS (GPU, hours)
 #   bash scripts/run_cluster.sh exp8-judge-graded      # the five-option judge on the grader's labels (GPU, ~20 min)
 #   bash scripts/run_cluster.sh exp8-rescore-summary   # the re-scoring summary table only (CPU job: scripts/omega-cpu.pbs)
 # Where each step runs: login node = `prepare` (downloads + light parquet export) and `exp8-prepare` (downloads); CPU job
@@ -128,6 +128,7 @@ EOF
     ;;
   exp8-rescore)
     for split in ${SPLITS:-test calib router_train}; do
+      $BIN rescore commit --split "$split"   # the cells' own models (3B, 70B in 4-bit) finish their answers
       $BIN rescore run --split "$split" --grader "${GRADER:-Qwen/Qwen2.5-14B-Instruct}"
     done
     $BIN rescore summary

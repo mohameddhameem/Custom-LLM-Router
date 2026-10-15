@@ -131,7 +131,8 @@ def load_tables(out, split: str, options: list[str], state_k: int, metric: str =
     """Question table (pool_answer.load_split) plus ok/cost/entropy/pred matrices over the common ids.
 
     `metric` is the correctness column: "lenient" from the answer files, or a column of the re-scored
-    files in `rescore_dir/<split>/<cell>.parquet` (stair.rescore: "correct" from the LLM grader, "ext_em").
+    files in `rescore_dir/<split>/<cell>.parquet` (stair.rescore: "correct" from the LLM grader on the
+    self-committed answer, "commit_em"). Then each option's cost includes its commit step (`commit_units`).
     """
     from pathlib import Path
 
@@ -153,6 +154,9 @@ def load_tables(out, split: str, options: list[str], state_k: int, metric: str =
             raise ValueError(f"re-scored answers missing for {missing} on {split}: run `rescore run --split {split}`")
         ok = np.stack([graded[o].loc[ids, metric].to_numpy() >= 0.5 for o in options], axis=1)
     cost = np.stack([answers[o].loc[ids, "units"].to_numpy() for o in options], axis=1)
+    if metric != "lenient":  # the self-commit step (stair.rescore, version 4) is part of each option's cost
+        cost = cost + np.stack([graded[o].loc[ids, "commit_units"].to_numpy() if "commit_units" in graded[o]
+                                else np.zeros(len(ids)) for o in options], axis=1)
     df["entropy0"] = answers[options[0]].loc[ids, "entropy"].to_numpy()
     df["pred0"] = answers[options[0]].loc[ids, "pred"].to_numpy()
     return df, ok, cost

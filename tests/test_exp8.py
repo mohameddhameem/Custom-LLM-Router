@@ -109,8 +109,23 @@ def test_load_tables_uses_the_chosen_metric(tmp_path):
 
 
 def test_rescore_helpers():
-    from stair.rescore import first_sentence, is_none
+    from stair.rescore import committed_text, grounded
 
-    assert first_sentence("Kalo did it. Then Rimer came.") == "Kalo did it."
-    assert first_sentence("No full stop") == "No full stop"
-    assert is_none("None.") and is_none(" none ") and is_none("") and not is_none("Nonesuch")
+    assert committed_text(' **"Forbidden Quest"**.\nBecause ...') == "Forbidden Quest"
+    assert committed_text("\n\n  Kalo.") == "Kalo" and committed_text("") == ""
+    assert grounded("Forbidden Quest", 'His debut was "Forbidden Quest" (2006).')
+    assert grounded("the Forbidden Quest", "forbidden quest")  # normalised: articles and case
+    assert grounded("Forbidden Quest film", "forbidden quest")  # 2 of 3 tokens >= 0.6
+    assert grounded("Yes", "Both films were released in 2009.")  # yes/no exempt
+    assert not grounded("Obsessed", "His debut was Forbidden Quest.") and not grounded("", "anything")
+
+
+def test_load_tables_adds_commit_cost(tmp_path):
+    out = _out_dir(tmp_path)
+    for cell in ("cheap", "strong"):
+        f = out / "rescore" / "test" / f"{cell}.parquet"
+        pd.read_parquet(f).assign(commit_units=0.5).to_parquet(f)
+    _, _, cost = ev.load_tables(out, "test", ["cheap", "strong"], 2, metric="correct", rescore_dir=out / "rescore")
+    assert cost[0].tolist() == [1.5, 9.5]
+    _, _, lenient_cost = ev.load_tables(out, "test", ["cheap", "strong"], 2)
+    assert lenient_cost[0].tolist() == [1.0, 9.0]  # the lenient metric has no commit step

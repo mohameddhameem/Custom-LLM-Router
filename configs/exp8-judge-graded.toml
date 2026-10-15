@@ -1,7 +1,8 @@
 # Experiment 8, phase 2 (docs/experiment-8-plan.md): the System One judge that picks an answer option.
 # This is the five-option plan; the three-option plan of 2026-10-14 is configs/exp8-judge-3opt.toml.
-# metric = "correct": labels and accuracy come from the LLM grader (stair.rescore, docs/gpu-jobs-exp8-rescore.md),
-# not the lenient scorer, which rewards long answers. The lenient-label run is configs/exp8-judge.toml.
+# metric = "correct": labels and accuracy come from the LLM grader on each answer's self-committed short answer
+# (stair.rescore version 4, docs/gpu-jobs-exp8-rescore.md), not the lenient scorer, which rewards long answers.
+# Costs then include the commit step. The lenient-label run is configs/exp8-judge.toml.
 #   uv run exp8-judge all --plan configs/exp8-judge.toml --exclude runs/exp8/nanojev_validation_ids.txt
 # Needs phase 1's answers for every option below (runs/exp8/answers/<split>/<cell>.parquet).
 out = "runs/exp8"
@@ -9,7 +10,7 @@ judge_dir = "judge-5opt-graded"   # the lenient-label run of 2026-10-14/15 is in
 seeds = [0, 1, 2]
 inputs = ["qp", "qpa"]            # qp decides before any answer; qpa also reads the cheapest option's answer
 init = "sdmlai/nano-jev@v1.0"
-metric = "correct"                # LLM grader verdicts; "lenient" for the old scorer, "ext_em" for extracted EM
+metric = "correct"                # LLM grader on the self-committed answer; "commit_em" for its official EM; "lenient" for the old scorer
 rescore_dir = "runs/exp8/rescore"
 state_k = 5                       # nano-jev passages in the judge's state (the cells read the top 5)
 strong_units = 929                # AgentTTS's strong-everything cost: 72B retrieval (814) + 70B answering (115)
