@@ -22,6 +22,7 @@ from transformers import (  # noqa: E402
 from stair import evaluate_routing, make_splits, router, run_experts  # noqa: E402
 from stair.evidence import CrossEncoderScorer, RerankerScorer  # noqa: E402
 from stair.experts import PROMPT, HFExpert  # noqa: E402
+from stair.rescore import GRADE_SYSTEM, GRADE_USER  # noqa: E402
 from synthetic import make_split  # noqa: E402
 
 CONFIGS = Path(__file__).parent.parent / "configs"
@@ -48,7 +49,7 @@ def tiny_models(tmp_path_factory):
     root = tmp_path_factory.mktemp("models")
     df = make_split(50, seed=3)
     texts = [PROMPT, "question: option: irrelevant partially relevant directly answers yes no user assistant",
-             CrossEncoderScorer.RELEVANCE[0], CrossEncoderScorer.SUFFICIENT[0]]
+             CrossEncoderScorer.RELEVANCE[0], CrossEncoderScorer.SUFFICIENT[0], GRADE_SYSTEM, GRADE_USER]
     texts += df["question"].tolist() + df["full_context"].tolist()
 
     lm_tok = build_tokenizer(texts, pair_template=False)
@@ -415,23 +416,24 @@ def test_exp8_judge_trains_and_evaluates(tiny_models, tmp_path):
     assert (out / "judge-4opt" / "eval" / "curves.csv").exists()
 
 
-def test_grader_batched_scores_match_single(tiny_models):
+def test_grader_verdict_mass_batched_matches_single(tiny_models):
     import torch
 
-    from stair.rescore import VERDICTS, Grader
+    from stair.rescore import Grader
 
-    g = Grader(str(tiny_models / "chat-lm"), "cpu")
-    prompts = [g.gen.chat("sys", "Question: Who directed the film?"), g.gen.chat("sys", "Who?"),
-               g.gen.chat("sys", "Question: Where was Kalo born? Response: Kalo was born in Rimer.")]
-    batched = g.verdict_logprobs(prompts, batch=3)
-    for i, p in enumerate(prompts):  # no padding: the plain full-sequence log-likelihood
-        for v, cont in enumerate(g.verdict_ids):
-            ids = torch.tensor([g.tok(p, add_special_tokens=False)["input_ids"] + cont])
-            logp = torch.log_softmax(g.model(input_ids=ids).logits[0, :-1].float(), dim=-1)
-            want = logp[-len(cont):].gather(-1, torch.tensor(cont).unsqueeze(-1)).sum().item()
-            assert batched[i, v] == pytest.approx(want, abs=1e-4)
-    p = g.grade(["Who?", "Who?"], ["Kalo", "Kalo"], ["Kalo.", "Kalo."], batch=1)
-    assert np.allclose(p, p[0]) and 0 < p[0] < 1 and len(VERDICTS) == 2
+    g = Grader(str(tiny_models / "chat-lm"), "cpu", dtype="float32")
+    assert len(g.correct_ids) and len(g.incorrect_ids)  # the tiny vocabulary holds both verdict words
+    assert not set(g.correct_ids) & set(g.incorrect_ids)
+    prompts = g.grade_prompts(["Who directed the film?", "Who?", "Where was Kalo born?"], ["Kalo"] * 3,
+                              ["Kalo.", "It was Rimer, not Kalo, who directed it.", "Kalo was born in Rimer."])
+    p_b, m_b = g.verdict_probs(prompts, batch=3)
+    for i, prompt in enumerate(prompts):  # unpadded, by hand
+        ids = torch.tensor([g.tok(prompt, add_special_tokens=False)["input_ids"]])
+        last = torch.softmax(g.model(input_ids=ids).logits[0, -1].float(), -1)
+        pc, pi = last[g.correct_ids].sum().item(), last[g.incorrect_ids].sum().item()
+        assert p_b[i] == pytest.approx(pc / (pc + pi), abs=1e-5) and m_b[i] == pytest.approx(pc + pi, abs=1e-5)
+    written = g.written_verdicts(["Who?"], ["Kalo"], ["Kalo."])
+    assert written.shape == (1,)
 
 
 def test_rescore_validate_and_run(tiny_models, tmp_path):
@@ -448,18 +450,20 @@ def test_rescore_validate_and_run(tiny_models, tmp_path):
     pd.DataFrame({"id": ids, "pred": ["Kalo", "Rimer"] * 3, "lenient": [1.0, 0.0] * 3, "units": 2.0}).to_parquet(
         out / "answers" / "test" / "cell.parquet")
     known = tmp_path / "known.parquet"
-    pd.DataFrame({"id": ids, "large_pred": ["Kalo", "Rimer"] * 3, "large_em": [1.0, 0.0] * 3,
-                  "large_f1": [1.0, 0.0] * 3}).to_parquet(known)
+    pd.DataFrame({"id": ids, "question": "Who directed the film?", "answer": "Kalo", "large_pred": ["Kalo", "Rimer"] * 3,
+                  "large_em": [1.0, 0.0] * 3, "large_f1": [1.0, 0.0] * 3}).to_parquet(known)
     common = ["--out", str(out), "--grader", str(tiny_models / "chat-lm"), "--device", "cpu", "--batch", "2"]
     with pytest.raises(SystemExit):
         rescore.main(["run", *common])  # no validation yet: refuses
-    rescore.main(["validate", *common, "--known", str(known)])
+    rescore.main(["validate", *common, "--known", str(known), "--known-start", "0", "--known-count", "6",
+                  "--dump-split", "test", "--diagnostic-start", "0"])
     v = json.loads((out / "rescore" / "validation.json").read_text())
-    assert v["known_n"] == 6 and v["dump_n"] == 6 and isinstance(v["passed"], bool)  # a random tiny model may fail it
+    assert v["gate"]["known_n"] == 6 and v["gate"]["dump_n"] == 6 and isinstance(v["passed"], bool)  # a tiny model may fail
+    assert 0 <= v["gate"]["written_agreement"] <= 1 and "diagnostic_not_gating" in v
     rescore.main(["run", *common, "--skip-validation-check", "--chunk-size", "4"])
     d = pd.read_parquet(out / "rescore" / "test" / "cell.parquet")
     assert d["id"].tolist() == ids and d["p_correct"].between(0, 1).all()
-    assert set(d.columns) >= {"correct", "extracted", "ext_em", "ext_f1", "lenient"}
+    assert set(d.columns) >= {"correct", "verdict_mass", "extracted", "ext_em", "ext_f1", "lenient"}
     rescore.main(["summary", "--out", str(out)])
     s = pd.read_csv(out / "rescore" / "summary.csv")
     assert s.loc[0, "n"] == 6 and s.loc[0, "units"] == 2.0

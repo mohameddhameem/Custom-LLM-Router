@@ -20,7 +20,8 @@ See the "Metric caveat" at the top of [experiments/2026-10-14-experiment-8.md](e
 This job re-scores every cached answer two ways:
 
 1. **An LLM grader** (`Qwen/Qwen2.5-14B-Instruct`, bf16, one answer per forward pass). It reads (question,
-   gold, response) and returns P(CORRECT) from the exact log-likelihoods of the two verdict words. This
+   gold, response) and returns P(CORRECT) from the next-token mass of the CORRECT-prefix against the
+   INCORRECT-prefix tokens (version 2). This
    becomes the primary metric, `correct` = P ≥ 0.5.
 2. **Short-answer extraction** by the same model, then the official HotpotQA EM/F1. That is the secondary
    metric, comparable with experiments 1–7.
@@ -92,19 +93,43 @@ identically. Do not run that step on the login node.
 qsub -l walltime=01:00:00 -v STEP=exp8-rescore-validate scripts/omega.pbs
 ```
 
-When it finishes (`qstat -u $USER` no longer lists it), read `runs/exp8/rescore/validation.json`. It
-reports:
+**History: version 1 of the grader failed this step.** Job 42683 on 2026-10-15 is recorded in
+`results/exp8-rescore/README.md`.
 
-| Field | Meaning | Must be |
+- **The failure.** Its prompt asked whether the response answered "correctly". The 14B graded identical
+  answers INCORRECT when it doubted the gold answer itself (for example "Ephedrine" against "Ephedrine",
+  P = 0.00001), and it passed 66% of the pasted-passage dumps.
+- **Version 2, now in `src/stair/rescore.py`, was written by the project owner's local session.** Its
+  changes:
+  - the gold answer is correct by definition;
+  - a response with no committed final answer is INCORRECT;
+  - P(CORRECT) comes from the next-token mass of all CORRECT-prefix against INCORRECT-prefix tokens, so
+    it is independent of tokenisation;
+  - a written-verdict self-check;
+  - the gate now uses a **fresh** slice, not the one the failure was diagnosed on.
+
+  Its thresholds were fixed before any run. You still MUST NOT change the prompt or the thresholds.
+
+When the job finishes (`qstat -u $USER` no longer lists it), read `runs/exp8/rescore/validation.json`.
+The pass/fail fields are under `gate`. That is experiment 1's 7B answers to dev items 1000–1499, plus the
+pasted-passage control on the calib pools:
+
+| `gate` field | Meaning | Must be |
 |---|---|---|
-| `agree_em1_correct` | Share of experiment 1's 7B short answers with official EM = 1 that the grader calls CORRECT | ≥ 0.90 |
-| `agree_f10_incorrect` | Share of those with F1 = 0 that it calls INCORRECT | ≥ 0.90 |
-| `dump_graded_correct` | Share of "responses" made of nano-jev's top-5 passages pasted together that it calls CORRECT (the lenient scorer gave these 0.798) | ≤ 0.10 |
-| `passed` | All three hold | `true` |
+| `agree_em1_correct` | Share of the short answers with official EM = 1 that the grader calls CORRECT | ≥ 0.95 |
+| `agree_f10_incorrect` | Share of those with F1 = 0 that it calls INCORRECT (HotpotQA gold strings have aliases, such as "AdScam" for "The sponsorship scandal", so this cannot reach 1.0) | ≥ 0.80 |
+| `dump_graded_correct` | Share of "responses" made of nano-jev's top-5 passages pasted together that it calls CORRECT (the lenient scorer gave these 0.798) | ≤ 0.05 |
+| `written_agreement` | Share where the grader's written greedy verdict agrees with its scored P(CORRECT) ≥ 0.5. Lower means a computation or format bug | ≥ 0.95 |
+| `verdict_mass_mean` | Mean next-token probability on the two verdicts (format adherence) | ≥ 0.90 |
+| `passed` (top level) | All five hold | `true` |
+
+`diagnostic_not_gating` repeats the checks on the slice where version 1 failed (dev items 500–999, with
+dumps from the test pools). Report it, but it does not decide pass or fail.
 
 Also read 10 rows of `runs/exp8/rescore/validation-disagreements.csv` yourself and note, in one line each,
 whether the grader or the official EM looks right. EM is strict, so some "EM = 0 but grader says correct"
-cases are fine: aliases and formats. **If `passed` is false: STOP** (see Rules).
+cases are fine: aliases and formats. **If `passed` is false: STOP** (see Rules). Report all `gate` numbers
+and 10 disagreement rows.
 
 ## Step 3: re-score every answer (GPU, about 2–3 h; two jobs in parallel)
 
