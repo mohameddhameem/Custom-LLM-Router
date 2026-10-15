@@ -55,6 +55,35 @@ cascade router (0.672). Like every router so far, none reaches always-large's F1
 
 ## Experiment 8: the AgentTTS setting (lenient accuracy, 500 test questions)
 
+> **Metric caveat (added 2026-10-15): do not quote these accuracies or the H3 verdict until re-scoring.**
+> The lenient scorer used here counts an answer as correct when the gold answer appears anywhere in it. That
+> favours long answers. The fused answers average 220–260 words, against 41 for the 70B. On the 500 test questions:
+>
+> | Setup | Words | Lenient | Gold in the first 40 words | Gold in the first sentence |
+> |---|---|---|---|---|
+> | 3B, one answer | 87 | 0.608 | 0.354 | 0.178 |
+> | 70B, one answer | 41 | 0.680 | 0.616 | 0.524 |
+> | 3B, 10 samples fused | 252 | 0.726 | 0.466 | 0.390 |
+> | 3B, 40 samples fused | 223 | 0.756 | 0.508 | 0.422 |
+> | No model: nano-jev's top 5 passages pasted as the answer | | **0.798** | | |
+>
+> - **No model beats every model.** Pasting the passages scores 0.798, above every answer setup.
+> - **With length held fixed, the ranking reverses:** the 70B, not the fused 3B, is the best answerer.
+> - **Many late hits are wrong.** 167 of the 40-sample cell's 378 lenient hits occur only after its first sentence.
+>   In a random sample of 8 such hits, about 5 hedged or gave a different answer first and then quoted a passage
+>   that contains the gold. Example: the Peabody Hotel "named after George Peabody", while the gold is "ducks".
+> - **It also misses right answers:** "November 22, 1761" against the gold "22 November".
+> - **AgentTTS's 74.6 is affected too.** It answers in long form and was re-scored with a lenient scorer, so it is
+>   likely inflated the same way.
+>
+> **What stands and what does not.**
+> - **Stands:** retrieval (phase 0), the costs, data integrity, and the evaluation code. A CPU rerun of the
+>   five-option evaluation from the tracked judge probabilities reproduces `report.json` exactly.
+> - **Not established:** "H3 met (75.6 against 74.6)", "the fused 3B beats the 70B", and the judge's
+>   accuracy and gain, because its labels come from the lenient scorer.
+>
+> Re-scoring with an LLM grader and short-answer extraction is in [gpu-jobs-exp8-rescore.md](gpu-jobs-exp8-rescore.md).
+
 Different questions, models and metric from runs 1-7: AgentTTS's 100-candidate pools, Llama-3.2-3B and Llama-3.1-70B
 reading nano-jev's top 5 passages, scored by lenient accuracy (the gold answer contained in the response). Cost is in
 AgentTTS units, as a share of its strong-everything cost (929). Details: [experiments/2026-10-14-experiment-8.md](experiments/2026-10-14-experiment-8.md); retrieval and answer cells: [experiment-8-plan.md](experiment-8-plan.md).

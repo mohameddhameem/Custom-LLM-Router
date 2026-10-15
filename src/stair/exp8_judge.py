@@ -56,7 +56,8 @@ def items_for(df: pd.DataFrame, labels: list[str], inputs: str) -> list[dict]:
 
 def load_all(plan: dict) -> dict[str, tuple]:
     options = [o["cell"] for o in plan["options"]]
-    return {s: ev.load_tables(plan.get("out", "runs/exp8"), s, options, plan["state_k"])
+    return {s: ev.load_tables(plan.get("out", "runs/exp8"), s, options, plan["state_k"], plan.get("metric", "lenient"),
+                              plan.get("rescore_dir"))
             for s in ("router_train", "calib", "test")}
 
 
@@ -122,7 +123,8 @@ def run_eval(tables: dict, plan: dict, out: Path, exclude: set[str] | None = Non
     strong = plan["strong_units"]
     budget = plan["budget_fraction"] * strong
     cmin, cmax = float(cost_t.mean(0).min()), float(cost_t.mean(0).max())
-    report = {"n_test": n, "options": labels, "budget_units": budget, "strong_units": strong,
+    report = {"n_test": n, "metric": plan.get("metric", "lenient"), "options": labels, "budget_units": budget,
+              "strong_units": strong,
               "agenttts": {"lenient": plan["agenttts_lenient"], "units": plan["agenttts_units"]},
               "always": ev.always_points(ok_t, cost_t), "oracle": ev.oracle_point(ok_t, cost_t)}
     curves = {"hull of fixed policies": lambda ix: ev.always_points(ok_t[ix], cost_t[ix])}

@@ -74,3 +74,35 @@ def test_evidence_features_and_logistic():
     y = (X[:, 0] > 0).astype(int)
     model, C = ev.fit_logistic(X, y, 0)
     assert model.predict_proba(X)[:, 1][y == 1].mean() > 0.7 and C in (0.01, 0.03, 0.1, 0.3, 1.0, 3.0)
+
+
+def _out_dir(tmp_path, n=6):
+    """A minimal runs/exp8 layout: pools, nano-jev scores, two answer cells and their re-scored copies."""
+    out = tmp_path / "exp8"
+    for d in ("pools", "scores", "answers/test", "rescore/test"):
+        (out / d).mkdir(parents=True)
+    ids = [f"q{i}" for i in range(n)]
+    pd.DataFrame({"id": ids, "question": "Who?", "answer": "Kalo", "titles": [["A", "B"]] * n,
+                  "texts": [["Kalo did it.", "Other."]] * n, "gold_idx": [[0]] * n}).to_parquet(out / "pools" / "test.parquet")
+    pd.DataFrame({"id": ids, "nanojev": [[0.9, 0.1]] * n, "tokens": [100] * n}).to_parquet(out / "scores" / "test.parquet")
+    for cell, lenient, graded in (("cheap", [1, 1, 0, 0, 1, 0], [0, 1, 0, 0, 1, 0]), ("strong", [1, 1, 1, 1, 1, 0], [1, 1, 1, 0, 0, 0])):
+        pd.DataFrame({"id": ids, "lenient": np.array(lenient, float), "units": 1.0 if cell == "cheap" else 9.0,
+                      "entropy": 0.5, "pred": "x"}).to_parquet(out / "answers" / "test" / f"{cell}.parquet")
+        pd.DataFrame({"id": ids, "correct": np.array(graded, float), "ext_em": 0.0}).to_parquet(
+            out / "rescore" / "test" / f"{cell}.parquet")
+    return out
+
+
+def test_load_tables_uses_the_chosen_metric(tmp_path):
+    out = _out_dir(tmp_path)
+    _, ok_l, cost = ev.load_tables(out, "test", ["cheap", "strong"], 2)
+    _, ok_g, _ = ev.load_tables(out, "test", ["cheap", "strong"], 2, metric="correct", rescore_dir=out / "rescore")
+    assert ok_l[:, 0].tolist() == [True, True, False, False, True, False]
+    assert ok_g[:, 0].tolist() == [False, True, False, False, True, False]
+    assert ok_g[:, 1].tolist() == [True, True, True, False, False, False]
+    assert cost[0].tolist() == [1.0, 9.0]
+    with pytest.raises(ValueError, match="rescore_dir"):
+        ev.load_tables(out, "test", ["cheap", "strong"], 2, metric="correct")
+    (out / "rescore" / "test" / "strong.parquet").unlink()
+    with pytest.raises(FileNotFoundError):
+        ev.load_tables(out, "test", ["cheap", "strong"], 2, metric="correct", rescore_dir=out / "rescore")

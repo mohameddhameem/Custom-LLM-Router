@@ -413,3 +413,53 @@ def test_exp8_judge_trains_and_evaluates(tiny_models, tmp_path):
     clean = exp8_judge.run_eval(tables, plan, out, set(tables["test"][0]["id"][:5]), "-clean")
     assert clean["n_test"] == 10 and (out / "judge-4opt" / "eval" / "report-clean.json").exists()
     assert (out / "judge-4opt" / "eval" / "curves.csv").exists()
+
+
+def test_grader_batched_scores_match_single(tiny_models):
+    import torch
+
+    from stair.rescore import VERDICTS, Grader
+
+    g = Grader(str(tiny_models / "chat-lm"), "cpu")
+    prompts = [g.gen.chat("sys", "Question: Who directed the film?"), g.gen.chat("sys", "Who?"),
+               g.gen.chat("sys", "Question: Where was Kalo born? Response: Kalo was born in Rimer.")]
+    batched = g.verdict_logprobs(prompts, batch=3)
+    for i, p in enumerate(prompts):  # no padding: the plain full-sequence log-likelihood
+        for v, cont in enumerate(g.verdict_ids):
+            ids = torch.tensor([g.tok(p, add_special_tokens=False)["input_ids"] + cont])
+            logp = torch.log_softmax(g.model(input_ids=ids).logits[0, :-1].float(), dim=-1)
+            want = logp[-len(cont):].gather(-1, torch.tensor(cont).unsqueeze(-1)).sum().item()
+            assert batched[i, v] == pytest.approx(want, abs=1e-4)
+    p = g.grade(["Who?", "Who?"], ["Kalo", "Kalo"], ["Kalo.", "Kalo."], batch=1)
+    assert np.allclose(p, p[0]) and 0 < p[0] < 1 and len(VERDICTS) == 2
+
+
+def test_rescore_validate_and_run(tiny_models, tmp_path):
+    from stair import rescore
+
+    out = tmp_path / "exp8"
+    for d in ("pools", "scores", "answers/test"):
+        (out / d).mkdir(parents=True)
+    ids = [f"q{i}" for i in range(6)]
+    pd.DataFrame({"id": ids, "question": "Who directed the film?", "answer": "Kalo",
+                  "titles": [["Film", "Other"]] * 6, "texts": [["It was directed by Kalo.", "Unrelated."]] * 6,
+                  "gold_idx": [[0]] * 6}).to_parquet(out / "pools" / "test.parquet")
+    pd.DataFrame({"id": ids, "nanojev": [[0.9, 0.1]] * 6, "tokens": [100] * 6}).to_parquet(out / "scores" / "test.parquet")
+    pd.DataFrame({"id": ids, "pred": ["Kalo", "Rimer"] * 3, "lenient": [1.0, 0.0] * 3, "units": 2.0}).to_parquet(
+        out / "answers" / "test" / "cell.parquet")
+    known = tmp_path / "known.parquet"
+    pd.DataFrame({"id": ids, "large_pred": ["Kalo", "Rimer"] * 3, "large_em": [1.0, 0.0] * 3,
+                  "large_f1": [1.0, 0.0] * 3}).to_parquet(known)
+    common = ["--out", str(out), "--grader", str(tiny_models / "chat-lm"), "--device", "cpu", "--batch", "2"]
+    with pytest.raises(SystemExit):
+        rescore.main(["run", *common])  # no validation yet: refuses
+    rescore.main(["validate", *common, "--known", str(known)])
+    v = json.loads((out / "rescore" / "validation.json").read_text())
+    assert v["known_n"] == 6 and v["dump_n"] == 6 and isinstance(v["passed"], bool)  # a random tiny model may fail it
+    rescore.main(["run", *common, "--skip-validation-check", "--chunk-size", "4"])
+    d = pd.read_parquet(out / "rescore" / "test" / "cell.parquet")
+    assert d["id"].tolist() == ids and d["p_correct"].between(0, 1).all()
+    assert set(d.columns) >= {"correct", "extracted", "ext_em", "ext_f1", "lenient"}
+    rescore.main(["summary", "--out", str(out)])
+    s = pd.read_csv(out / "rescore" / "summary.csv")
+    assert s.loc[0, "n"] == 6 and s.loc[0, "units"] == 2.0

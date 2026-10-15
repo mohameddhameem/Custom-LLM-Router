@@ -12,6 +12,10 @@
 #   bash scripts/run_cluster.sh exp8-pilot   # experiment 8: every answering cell on EXP8_PILOT (default 20) test questions (GPU)
 #   bash scripts/run_cluster.sh exp8-answer  # experiment 8: the cells in CELLS (default all) on all splits (GPU)
 #   bash scripts/run_cluster.sh exp8-judge   # experiment 8, phase 2: train and evaluate the option-choosing judge (GPU, <1 h)
+#   bash scripts/run_cluster.sh exp8-rescore-validate  # experiment 8 re-scoring: check the LLM grader on controls (GPU, ~10 min)
+#   bash scripts/run_cluster.sh exp8-rescore           # grade + extract every cached answer in SPLITS (GPU, ~2-3 h)
+#   bash scripts/run_cluster.sh exp8-judge-graded      # the five-option judge on the grader's labels (GPU, ~20 min)
+# The re-scoring steps are documented step by step in docs/gpu-jobs-exp8-rescore.md.
 #
 # Every step resumes: after a disconnect or a killed job, run the same command again.
 # An SSH disconnect kills foreground jobs, so start long steps inside tmux/screen, or with
@@ -22,7 +26,7 @@
 # the large expert changed) instead of recomputing them: see run-experts --reuse-from.
 set -euo pipefail
 
-STEP=${1:?usage: run_cluster.sh prepare|pilot|full|eval|judge-pilot|judge|exp8-prepare|exp8-score|exp8-pilot|exp8-answer|exp8-judge}
+STEP=${1:?usage: run_cluster.sh prepare|pilot|full|eval|judge-pilot|judge|exp8-prepare|exp8-score|exp8-pilot|exp8-answer|exp8-judge|exp8-rescore-validate|exp8-rescore|exp8-judge-graded}
 CONFIG=${CONFIG:-configs/gpu.toml}
 RUN=${RUN:-runs/gpu}
 DATA=${DATA:-data/hotpotqa}
@@ -111,8 +115,20 @@ EOF
   exp8-judge)
     $BIN exp8-judge all --plan "${PLAN:-configs/exp8-judge.toml}" --exclude runs/exp8/nanojev_validation_ids.txt
     ;;
+  exp8-rescore-validate)
+    $BIN rescore validate --grader "${GRADER:-Qwen/Qwen2.5-14B-Instruct}"
+    ;;
+  exp8-rescore)
+    for split in ${SPLITS:-test calib router_train}; do
+      $BIN rescore run --split "$split" --grader "${GRADER:-Qwen/Qwen2.5-14B-Instruct}"
+    done
+    $BIN rescore summary
+    ;;
+  exp8-judge-graded)
+    $BIN exp8-judge all --plan "${PLAN:-configs/exp8-judge-graded.toml}" --exclude runs/exp8/nanojev_validation_ids.txt
+    ;;
   *)
-    echo "unknown step: $STEP (prepare|pilot|full|eval|judge-pilot|judge|exp8-prepare|exp8-score|exp8-pilot|exp8-answer|exp8-judge)" >&2
+    echo "unknown step: $STEP (prepare|pilot|full|eval|judge-pilot|judge|exp8-prepare|exp8-score|exp8-pilot|exp8-answer|exp8-judge|exp8-rescore-validate|exp8-rescore|exp8-judge-graded)" >&2
     exit 2
     ;;
 esac

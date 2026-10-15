@@ -127,8 +127,12 @@ def diff(boot: dict, a: str, b: str) -> dict:
     return {"ci95": [float(np.percentile(d, 2.5)), float(np.percentile(d, 97.5))], "p_le_0": float((d <= 0).mean())}
 
 
-def load_tables(out, split: str, options: list[str], state_k: int):
-    """Question table (pool_answer.load_split) plus ok/cost/entropy/pred matrices over the common ids."""
+def load_tables(out, split: str, options: list[str], state_k: int, metric: str = "lenient", rescore_dir=None):
+    """Question table (pool_answer.load_split) plus ok/cost/entropy/pred matrices over the common ids.
+
+    `metric` is the correctness column: "lenient" from the answer files, or a column of the re-scored
+    files in `rescore_dir/<split>/<cell>.parquet` (stair.rescore: "correct" from the LLM grader, "ext_em").
+    """
     from pathlib import Path
 
     from stair.pool_answer import load_split
@@ -138,7 +142,16 @@ def load_tables(out, split: str, options: list[str], state_k: int):
     ids = [i for i in pd.read_parquet(out / "pools" / f"{split}.parquet", columns=["id"])["id"]
            if all(i in a.index for a in answers.values())]
     df = load_split(out, split, state_k, None).set_index("id").loc[ids].reset_index()
-    ok = np.stack([answers[o].loc[ids, "lenient"].to_numpy() >= 0.5 for o in options], axis=1)
+    if metric == "lenient":
+        ok = np.stack([answers[o].loc[ids, "lenient"].to_numpy() >= 0.5 for o in options], axis=1)
+    else:
+        if rescore_dir is None:
+            raise ValueError(f"metric {metric!r} needs rescore_dir (the stair.rescore output)")
+        graded = {o: pd.read_parquet(Path(rescore_dir) / split / f"{o}.parquet").set_index("id") for o in options}
+        missing = [o for o in options if not set(ids) <= set(graded[o].index)]
+        if missing:
+            raise ValueError(f"re-scored answers missing for {missing} on {split}: run `rescore run --split {split}`")
+        ok = np.stack([graded[o].loc[ids, metric].to_numpy() >= 0.5 for o in options], axis=1)
     cost = np.stack([answers[o].loc[ids, "units"].to_numpy() for o in options], axis=1)
     df["entropy0"] = answers[options[0]].loc[ids, "entropy"].to_numpy()
     df["pred0"] = answers[options[0]].loc[ids, "pred"].to_numpy()
