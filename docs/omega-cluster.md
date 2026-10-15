@@ -67,9 +67,13 @@ Every step resumes, so if a job dies or runs out of walltime, submit it again.
 
    Models go to `~/.cache/huggingface` (shared with `a-11`). Set `HF_HOME` to put them elsewhere.
 
-2. **Job script**: [`scripts/omega.pbs`](../scripts/omega.pbs) requests one L40S, 8 CPUs, 64 GB
-   and 24 h. It stops early if torch cannot use the GPU, then runs
-   `scripts/run_cluster.sh $STEP`. The log is written live to `runs/logs/<jobid>.log`. PBS passes
+2. **Job scripts**:
+   - [`scripts/omega.pbs`](../scripts/omega.pbs) is for GPU steps. It requests one L40S, 8 CPUs, 64 GB and
+     **4 h by default**. Pass a longer walltime on the command line for long steps:
+     `qsub -l walltime=12:00:00 -v STEP=... scripts/omega.pbs`. It stops early if torch cannot use the GPU,
+     then runs `scripts/run_cluster.sh $STEP`.
+   - [`scripts/omega-cpu.pbs`](../scripts/omega-cpu.pbs) is for CPU-only steps. It uses queue `short`, 8 CPUs,
+     32 GB and 2 h, and runs offline from the Hugging Face cache. The log is written live to `runs/logs/<jobid>.log`. PBS passes
    no environment variables by default: pass `STEP` (and `CONFIG`, `RUN`, `PILOT` and so on, if
    needed) with `-v`. Always submit from the repo root.
 
@@ -92,16 +96,17 @@ Every step resumes, so if a job dies or runs out of walltime, submit it again.
    and `gpu-vllm.toml` runs (use different `RUN` directories). Do not start two jobs on the same
    `RUN`, because both would write the same cache files.
 
-5. **Eval only** (CPU, seconds): `bash scripts/run_cluster.sh eval` on the login node.
-   `full` already runs it at the end.
+5. **Eval only** (CPU, about 25 min: 5-fold CV over 10 routers): `qsub -v STEP=eval,RUN=runs/gpu scripts/omega-cpu.pbs`.
+   `full` already runs it at the end. Do not run it on the login node.
 
 ## Recovering from failures
 
 Every step resumes from its finished 500-question chunks, so a rerun never repeats work.
 Three layers use that:
 
-- **Retries inside the job**: `scripts/omega.pbs` reruns the step up to `ATTEMPTS` times (default 3,
-  60 s apart). This covers Hub or network hiccups and transient CUDA errors.
+- **Retries inside the job**: `scripts/omega.pbs` reruns the step up to `ATTEMPTS` times (default 2,
+  60 s apart; `scripts/omega-cpu.pbs` defaults to 1). This covers transient CUDA or filesystem errors. A
+  deterministic bug fails every attempt and burns allocation, so use `-v ATTEMPTS=1` for short jobs.
 - **Requeue** (`#PBS -r y`): if the node goes down, PBS restarts the job. The log appends.
 - **Backup jobs** for walltime kills and failures that outlast the retries. A backup starts only if
   the job before it fails, and PBS deletes it when that job succeeds:
@@ -129,6 +134,23 @@ the config, which a run directory accepts). Read `runs/logs/<jobid>.log`, fix th
 
 A submitted job keeps running if your SSH (PuTTY) session drops. You don't need `tmux` or
 `nohup` with `qsub`, only for interactive sessions.
+
+## Good practice on OMEGA
+
+From SMU's *OMEGA Quick User Guide* (IITS, v1.8). It is marked "SMU Classification: Restricted", so keep it
+out of git: a local copy can live in `reference/`, which git ignores. Questions go to helpdesk@smu.edu.sg.
+
+| Practice | How this project follows it |
+|---|---|
+| **The login node is for logging in, editing, git, downloads and `qsub`.** Compute runs as PBS jobs | Login node: `exp8-prepare` (downloads only), `prepare` (downloads plus a light parquet export, a few minutes; the CPU nodes' internet access is untested), and short `uv run python` reads of result files. Jobs: everything else. CPU-only steps (`eval`, `exp8-pools`, `exp8-rescore-summary`) go to queue `short` via `scripts/omega-cpu.pbs` |
+| **Request the resources the job needs:** `-l select=1:ncpus=…:mem=…`, `ngpus` on queue `GPU` | `omega.pbs` asks for 8 CPUs, 64 GB and 1 GPU. Light GPU steps (nano-jev scoring, judges) override with `-l select=1:ncpus=4:ngpus=1:mem=32gb` or 8 CPUs / 32 GB, as each job sheet shows |
+| **Size the walltime** (the guide's examples ask for 10 min to 3 h) | Default 4 h (GPU) and 2 h (CPU). Every job sheet gives each step its walltime, sized from the pilot or measured times with margin. Only the long answer runs ask for up to 24 h |
+| **Bill jobs to the right project:** `-P <project id>`, and check usage with `project_summary` | No project ID has been assigned yet, so jobs bill to the personal project. Run `project_summary` before multi-hour runs. If a course or supervisor project ID exists, pass `-P <id>` to `qsub` or un-comment `##PBS -P` in both scripts |
+| **Name jobs and keep their output:** `-N`, `-j oe`, `-o`, `-e` | `-N router` / `router-cpu` (or `-N` per job), `-j oe`, and a live log in `runs/logs/<jobid>.log` |
+| **Get notified:** `-m abe -M <email>` | Set in both scripts. The address is removed before the project submission (the repo is private until then) |
+| **Monitor and clean up:** `qstat`, `qdel`, `qdel -W force` | See "Watching and managing jobs". Delete queued backup jobs that are no longer needed |
+| (not in the guide) **Storage** | The Hugging Face cache in `$HOME` holds about 200 GB (Llama-3.1-70B alone is 141 GB). Once experiment 8 is final, delete what is not needed, e.g. `rm -rf ~/.cache/huggingface/hub/models--meta-llama--Llama-3.1-70B-Instruct`. Ask the helpdesk about quotas before downloading more |
+| (not in the guide) **AI assistants on the login node** | Claude Code sessions on omega follow the job sheets' rules: git, downloads, reading files and `qsub` only; never compute on the login node. Confirm with the helpdesk that this use is allowed under SMU's HPC policy |
 
 ## Etiquette
 

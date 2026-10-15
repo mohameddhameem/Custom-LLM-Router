@@ -52,6 +52,16 @@ No answers are regenerated. The code is in `src/stair/rescore.py`; read its docs
 - **Report numbers as they come out,** with their intervals. Do not round in a way that changes a
   comparison. Write "not significant" when an interval includes zero.
 - **The model must be downloaded on the login node** (step 1). The GPU jobs run with `HF_HUB_OFFLINE=1`.
+- **MUST NOT run compute on the login node.** The login node is for git, downloads, reading files and `qsub`
+  (SMU OMEGA user guide; [omega-cluster.md](omega-cluster.md), "Good practice on OMEGA"). Everything else runs as a
+  job:
+  - GPU steps use `scripts/omega.pbs`;
+  - CPU-only steps (building pools, the summary table) use `scripts/omega-cpu.pbs` (queue `short`).
+
+  Short `uv run python` one-liners that only read result files (the checks below) are fine on the login
+  node. Anything that loads a model, builds pools or trains is not.
+- **MUST give every `qsub` the walltime shown in this file.** `scripts/omega.pbs` defaults to 4 h. Ask for
+  no more than a step needs.
 
 ## Step 1: update and download (login node)
 
@@ -62,11 +72,13 @@ uv sync --extra llm
 uv run python -c "from huggingface_hub import snapshot_download as d; print(d('Qwen/Qwen2.5-14B-Instruct'))"   # ~30 GB, ungated
 ls runs/exp8/answers/test runs/exp8/answers/calib runs/exp8/answers/router_train
 ls runs/exp8/pools/test.parquet runs/exp8/scores/test.parquet results/gpu/test.parquet
+project_summary                                  # check the CPU/GPU-hour allocation before a multi-hour run
 ```
 
 **Check:** the three `answers/` folders list the cells below, and the other files exist. If
 `runs/exp8/answers` is missing, copy it from `results/exp8-phase1/answers` (`cp -r`). If the pools are
-missing, rebuild them with `bash scripts/run_cluster.sh exp8-prepare`: they rebuild identically.
+missing, rebuild them with a CPU job, `qsub -v STEP=exp8-pools scripts/omega-cpu.pbs` (about 5 min): they rebuild
+identically. Do not run that step on the login node.
 
 | Split | Cells (parquet files) | Rows each |
 |---|---|---|
@@ -77,7 +89,7 @@ missing, rebuild them with `bash scripts/run_cluster.sh exp8-prepare`: they rebu
 ## Step 2: validate the grader (GPU, about 10 min)
 
 ```bash
-qsub -v STEP=exp8-rescore-validate scripts/omega.pbs
+qsub -l walltime=01:00:00 -v STEP=exp8-rescore-validate scripts/omega.pbs
 ```
 
 When it finishes (`qstat -u $USER` no longer lists it), read `runs/exp8/rescore/validation.json`. It
@@ -97,8 +109,8 @@ cases are fine: aliases and formats. **If `passed` is false: STOP** (see Rules).
 ## Step 3: re-score every answer (GPU, about 2–3 h; two jobs in parallel)
 
 ```bash
-J1=$(qsub -v STEP=exp8-rescore,SPLITS=test scripts/omega.pbs)
-J2=$(qsub -v "STEP=exp8-rescore,SPLITS=calib router_train" scripts/omega.pbs)
+J1=$(qsub -l walltime=03:00:00 -v STEP=exp8-rescore,SPLITS=test scripts/omega.pbs)                    # 3,500 answers
+J2=$(qsub -l walltime=10:00:00 -v "STEP=exp8-rescore,SPLITS=calib router_train" scripts/omega.pbs)   # 24,000 answers
 ```
 
 - **Resuming:** each answer file is scored in resumable chunks of 250 into
@@ -106,8 +118,8 @@ J2=$(qsub -v "STEP=exp8-rescore,SPLITS=calib router_train" scripts/omega.pbs)
   If a job dies, resubmit the same line.
 - **Summary:** each job ends with `rescore summary`, which writes `runs/exp8/rescore/summary.csv`, one row
   per split and cell, with `lenient`, `graded_correct`, `ext_em`, `ext_f1` and `units`.
-- **After both jobs:** run `bash scripts/run_cluster.sh exp8-rescore` once more on the login node,
-  *without* qsub. Every file is done, so it only rewrites the full summary. It needs no GPU.
+- **After both jobs:** each job's summary only saw the files done by then, so rewrite the full table
+  with a short CPU job: `qsub -l walltime=00:15:00 -v STEP=exp8-rescore-summary scripts/omega-cpu.pbs`.
 
 **Checks** (write the results down for the write-up):
 
@@ -138,7 +150,7 @@ J2=$(qsub -v "STEP=exp8-rescore,SPLITS=calib router_train" scripts/omega.pbs)
 ## Step 4: retrain and evaluate the judge on the grader's labels (GPU, about 20 min)
 
 ```bash
-qsub -v STEP=exp8-judge-graded scripts/omega.pbs
+qsub -l select=1:ncpus=8:ngpus=1:mem=32gb -l walltime=01:00:00 -v STEP=exp8-judge-graded scripts/omega.pbs
 ```
 
 This uses [`configs/exp8-judge-graded.toml`](../configs/exp8-judge-graded.toml):

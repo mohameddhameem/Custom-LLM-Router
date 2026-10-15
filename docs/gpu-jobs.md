@@ -79,7 +79,7 @@ Submit from the repo root:
 qsub -v STEP=full,CONFIG=configs/gpu-large-top3.toml,RUN=runs/gpu-large-top3,REUSE=runs/gpu scripts/omega.pbs
 qsub -v STEP=full,CONFIG=configs/gpu-small-3b.toml,RUN=runs/gpu-small-3b,REUSE=runs/gpu scripts/omega.pbs
 qsub -v STEP=full,CONFIG=configs/gpu-large-top5.toml,RUN=runs/gpu-large-top5,REUSE=runs/gpu scripts/omega.pbs
-qsub -v STEP=full,CONFIG=configs/gpu-large-14b.toml,RUN=runs/gpu-large-14b,REUSE=runs/gpu scripts/omega.pbs
+qsub -l walltime=06:00:00 -v STEP=full,CONFIG=configs/gpu-large-14b.toml,RUN=runs/gpu-large-14b,REUSE=runs/gpu scripts/omega.pbs   # ~3 h; over the 4 h default with margin
 ```
 
 With the 2-GPU-per-user limit, two jobs run at a time and the others wait in the queue. Every

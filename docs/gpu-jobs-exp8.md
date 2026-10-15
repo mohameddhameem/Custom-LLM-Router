@@ -46,16 +46,18 @@ Everything resumes from finished chunks, so a failed job is simply resubmitted.
    cd ~/Custom-LLM-Router
    git fetch && git switch master && git pull   # after the PR is merged; until then: git switch feat/experiment-8-phase0
    uv sync --extra llm                           # now also installs bitsandbytes and accelerate
-   bash scripts/run_cluster.sh exp8-prepare      # pools for test/calib/router_train (~3 min), nano-jev ids, models
+   bash scripts/run_cluster.sh exp8-prepare      # login node: downloads only (dataset, nano-jev, Llama models)
+   qsub -v STEP=exp8-pools scripts/omega-cpu.pbs  # CPU job (queue short, ~5 min): pools for test/calib/router_train, nano-jev ids
    ```
 
-   The pools rebuild exactly as in phase 0 (seeded). The 70B download is about 141 GB, and the
+   Building the pools is compute (BM25 over ~500k paragraphs, ~2.3 GB RAM), so it runs as a CPU job, not on the login
+   node (see "Good practice on OMEGA" in [omega-cluster.md](omega-cluster.md)). The pools rebuild exactly as in phase 0 (seeded). The 70B download is about 141 GB, and the
    Hugging Face cache needs room for it (`HF_HOME`).
 
 ## 1. nano-jev scores (GPU, minutes)
 
 ```bash
-qsub -v STEP=exp8-score scripts/omega.pbs
+qsub -l select=1:ncpus=4:ngpus=1:mem=32gb -l walltime=01:00:00 -v STEP=exp8-score scripts/omega.pbs   # a light job: ask for less
 ```
 
 This scores 4,500 pools of ~100 candidates and rewrites `runs/exp8/recall-test.json`. The CPU run took
@@ -81,13 +83,13 @@ Submit one job per cell, so that two run at once (2 GPUs per user):
 
 ```bash
 for c in llama3b-top5 llama3b-top3 llama3b-s10fuse-top5 llama70b-top5 llama70b-top3; do
-  qsub -v STEP=exp8-answer,CELLS=$c scripts/omega.pbs
+  qsub -l walltime=24:00:00 -v STEP=exp8-answer,CELLS=$c scripts/omega.pbs   # all 3 splits in one job; the 4 h default is too short
 done
 ```
 
 - **Order:** the 3B cells take minutes to about 2 h. The 70B cells are the long ones, an estimated
   3–5 h each; the pilot gives the real figure.
-- **70B on two GPUs**, if one L40S runs out of memory: `qsub -l select=1:ncpus=8:ngpus=2:mem=96gb -v STEP=exp8-answer,CELLS=llama70b-top5 scripts/omega.pbs`.
+- **70B on two GPUs**, if one L40S runs out of memory: `qsub -l select=1:ncpus=8:ngpus=2:mem=96gb -l walltime=24:00:00 -v STEP=exp8-answer,CELLS=llama70b-top5 scripts/omega.pbs`.
   The model then spreads over both GPUs by itself.
 - **Test only first:** add `SPLITS=test` to run only the 500 test questions, for a quick look at the
   head-to-head with AgentTTS.
@@ -131,7 +133,7 @@ and `results/exp8-phase2/`.
 After step 4, with all of `llama3b-top5`, `llama3b-s10fuse-top5` and `llama70b-top5` answered on all three splits:
 
 ```bash
-qsub -v STEP=exp8-judge scripts/omega.pbs
+qsub -l select=1:ncpus=8:ngpus=1:mem=32gb -l walltime=01:00:00 -v STEP=exp8-judge scripts/omega.pbs
 ```
 
 This runs `exp8-judge all` ([`configs/exp8-judge.toml`](../configs/exp8-judge.toml)): 2 judge inputs (`qp`, `qpa`) × 3
@@ -153,13 +155,14 @@ Bring `runs/exp8/judge/` back without the per-seed score files you do not need: 
 
 ```bash
 sub() { qsub "$@" scripts/omega.pbs; }
-A1=$(sub -N e8-s20-test  -v STEP=exp8-answer,CELLS=llama3b-s20fuse-top5,SPLITS=test)
-A2=$(sub -N e8-s20-calib -W depend=afterany:$A1 -v STEP=exp8-answer,CELLS=llama3b-s20fuse-top5,SPLITS=calib)
-A3=$(sub -N e8-s20-train -W depend=afterany:$A2 -v STEP=exp8-answer,CELLS=llama3b-s20fuse-top5,SPLITS=router_train)
+# walltimes sized from the measured ~17 s/question: 500 questions ~2.5 h, 1,000 ~5 h, 3,000 ~14 h, plus margin
+A1=$(sub -N e8-s20-test  -l walltime=04:00:00 -v STEP=exp8-answer,CELLS=llama3b-s20fuse-top5,SPLITS=test)
+A2=$(sub -N e8-s20-calib -l walltime=08:00:00 -W depend=afterany:$A1 -v STEP=exp8-answer,CELLS=llama3b-s20fuse-top5,SPLITS=calib)
+A3=$(sub -N e8-s20-train -l walltime=20:00:00 -W depend=afterany:$A2 -v STEP=exp8-answer,CELLS=llama3b-s20fuse-top5,SPLITS=router_train)
 # the same chain for llama3b-s40fuse-top5, and a -W depend=afternotok backup for each long job
 ```
 
-Then `qsub -v STEP=exp8-judge scripts/omega.pbs` runs [`configs/exp8-judge.toml`](../configs/exp8-judge.toml), now with five options in
+Then `qsub -l select=1:ncpus=8:ngpus=1:mem=32gb -l walltime=01:00:00 -v STEP=exp8-judge scripts/omega.pbs` runs [`configs/exp8-judge.toml`](../configs/exp8-judge.toml), now with five options in
 cost order (3B once, 3B x10, 70B, 3B x20, 3B x40), writing to `runs/exp8/judge-5opt/`. The three-option plan is kept as
 `configs/exp8-judge-3opt.toml` and writes to `runs/exp8/judge/`.
 
