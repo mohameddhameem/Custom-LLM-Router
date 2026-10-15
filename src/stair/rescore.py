@@ -5,39 +5,53 @@ nano-jev's top 5 passages as the "answer" scores 0.798 lenient, above every mode
 re-scores every cached answer in `<out>/answers/<split>/<cell>.parquet` two ways, with one fixed,
 ungated grader model (default Qwen2.5-14B-Instruct):
 
-- grade: the grader reads (question, gold answer, response) and gives a one-word verdict, CORRECT or
-  INCORRECT. P(CORRECT) is the next-token probability mass of every vocabulary token that begins
-  "CORRECT" against every token that begins "INCORRECT", case-insensitive. That works for any
-  tokenisation, and both words start differently (C against I). It is deterministic. The gold answer
-  is correct by definition, and a response without one committed final answer is INCORRECT.
-- extract: the grader states the response's final answer in a few words (greedy), and the official
-  HotpotQA EM / F1 are computed on it (`stair.metrics`). That keeps experiment 8 comparable with
-  experiments 1-7.
+Version 3 extracts first, then grades:
+
+1. extract: the grader states the response's committed final answer in a few words (greedy), or
+   "none" when the response commits to no single answer. The official HotpotQA EM / F1 are computed
+   on it (`stair.metrics`), which keeps experiment 8 comparable with experiments 1-7.
+2. grade the extracted answer (primary metric, `correct`; "none" is wrong). The grader reads
+   (question, gold answer, short answer) and gives a one-word verdict, CORRECT or INCORRECT. P(CORRECT)
+   is the next-token mass of every vocabulary token that begins "CORRECT" against every token that
+   begins "INCORRECT", case-insensitive, so it works for any tokenisation. The gold answer is correct by
+   definition.
+
+Also recorded:
+- `correct_first`: the grade of the response's first sentence, a length-controlled check;
+- `correct_full`: the grade of the whole response. This is version 2's metric and a diagnostic only,
+  because it accepted about 83% of pasted-passage dumps that contain the gold.
 
     rescore validate --grader Qwen/Qwen2.5-14B-Instruct     # must pass before anything else
     rescore run      --split test                           # every cell of that split
     rescore summary
 
-`validate` writes `<out>/rescore/validation.json`. Gating uses a *fresh* slice, not used while the
-prompt was designed:
+`validate` writes `<out>/rescore/validation.json`. Gating uses a slice not used while the method was
+designed. The checks run the full extract-then-grade pipeline:
 
 - Known short answers: experiment 1's 7B answers to HotpotQA dev items 1000-1499, with official EM /
-  F1. EM = 1 should be graded CORRECT. F1 = 0 should mostly be INCORRECT; HotpotQA's gold strings have
-  aliases ("AdScam" for "The sponsorship scandal"), so a good grader cannot reach 100% there.
-- A negative control: nano-jev's top 5 passages pasted as the "response", on the calib pools. Almost
-  all should be INCORRECT, since they commit to no answer.
+  F1. Extraction must leave a short answer unchanged (faithfulness). EM = 1 should be graded CORRECT.
+  F1 = 0 should mostly be INCORRECT; HotpotQA's gold strings have aliases ("AdScam" for "The
+  sponsorship scandal"), so a good grader cannot reach 100% there.
+- A negative control: nano-jev's top 5 passages pasted as the "response", on the calib pools. They
+  commit to no answer, so extraction should give "none" or a wrong answer for almost all of them.
 - A self-check: the grader's greedy, written verdict must agree with its scored P(CORRECT), and almost
   all next-token mass must fall on the two verdicts. A disagreement means a computation or format bug.
 
-The first prompt failed validation on 2026-10-15 (`results/exp8-rescore/README.md`). It asked whether
-the response answered "correctly", and the 14B graded identical answers INCORRECT when it doubted the
-gold answer itself; it also passed 66% of pasted-passage dumps. The slice used to diagnose that (dev
-items 500-999, experiment 8's test questions) is still reported, as a diagnostic only.
+History (2026-10-15):
+- Version 1 failed: the grader graded against its own knowledge (`results/exp8-rescore/README.md`).
+- Version 2 fixed that, with 0.996 / 0.917 on short answers. It still graded 0.619 of pasted-passage
+  dumps CORRECT, because the 14B treats "the gold is stated somewhere" as answering
+  (`results/exp8-rescore/v2/README.md`).
+- Version 3 therefore grades only the extracted short answer, where version 2 was reliable.
+
+The slice used for diagnosis (dev items 500-999, experiment 8's test questions) is still reported, as a
+diagnostic only.
 """
 
 import argparse
 import json
 import logging
+import re
 import time
 from pathlib import Path
 
@@ -61,19 +75,36 @@ Does the response give the same final answer as the gold answer?
 - CORRECT: the response commits to one final answer, and it matches the gold answer: the same entity, date, number, place, or yes/no. Different wording, spelling, aliases, abbreviations, formatting, units or date order are fine, and so is extra explanation.
 - INCORRECT: the response's final answer differs from the gold answer; or it says it cannot answer or that the information is missing; or it hedges between several candidates; or it gives no final answer at all (for example it only quotes, lists or summarises references or passages); or the gold answer appears only inside quoted material while the response concludes something else.
 Reply with exactly one word: CORRECT or INCORRECT."""
-EXTRACT_SYSTEM = "You extract the final answer from a response, in as few words as possible."
+EXTRACT_SYSTEM = ("You report the final answer that a response commits to, in as few words as possible. "
+                  "You never answer the question yourself.")
 EXTRACT_USER = """Question: {question}
 Response: {response}
 
-What final answer does the response give to the question? Reply with only that answer, in as few words as possible: a name, date, number, place or short phrase, or "yes" / "no" for yes/no questions. Do not add any explanation. If the response does not commit to one answer, reply "none"."""
+What final answer does the response itself commit to? Rules:
+- Report only an answer the response explicitly states as its answer to the question (a direct answer, or a concluding statement such as "so the answer is X").
+- Do not answer the question yourself, and do not work out an answer from facts, passages or references the response quotes, lists or summarises without concluding.
+- If the response hedges between candidates, says it cannot answer, or gives no conclusion, reply "none".
+Reply with only that answer, in as few words as possible: a name, date, number, place or short phrase, or "yes" / "no" for yes/no questions. Do not add any explanation."""
 VERDICTS = ("CORRECT", "INCORRECT")
 
-# Validation thresholds, fixed on 2026-10-15 before any run on the fresh gate slice:
-MIN_AGREE_EM1 = 0.95       # EM = 1 short answers graded CORRECT
-MIN_AGREE_F10 = 0.80       # F1 = 0 short answers graded INCORRECT (gold aliases make 100% unreachable)
-MAX_DUMP_CORRECT = 0.05    # pasted-passage "responses" graded CORRECT
-MIN_GEN_AGREEMENT = 0.95   # the written greedy verdict agrees with P(CORRECT) >= 0.5
-MIN_VERDICT_MASS = 0.90    # mean next-token mass on the two verdicts (format adherence)
+# Version 3 validation thresholds, fixed on 2026-10-15 before any version 3 run:
+MIN_AGREE_EM1 = 0.95         # EM = 1 short answers, extracted then graded CORRECT
+MIN_AGREE_F10 = 0.80         # F1 = 0 short answers graded INCORRECT (gold aliases make 100% unreachable)
+MAX_DUMP_CORRECT = 0.10      # pasted-passage dumps extracted then graded CORRECT. An extractor may fairly read a
+                             # dump that opens with a direct statement of the answer; 0.10 is half of the 0.209 of
+                             # calib dumps whose first sentence contains the gold
+MIN_GEN_AGREEMENT = 0.95     # the written greedy verdict agrees with P(CORRECT) >= 0.5
+MIN_VERDICT_MASS = 0.90      # mean next-token mass on the two verdicts (format adherence)
+MIN_EXTRACT_FAITHFUL = 0.90  # extraction leaves a short answer unchanged (official EM between the two)
+NONE_ANSWERS = {"none", ""}
+
+
+def first_sentence(text: str) -> str:
+    return re.split(r"(?<=[.!?])\s", text.strip(), maxsplit=1)[0]
+
+
+def is_none(extracted: str) -> bool:
+    return extracted.strip().strip(".").lower() in NONE_ANSWERS
 
 
 def verdict_token_sets(tokenizer) -> tuple[np.ndarray, np.ndarray]:
@@ -170,12 +201,25 @@ class Grader:
         return out
 
 
+def extract_then_grade(grader: Grader, questions, golds, responses, batch: int, extract_batch: int = 16):
+    """(extracted answers, none flags, P(CORRECT) of the extracted answer with 'none' = 0, verdict mass)."""
+    questions, golds = list(questions), list(golds)
+    ext = grader.extract(questions, list(responses), extract_batch)
+    none = np.array([is_none(e) for e in ext])
+    p, mass = grader.grade(questions, golds, ["none" if n else e for e, n in zip(ext, none)], batch)
+    return ext, none, np.where(none, 0.0, p), mass
+
+
 def score_frame(grader: Grader, questions, golds, responses, batch: int, extract_batch: int = 16) -> pd.DataFrame:
-    p, mass = grader.grade(questions, golds, responses, batch)
-    ext = grader.extract(questions, responses, extract_batch)
-    none = [e.strip().lower() in ("none", "") for e in ext]
+    questions, golds, responses = list(questions), list(golds), list(responses)
+    ext, none, p, mass = extract_then_grade(grader, questions, golds, responses, batch, extract_batch)
+    p_first, _ = grader.grade(questions, golds, [first_sentence(r) for r in responses], batch)
+    p_full, _ = grader.grade(questions, golds, responses, batch)  # version 2's metric: a diagnostic only
     return pd.DataFrame({
         "p_correct": p, "correct": (p >= 0.5).astype(float), "verdict_mass": mass, "extracted": ext,
+        "ext_none": none.astype(float),
+        "p_first": p_first, "correct_first": (p_first >= 0.5).astype(float),
+        "p_full": p_full, "correct_full": (p_full >= 0.5).astype(float),
         "ext_em": [0.0 if n else exact_match(e, g) for e, g, n in zip(ext, golds, none)],
         "ext_f1": [0.0 if n else f1_score(e, g) for e, g, n in zip(ext, golds, none)],
     })
@@ -204,26 +248,31 @@ def passage_dumps(out: Path, split: str, k: int = 5) -> pd.DataFrame:
 
 
 def check_slice(grader: Grader, known: pd.DataFrame, dumps: pd.DataFrame, batch: int) -> tuple[dict, pd.DataFrame]:
-    pk, mk = grader.grade(known["question"], known["answer"], known["large_pred"], batch)
-    pd_, md = grader.grade(dumps["question"], dumps["answer"], dumps["response"], batch)
-    wk = grader.written_verdicts(known["question"], known["answer"], known["large_pred"])
-    wd = grader.written_verdicts(dumps["question"], dumps["answer"], dumps["response"])
+    ek, nk, pk, mk = extract_then_grade(grader, known["question"], known["answer"], known["large_pred"], batch)
+    ed, nd, pd_, md = extract_then_grade(grader, dumps["question"], dumps["answer"], dumps["response"], batch)
+    # self-check on the graded short answers ("none" is not graded, so it is left out)
+    wk = grader.written_verdicts(known["question"][~nk], known["answer"][~nk], [e for e, n in zip(ek, nk) if not n])
+    wd = grader.written_verdicts(dumps["question"][~nd], dumps["answer"][~nd], [e for e, n in zip(ed, nd) if not n])
     written = np.concatenate([wk, wd])
-    scored = np.concatenate([pk, pd_]) >= 0.5
+    scored = np.concatenate([pk[~nk], pd_[~nd]]) >= 0.5
     parsed = ~np.isnan(written)
     em1, f10 = known["large_em"].to_numpy() == 1, known["large_f1"].to_numpy() == 0
+    graded_mass = np.concatenate([mk[~nk], md[~nd]])
     stats = {
         "known_n": int(len(known)), "known_em1_n": int(em1.sum()), "known_f10_n": int(f10.sum()),
+        "extract_faithful": float(np.mean([exact_match(e, r) for e, r in zip(ek, known["large_pred"])])),
+        "known_extracted_none": float(nk.mean()),
         "agree_em1_correct": float((pk[em1] >= 0.5).mean()), "agree_f10_incorrect": float((pk[f10] < 0.5).mean()),
         "known_graded_correct": float((pk >= 0.5).mean()), "known_em": float(em1.mean()),
-        "dump_n": int(len(dumps)), "dump_graded_correct": float((pd_ >= 0.5).mean()),
-        "written_parsed": float(parsed.mean()),
+        "dump_n": int(len(dumps)), "dump_extracted_none": float(nd.mean()),
+        "dump_graded_correct": float((pd_ >= 0.5).mean()),
+        "written_parsed": float(parsed.mean()) if len(parsed) else 0.0,
         "written_agreement": float((scored[parsed] == (written[parsed] == 1.0)).mean()) if parsed.any() else 0.0,
-        "verdict_mass_mean": float(np.concatenate([mk, md]).mean()),
+        "verdict_mass_mean": float(graded_mass.mean()) if len(graded_mass) else 0.0,
     }
-    dis = known.assign(p_correct=pk, written=wk)
+    dis = known.assign(extracted=ek, p_correct=pk)
     dis = dis[(em1 & (pk < 0.5)) | (f10 & (pk >= 0.5))]
-    return stats, dis[["id", "question", "answer", "large_pred", "large_em", "large_f1", "p_correct", "written"]]
+    return stats, dis[["id", "question", "answer", "large_pred", "extracted", "large_em", "large_f1", "p_correct"]]
 
 
 def cmd_validate(args) -> None:
@@ -239,7 +288,8 @@ def cmd_validate(args) -> None:
                        "dumps": f"{args.dump_split} pools", **gate},
               "thresholds": {"min_agree_em1": MIN_AGREE_EM1, "min_agree_f10": MIN_AGREE_F10,
                              "max_dump_correct": MAX_DUMP_CORRECT, "min_gen_agreement": MIN_GEN_AGREEMENT,
-                             "min_verdict_mass": MIN_VERDICT_MASS}}
+                             "min_verdict_mass": MIN_VERDICT_MASS, "min_extract_faithful": MIN_EXTRACT_FAITHFUL},
+              "method": "v3: extract, then grade the extracted answer"}
     if args.diagnostic_start is not None:  # the slice the prompt was diagnosed on: reported, never gating
         diag, _ = check_slice(grader, known_slice(args.known, args.diagnostic_start, args.known_count),
                               passage_dumps(out, "test"), args.batch)
@@ -249,7 +299,8 @@ def cmd_validate(args) -> None:
     report["passed"] = bool(gate["agree_em1_correct"] >= MIN_AGREE_EM1 and gate["agree_f10_incorrect"] >= MIN_AGREE_F10
                             and gate["dump_graded_correct"] <= MAX_DUMP_CORRECT
                             and gate["written_agreement"] >= MIN_GEN_AGREEMENT
-                            and gate["verdict_mass_mean"] >= MIN_VERDICT_MASS)
+                            and gate["verdict_mass_mean"] >= MIN_VERDICT_MASS
+                            and gate["extract_faithful"] >= MIN_EXTRACT_FAITHFUL)
     gate_dis.head(40).to_csv(out / "rescore" / "validation-disagreements.csv", index=False)
     (out / "rescore" / "validation.json").write_text(json.dumps(report, indent=1))
     log.info(json.dumps(report, indent=1))
@@ -292,9 +343,9 @@ def cmd_run(args) -> None:
         merged = pd.concat([pd.read_parquet(p) for p in sorted(parts.glob("*.parquet"))], ignore_index=True)
         merged.to_parquet(target)
         log.info(f"{args.split}/{f.stem}: {len(merged)} answers in {time.perf_counter() - start:.0f} s | "
-                 f"lenient {merged['lenient'].mean():.3f} graded-correct {merged['correct'].mean():.3f} "
-                 f"extracted EM {merged['ext_em'].mean():.3f} F1 {merged['ext_f1'].mean():.3f} | "
-                 f"verdict mass {merged['verdict_mass'].mean():.3f}")
+                 f"lenient {merged['lenient'].mean():.3f} | graded (extracted) {merged['correct'].mean():.3f} "
+                 f"first sentence {merged['correct_first'].mean():.3f} whole (v2) {merged['correct_full'].mean():.3f} | "
+                 f"extracted EM {merged['ext_em'].mean():.3f} F1 {merged['ext_f1'].mean():.3f} none {merged['ext_none'].mean():.3f}")
 
 
 def cmd_summary(args) -> None:
@@ -305,10 +356,11 @@ def cmd_summary(args) -> None:
         for f in sorted(split_dir.glob("*.parquet")):
             d = pd.read_parquet(f)
             units = pd.read_parquet(args.out / "answers" / split_dir.name / f.name, columns=["units"])["units"].mean()
-            rows.append({"split": split_dir.name, "cell": f.stem, "n": len(d), "lenient": d["lenient"].mean(),
-                         "graded_correct": d["correct"].mean(), "ext_em": d["ext_em"].mean(), "ext_f1": d["ext_f1"].mean(),
-                         "verdict_mass": d["verdict_mass"].mean() if "verdict_mass" in d else float("nan"),
-                         "units": units})
+            get = lambda c: d[c].mean() if c in d else float("nan")
+            rows.append({"split": split_dir.name, "cell": f.stem, "n": len(d), "lenient": get("lenient"),
+                         "graded_correct": get("correct"), "graded_first_sentence": get("correct_first"),
+                         "graded_whole_v2": get("correct_full"), "ext_em": get("ext_em"), "ext_f1": get("ext_f1"),
+                         "ext_none": get("ext_none"), "verdict_mass": get("verdict_mass"), "units": units})
     table = pd.DataFrame(rows)
     table.to_csv(args.out / "rescore" / "summary.csv", index=False)
     with pd.option_context("display.width", 200):

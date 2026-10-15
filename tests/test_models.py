@@ -460,10 +460,13 @@ def test_rescore_validate_and_run(tiny_models, tmp_path):
     v = json.loads((out / "rescore" / "validation.json").read_text())
     assert v["gate"]["known_n"] == 6 and v["gate"]["dump_n"] == 6 and isinstance(v["passed"], bool)  # a tiny model may fail
     assert 0 <= v["gate"]["written_agreement"] <= 1 and "diagnostic_not_gating" in v
+    assert 0 <= v["gate"]["extract_faithful"] <= 1 and v["method"].startswith("v3")
     rescore.main(["run", *common, "--skip-validation-check", "--chunk-size", "4"])
     d = pd.read_parquet(out / "rescore" / "test" / "cell.parquet")
     assert d["id"].tolist() == ids and d["p_correct"].between(0, 1).all()
-    assert set(d.columns) >= {"correct", "verdict_mass", "extracted", "ext_em", "ext_f1", "lenient"}
+    assert set(d.columns) >= {"correct", "verdict_mass", "extracted", "ext_none", "ext_em", "ext_f1", "lenient",
+                              "correct_first", "correct_full"}
+    assert (d.loc[d["ext_none"] == 1, "correct"] == 0).all()  # "none" is never correct
     rescore.main(["summary", "--out", str(out)])
     s = pd.read_csv(out / "rescore" / "summary.csv")
     assert s.loc[0, "n"] == 6 and s.loc[0, "units"] == 2.0

@@ -106,3 +106,11 @@ def test_load_tables_uses_the_chosen_metric(tmp_path):
     (out / "rescore" / "test" / "strong.parquet").unlink()
     with pytest.raises(FileNotFoundError):
         ev.load_tables(out, "test", ["cheap", "strong"], 2, metric="correct", rescore_dir=out / "rescore")
+
+
+def test_rescore_helpers():
+    from stair.rescore import first_sentence, is_none
+
+    assert first_sentence("Kalo did it. Then Rimer came.") == "Kalo did it."
+    assert first_sentence("No full stop") == "No full stop"
+    assert is_none("None.") and is_none(" none ") and is_none("") and not is_none("Nonesuch")

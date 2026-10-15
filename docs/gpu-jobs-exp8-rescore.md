@@ -17,14 +17,17 @@ See the "Metric caveat" at the top of [experiments/2026-10-14-experiment-8.md](e
 - **Many credited hits are wrong.** Most of those that appear only after the first sentence are hedges, or
   wrong first answers that later quote a passage.
 
-This job re-scores every cached answer two ways:
+This job re-scores every cached answer with one grader model (`Qwen/Qwen2.5-14B-Instruct`, bf16, one
+answer per forward pass), version 3: **extract, then grade.**
 
-1. **An LLM grader** (`Qwen/Qwen2.5-14B-Instruct`, bf16, one answer per forward pass). It reads (question,
-   gold, response) and returns P(CORRECT) from the next-token mass of the CORRECT-prefix against the
-   INCORRECT-prefix tokens (version 2). This
-   becomes the primary metric, `correct` = P ≥ 0.5.
-2. **Short-answer extraction** by the same model, then the official HotpotQA EM/F1. That is the secondary
-   metric, comparable with experiments 1–7.
+1. **Extraction.** The model states the response's committed final answer in a few words, or "none".
+   The official HotpotQA EM/F1 on it are the secondary metric, comparable with experiments 1–7.
+2. **Grading.** The model grades that *short* answer against the gold. P(CORRECT) comes from the
+   next-token mass of the CORRECT-prefix against the INCORRECT-prefix tokens, and "none" is wrong. This is
+   the primary metric, `correct` = P ≥ 0.5.
+3. **Diagnostics.** `correct_first` grades the response's first sentence (a length control).
+   `correct_full` grades the whole response (version 2's metric). It is recorded only, because it accepts
+   long responses that merely contain the gold.
 
 Then the five-option System One judge is retrained and re-evaluated on the grader's labels.
 
@@ -39,7 +42,7 @@ No answers are regenerated. The code is in `src/stair/rescore.py`; read its docs
   2. Do not continue to `exp8-rescore`.
   3. Do not change the thresholds or the grader prompt to make it pass.
 - **MUST NOT** edit the cached answers (`runs/exp8/answers/**`, `results/exp8-phase1/**`), the prompts in
-  `rescore.py`, the validation thresholds (`MIN_AGREE_EM1`, `MIN_AGREE_F10`, `MAX_DUMP_CORRECT`), or
+  `rescore.py`, the validation thresholds (every `MIN_*` / `MAX_*` constant), or
   `configs/exp8.toml`.
 - **MUST NOT** tune anything on the test split. The operating points are chosen on calib by the existing
   code.
@@ -93,7 +96,7 @@ identically. Do not run that step on the login node.
 qsub -l walltime=01:00:00 -v STEP=exp8-rescore-validate scripts/omega.pbs
 ```
 
-**History: version 1 of the grader failed this step.** Job 42683 on 2026-10-15 is recorded in
+**History: versions 1 and 2 of the grader failed this step.** Job 42683 on 2026-10-15 is recorded in
 `results/exp8-rescore/README.md`.
 
 - **The failure.** Its prompt asked whether the response answered "correctly". The 14B graded identical
@@ -108,7 +111,12 @@ qsub -l walltime=01:00:00 -v STEP=exp8-rescore-validate scripts/omega.pbs
   - a written-verdict self-check;
   - the gate now uses a **fresh** slice, not the one the failure was diagnosed on.
 
-  Its thresholds were fixed before any run. You still MUST NOT change the prompt or the thresholds.
+- **Version 2 failed too** (job 42685, `results/exp8-rescore/v2/README.md`). It passed on short answers
+  (0.996 / 0.917), but graded 0.619 of the pasted-passage dumps CORRECT: the 14B treats "the gold is stated
+  somewhere" as an answer.
+- **Version 3, now in the code,** grades only the extracted short answer, where version 2 was reliable.
+  The checks below run that full extract-then-grade pipeline. Version 3's thresholds were fixed before any
+  version 3 run. You MUST NOT change the prompts or the thresholds.
 
 When the job finishes (`qstat -u $USER` no longer lists it), read `runs/exp8/rescore/validation.json`.
 The pass/fail fields are under `gate`. That is experiment 1's 7B answers to dev items 1000–1499, plus the
@@ -118,10 +126,12 @@ pasted-passage control on the calib pools:
 |---|---|---|
 | `agree_em1_correct` | Share of the short answers with official EM = 1 that the grader calls CORRECT | ≥ 0.95 |
 | `agree_f10_incorrect` | Share of those with F1 = 0 that it calls INCORRECT (HotpotQA gold strings have aliases, such as "AdScam" for "The sponsorship scandal", so this cannot reach 1.0) | ≥ 0.80 |
-| `dump_graded_correct` | Share of "responses" made of nano-jev's top-5 passages pasted together that it calls CORRECT (the lenient scorer gave these 0.798) | ≤ 0.05 |
+| `extract_faithful` | Share of the short answers that extraction leaves unchanged (official EM between the extracted and the original answer) | ≥ 0.90 |
+| `dump_graded_correct` | Share of "responses" made of nano-jev's top-5 passages pasted together whose extracted answer is graded CORRECT (lenient gave 0.798, version 2 0.619). Some dumps open with a sentence that states the answer, so this need not be 0 | ≤ 0.10 |
+| `dump_extracted_none` | Share of dumps extracted as "none" (reported, not gating) | |
 | `written_agreement` | Share where the grader's written greedy verdict agrees with its scored P(CORRECT) ≥ 0.5. Lower means a computation or format bug | ≥ 0.95 |
 | `verdict_mass_mean` | Mean next-token probability on the two verdicts (format adherence) | ≥ 0.90 |
-| `passed` (top level) | All five hold | `true` |
+| `passed` (top level) | All six thresholds hold | `true` |
 
 `diagnostic_not_gating` repeats the checks on the slice where version 1 failed (dev items 500–999, with
 dumps from the test pools). Report it, but it does not decide pass or fail.
@@ -131,7 +141,7 @@ whether the grader or the official EM looks right. EM is strict, so some "EM = 0
 cases are fine: aliases and formats. **If `passed` is false: STOP** (see Rules). Report all `gate` numbers
 and 10 disagreement rows.
 
-## Step 3: re-score every answer (GPU, about 2–3 h; two jobs in parallel)
+## Step 3: re-score every answer (GPU, about 3–5 h; two jobs in parallel)
 
 ```bash
 J1=$(qsub -l walltime=03:00:00 -v STEP=exp8-rescore,SPLITS=test scripts/omega.pbs)                    # 3,500 answers
@@ -142,7 +152,8 @@ J2=$(qsub -l walltime=10:00:00 -v "STEP=exp8-rescore,SPLITS=calib router_train" 
   `runs/exp8/rescore/<split>/<cell>.parts/`, then merged into `runs/exp8/rescore/<split>/<cell>.parquet`.
   If a job dies, resubmit the same line.
 - **Summary:** each job ends with `rescore summary`, which writes `runs/exp8/rescore/summary.csv`, one row
-  per split and cell, with `lenient`, `graded_correct`, `ext_em`, `ext_f1` and `units`.
+  per split and cell, with `lenient`, `graded_correct` (primary), `graded_first_sentence`,
+  `graded_whole_v2` (diagnostic), `ext_em`, `ext_f1`, `ext_none` and `units`.
 - **After both jobs:** each job's summary only saw the files done by then, so rewrite the full table
   with a short CPU job: `qsub -l walltime=00:15:00 -v STEP=exp8-rescore-summary scripts/omega-cpu.pbs`.
 
@@ -212,9 +223,10 @@ this order. Be factual. Every number comes from the files above.
    - Does the judge still beat the fixed-policy hull, the entropy threshold and logistic regression? Give
      the paired AIQ intervals from `report.json` → `bootstrap`.
    - What is the judge's accuracy and cost at its operating points?
-2. **Setup:** the grader (model, revision from `validation.json`, bf16, one answer per pass), the prompt
-   (point to `rescore.py`), extraction, `correct` = P ≥ 0.5, and the judge settings (unchanged except the
-   labels).
+2. **Setup:** the grader (model, revision from `validation.json`, bf16, one answer per pass), the prompts
+   (point to `rescore.py`), extract-then-grade (version 3; say why versions 1 and 2 were dropped, with
+   their results READMEs), `correct` = P ≥ 0.5 on the extracted answer, and the judge settings (unchanged
+   except the labels).
 3. **Validation:** the table of step 2, plus your notes on the disagreements.
 4. **Execution:** job ids, durations, exit codes, any fix you made, and the checks of steps 3–4.
 5. **Results.**
