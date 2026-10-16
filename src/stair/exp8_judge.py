@@ -18,6 +18,10 @@ threshold t, so one judge gives a whole cost-accuracy curve.
 Training resumes: a (inputs, seed) with a done.json is skipped. Outputs in `<out>/<judge_dir>/` (default `judge`):
 `<inputs>/seed<k>/{calib,test}.parquet` (judge probabilities), `done.json` (training curve, timing),
 and `eval/report.json`, `eval/curves.csv`.
+
+Experiment 9: `init` may be a Strands Decider (`stair.decider`); `zero_shot = true` scores the checkpoint
+as it is, without training; `reference_judges` (a list of `{name, judge_dir, inputs, seeds, init}`) adds
+judges from other runs to the report, so the paired AIQ differences compare against them.
 """
 
 import argparse
@@ -35,7 +39,7 @@ from stair import provenance
 from stair.evaluate_routing import aiq
 from stair.evidence import passages_state
 from stair.experts import clean_answer
-from stair.judge import JUDGE_PARAMS_B, Judge, fine_tune
+from stair.judge import fine_tune, judge_params_b, make_judge
 
 log = logging.getLogger(__name__)
 
@@ -68,7 +72,7 @@ def run_train(tables: dict, plan: dict, inputs: str, seed: int, out: Path, devic
     if (target / "done.json").exists():
         log.info(f"train {inputs} seed {seed}: done")
         return
-    hp, labels = plan["train"], [o["label"] for o in plan["options"]]
+    hp, labels = plan.get("train", {}), [o["label"] for o in plan["options"]]
     df, ok, cost = tables["router_train"]
     y = ev.cheapest_correct_label(ok, cost)
     counts = np.bincount(y, minlength=len(labels))
@@ -76,10 +80,13 @@ def run_train(tables: dict, plan: dict, inputs: str, seed: int, out: Path, devic
     tr, dev = train_test_split(np.arange(len(df)), test_size=hp["dev_fraction"], random_state=seed,
                                stratify=y if counts.min() >= 2 else None)
     items = items_for(df, labels, inputs)
-    judge = Judge(plan["init"], device, hp["max_length"], plan.get("score_batch"))
+    judge = make_judge(plan["init"], device, hp.get("max_length", 512), plan.get("score_batch"))
     start = time.perf_counter()
-    history = fine_tune(judge, [items[i] for i in tr], y[tr], [items[i] for i in dev], y[dev], hp["epochs"], hp["lr"],
-                        hp["weight_decay"], hp["warmup"], hp["batch_size"], seed, hp.get("micro_batch"))
+    if plan.get("zero_shot"):  # the checkpoint's own calibrated choice, no training
+        history = []
+    else:
+        history = fine_tune(judge, [items[i] for i in tr], y[tr], [items[i] for i in dev], y[dev], hp["epochs"],
+                            hp["lr"], hp["weight_decay"], hp["warmup"], hp["batch_size"], seed, hp.get("micro_batch"))
     train_seconds = time.perf_counter() - start
     target.mkdir(parents=True, exist_ok=True)
     scoring = {}
@@ -91,20 +98,21 @@ def run_train(tables: dict, plan: dict, inputs: str, seed: int, out: Path, devic
         pd.DataFrame({"id": d["id"], **{f"p{k}": p[:, k] for k in range(p.shape[1])}, "tokens": tokens}
                      ).to_parquet(target / f"{split}.parquet")
     (target / "done.json").write_text(json.dumps({
-        "inputs": inputs, "seed": seed, "init": plan["init"], "options": labels, "train": hp, "n_train": len(tr),
+        "inputs": inputs, "seed": seed, "init": plan["init"], "zero_shot": bool(plan.get("zero_shot")),
+        "options": labels, "train": hp, "n_train": len(tr),
         "n_dev": len(dev), "label_counts": counts.tolist(), "history": history, "train_seconds": train_seconds,
         "scoring_seconds_per_question": scoring, "init_revision": provenance.hub_revision(plan["init"]),
         "device": judge.device}, indent=1))
 
 
-def judge_probs(root: Path, inputs: str, seeds: list[int], split: str, ids: list[str]):
+def judge_probs(root: Path, inputs: str, seeds: list[int], split: str, ids: list[str], init: str = "sdmlai/nano-jev"):
     """Mean probabilities over the seeds, the judge's cost in units per question, and the per-seed arrays."""
     per_seed, tokens = [], None
     for s in seeds:
         d = pd.read_parquet(root / inputs / f"seed{s}" / f"{split}.parquet").set_index("id").loc[ids]
         per_seed.append(d[[c for c in d.columns if c.startswith("p")]].to_numpy())
         tokens = d["tokens"].to_numpy()
-    units = 2 * JUDGE_PARAMS_B * tokens * len(seeds) / UNIT_GFLOPS  # GFLOPs of every seed's pass, in units
+    units = 2 * judge_params_b(init) * tokens * len(seeds) / UNIT_GFLOPS  # GFLOPs of every seed's pass, in units
     return np.mean(per_seed, axis=0), units, per_seed
 
 
@@ -148,16 +156,17 @@ def run_eval(tables: dict, plan: dict, out: Path, exclude: set[str] | None = Non
         report.setdefault("lr_C", {})[name] = C
 
     judges = {}
-    for inputs in plan["inputs"]:
-        pc, uc, _ = judge_probs(root, inputs, seeds, "calib", df_c["id"].tolist())
-        pt, ut, per_seed = judge_probs(root, inputs, seeds, "test", tables["test"][0]["id"].tolist())
+    runs = [(f"judge {i}", root, i, seeds, plan["init"]) for i in plan["inputs"]]
+    runs += [(r["name"], out / r["judge_dir"], r["inputs"], r["seeds"], r["init"]) for r in plan.get("reference_judges", [])]
+    for name, jroot, inputs, jseeds, init in runs:
+        pc, uc, _ = judge_probs(jroot, inputs, jseeds, "calib", df_c["id"].tolist(), init)
+        pt, ut, per_seed = judge_probs(jroot, inputs, jseeds, "test", tables["test"][0]["id"].tolist(), init)
         if exclude:
             pt, ut, per_seed = pt[keep], ut[keep], [p[keep] for p in per_seed]
-        name = f"judge {inputs}"
         curves[name] = lambda ix, p=pt, u=ut: ev.judge_points(ok_t[ix], cost_t[ix], p[ix], u[ix])
         scored[name] = (ev.judge_points(ok_c, cost_c, pc, uc), ev.judge_points(ok_t, cost_t, pt, ut))
         judges[name] = {"aiq_per_seed": [aiq(ev.judge_points(ok_t, cost_t, p), cmin, cmax) for p in per_seed],
-                        "judge_units": float(ut.mean())}
+                        "judge_units": float(ut.mean()), "init": init}
 
     boot = ev.bootstrap(curves, n, plan.get("bootstrap", 1000), 0, (cmin, cmax))
     report["aiq"] = {"hull of fixed policies": aiq(ev.always_points(ok_t, cost_t), cmin, cmax),

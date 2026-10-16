@@ -1,0 +1,16 @@
+job 42768.pbs-omega on a-11, step exp9-judge8
+name, memory.used [MiB], memory.total [MiB], driver_version
+NVIDIA L40S, 14 MiB, 46068 MiB, 555.58.02
+torch 2.14.1+cu126 NVIDIA L40S
+train qp seed 0: 3000 questions, label counts [2165, 431, 340, 42, 22]
+Traceback (most recent call last):
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/bin/exp8-judge", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/src/stair/exp8_judge.py", line 217, in main
+    run_train(tables, plan, inputs, seed, out, args.device)
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/src/stair/exp8_judge.py", line 83, in run_train
+    judge = make_judge(plan["init"], device, hp["max_length"], plan.get("score_batch"))
+                                             ~~^^^^^^^^^^^^^^
+KeyError: 'max_length'
+attempt 1/2 of exp9-judge8 failed at Fri Oct 16 19:25:09 +08 2026

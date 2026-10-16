@@ -1,0 +1,29 @@
+job 42784.pbs-omega on a-11, step exp9-judge8
+name, memory.used [MiB], memory.total [MiB], driver_version
+NVIDIA L40S, 14 MiB, 46068 MiB, 555.58.02
+torch 2.14.1+cu126 NVIDIA L40S
+train qp seed 0: 3000 questions, label counts [2165, 431, 340, 42, 22]
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  62%|██████▏   | 1285/2076 [00:00<00:00, 12813.11it/s]Loading weights: 100%|██████████| 2076/2076 [00:00<00:00, 13201.33it/s]
+    epoch 1: train loss 0.9241 dev NLL 0.8187
+    epoch 2: train loss 0.7841 dev NLL 0.8447
+[W1016 21:22:44.570852645 CUDACachingAllocator.cpp:3934] memory allocation failed with OOM on device 0 while trying to allocate 903872512 bytes (free: 432865280, total: 47704637440).
+train qp seed 1: 3000 questions, label counts [2165, 431, 340, 42, 22]
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  57%|█████▋    | 1175/2076 [00:00<00:00, 11735.07it/s]Loading weights: 100%|██████████| 2076/2076 [00:00<00:00, 13261.57it/s]
+    epoch 1: train loss 0.9181 dev NLL 0.9368
+    epoch 2: train loss 0.8025 dev NLL 0.8435
+train qp seed 2: 3000 questions, label counts [2165, 431, 340, 42, 22]
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  62%|██████▏   | 1286/2076 [00:00<00:00, 12858.54it/s]Loading weights: 100%|██████████| 2076/2076 [00:00<00:00, 13251.04it/s]
+    epoch 1: train loss 0.9240 dev NLL 0.8315
+    epoch 2: train loss 0.8050 dev NLL 0.8521
+train qpa seed 0: 3000 questions, label counts [2165, 431, 340, 42, 22]
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  55%|█████▍    | 1137/2076 [00:00<00:00, 11350.63it/s]Loading weights: 100%|██████████| 2076/2076 [00:00<00:00, 12592.28it/s]
+    epoch 1: train loss 0.9004 dev NLL 0.8036
+    epoch 2: train loss 0.7647 dev NLL 0.7945
+train qpa seed 1: 3000 questions, label counts [2165, 431, 340, 42, 22]
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  61%|██████    | 1268/2076 [00:00<00:00, 12675.60it/s]Loading weights: 100%|██████████| 2076/2076 [00:00<00:00, 13115.91it/s]
+    epoch 1: train loss 0.9053 dev NLL 0.8473
+    epoch 2: train loss 0.7609 dev NLL 0.8584
+train qpa seed 2: 3000 questions, label counts [2165, 431, 340, 42, 22]
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  60%|█████▉    | 1243/2076 [00:00<00:00, 12347.58it/s]Loading weights: 100%|██████████| 2076/2076 [00:00<00:00, 12813.33it/s]
+    epoch 1: train loss 0.8978 dev NLL 0.8359
+    epoch 2: train loss 0.7784 dev NLL 0.8660

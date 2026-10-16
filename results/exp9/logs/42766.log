@@ -1,0 +1,29 @@
+job 42766.pbs-omega on a-11, step exp9-judge7
+name, memory.used [MiB], memory.total [MiB], driver_version
+NVIDIA L40S, 14 MiB, 46068 MiB, 555.58.02
+torch 2.14.1+cu126 NVIDIA L40S
+train qp-large-helps-strands-decider-2b-hobson-v21-A seed 0
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 12188.76it/s]
+[transformers] `causal_conv1d_fn` is falling back to its reference PyTorch implementation because `causal_conv1d` is not installed. This is correct but much slower; install `causal_conv1d` for the optimized kernel.
+    epoch 1: train loss 0.4409 dev NLL 0.4108
+    epoch 2: train loss 0.3233 dev NLL 0.4802
+train qp-large-helps-strands-decider-2b-hobson-v21-A seed 1
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 11151.36it/s]
+    epoch 1: train loss 0.4407 dev NLL 0.4010
+    epoch 2: train loss 0.3280 dev NLL 0.4347
+train qp-large-helps-strands-decider-2b-hobson-v21-A seed 2
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 10735.61it/s]
+    epoch 1: train loss 0.4438 dev NLL 0.4099
+    epoch 2: train loss 0.3239 dev NLL 0.4381
+train qpa-large-helps-strands-decider-2b-hobson-v21-A seed 0
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 10887.49it/s]
+    epoch 1: train loss 0.4094 dev NLL 0.3606
+    epoch 2: train loss 0.2577 dev NLL 0.3997
+train qpa-large-helps-strands-decider-2b-hobson-v21-A seed 1
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 10589.92it/s]
+    epoch 1: train loss 0.4058 dev NLL 0.3403
+    epoch 2: train loss 0.2514 dev NLL 0.4250
+train qpa-large-helps-strands-decider-2b-hobson-v21-A seed 2
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 10495.11it/s]
+    epoch 1: train loss 0.4133 dev NLL 0.3533
+    epoch 2: train loss 0.2666 dev NLL 0.3743
