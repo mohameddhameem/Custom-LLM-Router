@@ -23,6 +23,12 @@ Subcommands (all read existing caches and run no LLM):
 
 Each judge also records its tokens per question, so its own cost (2 x params x tokens) can be
 added to its cost-F1 curve.
+
+A judge whose checkpoint is a Strands Decider (experiment 9, `stair.decider`) runs through
+`decider.DeciderJudge`, with the same interface; `make_judge` picks the backend from the name. A plan's
+`zero_shot_judge` may be one checkpoint (columns `zs_grounded`, `zs_correct`, in `zeroshot/<pair>`) or a
+list (columns `zs_<name>_grounded`, ..., in `zeroshot/<name>/<pair>`), and `eval_dir` (default `eval`)
+keeps a second plan's reports apart from the first's.
 """
 
 import argparse
@@ -41,6 +47,7 @@ import pandas as pd
 from stair import provenance
 from stair.evaluate_routing import COST_UNITS, aiq, curve, evaluate, expert_params, with_cost_unit
 from stair.evidence import paragraph_text, passages_state, resolve_checkpoint
+from stair.decider import DeciderJudge, is_decider, params_b
 from stair.router import escalation_label, train_routers
 
 log = logging.getLogger(__name__)
@@ -50,7 +57,7 @@ ROUTE = ("Which model should answer this question: {question}", ("small model", 
 GROUNDED = ("Is this claim supported by the context? Claim: {claim}", ("yes", "no"))  # nano-jev built-in
 CLAIM = 'The answer to "{question}" is {answer}.'
 CORRECT = ("Is the proposed answer correct? Question: {question} Proposed answer: {answer}", ("yes", "no"))
-ZERO_SHOT = ("zs_grounded", "zs_correct")
+ZERO_SHOT = ("grounded", "correct")  # zero-shot questions; columns <prefix>_grounded, <prefix>_correct
 JUDGE_PARAMS_B = 0.0334  # nano-jev / MiniLM-L12-H384, billions
 SPLIT_DATA = {"router_train": "distractor_train.parquet", "calib": "distractor_train.parquet",
               "test": "distractor_validation.parquet"}
@@ -162,6 +169,31 @@ class Judge:
         return np.concatenate(probs), np.asarray(tokens)
 
 
+def make_judge(path: str, device: str | None = None, max_length: int = 512, score_batch: int | None = None):
+    """A Strands Decider (experiment 9) or a nano-jev-style cross-encoder, by the checkpoint's name."""
+    if is_decider(path):
+        return DeciderJudge(path, device, max_length, score_batch)
+    return Judge(path, device, max_length, score_batch)
+
+
+def judge_params_b(path: str) -> float:
+    return params_b(path) if is_decider(path) else JUDGE_PARAMS_B
+
+
+def short_name(path: str) -> str:
+    return path.split("/")[-1].split("@")[0].lower()
+
+
+def zero_shot_judges(plan: dict) -> list[tuple[str, str, Path]]:
+    """(checkpoint, column prefix, output folder under --out) for each zero-shot judge of a plan."""
+    z = plan.get("zero_shot_judge")
+    if not z:
+        return []
+    if isinstance(z, str):
+        return [(z, "zs", Path("zeroshot"))]
+    return [(path, f"zs_{short_name(path)}", Path("zeroshot") / short_name(path)) for path in z]
+
+
 def accumulate(judge: Judge, items: list[dict], target, micro_batch: int) -> float:
     """Backpropagate the mean grouped-softmax cross-entropy of `items` in micro-batches; returns the loss.
 
@@ -193,7 +225,8 @@ def fine_tune(judge: Judge, items: list[dict], labels: np.ndarray, dev_items: li
     torch.manual_seed(seed)
     rng = np.random.default_rng(seed)
     model = judge.model
-    opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
+    trainable = [p for p in model.parameters() if p.requires_grad]  # a decider trains only its LoRA and head
+    opt = torch.optim.AdamW(trainable, lr=lr, weight_decay=weight_decay)
     steps = epochs * int(np.ceil(len(items) / batch_size))
     sched = get_linear_schedule_with_warmup(opt, int(warmup * steps), steps)
     target = torch.tensor(np.asarray(labels), dtype=torch.long)
@@ -207,7 +240,7 @@ def fine_tune(judge: Judge, items: list[dict], labels: np.ndarray, dev_items: li
             b = order[i: i + batch_size]
             opt.zero_grad()
             losses.append(accumulate(judge, [items[j] for j in b], target[b], micro_batch))
-            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+            torch.nn.utils.clip_grad_norm_(trainable, 1.0)
             opt.step()
             sched.step()
         probs, _ = judge.probabilities(dev_items)
@@ -216,8 +249,8 @@ def fine_tune(judge: Judge, items: list[dict], labels: np.ndarray, dev_items: li
                         "seconds": time.perf_counter() - start})
         log.info(f"    epoch {epoch + 1}: train loss {history[-1]['train_loss']:.4f} dev NLL {nll:.4f}")
         if nll < best:
-            best, best_state = nll, {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
-    model.load_state_dict(best_state)
+            best, best_state = nll, {k: v.detach().cpu().clone() for k, v in model.named_parameters() if v.requires_grad}
+    model.load_state_dict(best_state, strict=False)  # only the trained parameters change
     return history
 
 
@@ -258,10 +291,10 @@ class Splits:
 
 
 def run_zeroshot(splits: Splits, pairs: list[str], judge_path: str, out: Path, device: str | None,
-                 score_batch: int | None = None) -> None:
+                 score_batch: int | None = None, prefix: str = "zs", folder: Path = Path("zeroshot")) -> None:
     judge, scored = None, {}  # fingerprint -> output frame, reused by pairs with the same small answers
     for pair in pairs:
-        target = out / "zeroshot" / pair
+        target = out / folder / pair
         if (target / "done.json").exists():
             log.info(f"zeroshot {pair}: done")
             continue
@@ -277,13 +310,13 @@ def run_zeroshot(splits: Splits, pairs: list[str], judge_path: str, out: Path, d
             if key in scored:
                 log.info(f"zeroshot {pair}/{split}: same inputs as an earlier pair, scores reused")
             else:
-                judge = judge or Judge(judge_path, device, score_batch=score_batch)
+                judge = judge or make_judge(judge_path, device, score_batch=score_batch)
                 start = time.perf_counter()
                 pg, tg = judge.probabilities(grounded, judge.temperatures.get("grounded", 1.0))
                 pc, tc = judge.probabilities(correct)  # a new typed question: no calibrated temperature
                 seconds = (time.perf_counter() - start) / len(df)
-                scored[key] = pd.DataFrame({"id": df["id"], "zs_grounded": pg[:, 1], "zs_grounded_tokens": tg,
-                                            "zs_correct": pc[:, 1], "zs_correct_tokens": tc})
+                scored[key] = pd.DataFrame({"id": df["id"], f"{prefix}_grounded": pg[:, 1], f"{prefix}_grounded_tokens": tg,
+                                            f"{prefix}_correct": pc[:, 1], f"{prefix}_correct_tokens": tc})
                 log.info(f"zeroshot {pair}/{split}: {len(df)} questions, {seconds * 1000:.1f} ms/question for both judges")
             scored[key].to_parquet(target / f"{split}.parquet")
         (target / "done.json").write_text(json.dumps({"judge": judge_path, "revision": provenance.hub_revision(judge_path),
@@ -299,7 +332,7 @@ def run_train(splits: Splits, spec: dict, seed: int, plan: dict, out: Path, devi
     if (target / "done.json").exists():
         log.info(f"train {name} seed {seed}: done")
         return
-    hp = plan["train"]
+    hp = {**plan["train"], **spec.get("train", {})}  # a judge may override the plan's settings (a decider's LoRA)
     log.info(f"train {name} seed {seed}")
     df = splits.get(spec["train_pair"], "router_train")
     y = escalation_label(df, plan["tau"], spec["label"])
@@ -307,7 +340,7 @@ def run_train(splits: Splits, spec: dict, seed: int, plan: dict, out: Path, devi
     if hp.get("max_questions") and len(tr) > hp["max_questions"]:  # e.g. the CPU plan: a stratified subsample
         tr, _ = train_test_split(tr, train_size=hp["max_questions"], stratify=y[tr], random_state=seed)
     items = route_items(df, spec["inputs"])
-    judge = Judge(spec["init"], device, hp["max_length"], score_batch)
+    judge = make_judge(spec["init"], device, hp["max_length"], score_batch)
     start = time.perf_counter()
     history = fine_tune(judge, [items[i] for i in tr], y[tr], [items[i] for i in dev], y[dev], hp["epochs"], hp["lr"],
                         hp["weight_decay"], hp["warmup"], hp["batch_size"], seed, micro_batch or hp.get("micro_batch"))
@@ -341,13 +374,18 @@ def run_train(splits: Splits, spec: dict, seed: int, plan: dict, out: Path, devi
 def judge_columns(out: Path, pair: str, split: str, plan: dict) -> tuple[pd.DataFrame, dict]:
     """Escalation-score columns of every finished judge for one pair and split, plus their specs."""
     cols, specs = {}, {}
-    zs = out / "zeroshot" / pair / f"{split}.parquet"
-    if zs.exists():
+    for path, prefix, folder in zero_shot_judges(plan):
+        zs = out / folder / pair / f"{split}.parquet"
+        if not zs.exists():
+            continue
         z = pd.read_parquet(zs)
+        if "id" in cols and not (z["id"].to_numpy() == np.asarray(cols["id"])).all():
+            raise ValueError(f"{zs} has different questions than the other judges")
         cols["id"] = z["id"]
-        for c in ZERO_SHOT:
+        for q in ZERO_SHOT:
+            c = f"{prefix}_{q}"
             cols[c], cols[f"{c}_tokens"] = z[c].to_numpy(), z[f"{c}_tokens"].to_numpy()
-            specs[c] = {"label": "small-fails", "post": True, "zero_shot": True}
+            specs[c] = {"label": "small-fails", "post": True, "zero_shot": True, "init": path}
     for spec in plan["judges"]:
         name = judge_name(spec)
         files = sorted((out / "judges" / name).glob(f"seed*/{pair}-{split}.parquet"))
@@ -401,9 +439,10 @@ def run_eval(pair: str, plan: dict, out: Path, unit: str, n_boot: int, seed: int
     judges = {}
     for col, spec in specs.items():
         tokens = test.get(f"{col}_tokens")
-        gflops = 2 * JUDGE_PARAMS_B * float(tokens.mean()) if tokens is not None else 0.0  # sufficiency: already paid
+        params = judge_params_b(spec["init"]) if "init" in spec else 0.0
+        gflops = 2 * params * float(tokens.mean()) if tokens is not None else 0.0  # sufficiency: already paid
         pts = [p for p in report_curve(curves, f"router:{col}")]
-        entry = {**spec, "aiq": report["aiq"][f"router:{col}"], "judge_gflops": gflops,
+        entry = {**spec, "aiq": report["aiq"][f"router:{col}"], "judge_gflops": gflops, "judge_params_b": params,
                  "aiq_with_judge_cost": aiq([{**p, "cost": p["cost"] + gflops} for p in pts], cmin, cmax)}
         seed_cols = [c for c in test.columns if c.startswith(f"{col}#")]
         if seed_cols:
@@ -413,7 +452,7 @@ def run_eval(pair: str, plan: dict, out: Path, unit: str, n_boot: int, seed: int
         judges[col] = entry
     report = {"pair": pair, "run": str(run), "cost_unit": unit, "excluded": len(exclude), **report, "judges": judges}
 
-    target = out / "eval" / pair
+    target = out / plan.get("eval_dir", "eval") / pair
     target.mkdir(parents=True, exist_ok=True)
     suffix = "-clean" if exclude else ""
     (target / f"report{suffix}.json").write_text(json.dumps(report, indent=1, default=str))
@@ -478,7 +517,8 @@ def main(argv: list[str] | None = None) -> None:
     provenance.record(args.out, f"judge-{args.step}", plan=str(args.plan), **provenance.environment())
     splits = Splits(plan["pairs"], args.data_dir)
     if args.step in ("zeroshot", "all"):
-        run_zeroshot(splits, list(plan["pairs"]), plan["zero_shot_judge"], args.out, args.device, args.score_batch)
+        for path, prefix, folder in zero_shot_judges(plan):
+            run_zeroshot(splits, list(plan["pairs"]), path, args.out, args.device, args.score_batch, prefix, folder)
     if args.step in ("train", "all"):
         for spec in plan["judges"]:
             if args.only and judge_name(spec) not in args.only:
