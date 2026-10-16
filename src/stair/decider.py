@@ -76,8 +76,12 @@ class DeciderJudge:
         from strands_decider.schema import ChoiceQuestion
 
         rq = render_question(ChoiceQuestion(instructions=item["question"], criteria={o: "" for o in item["options"]}))
-        s, q = self.engine._fit(render_state(item["state"]), [rq.text])
-        idx = _option_token_index(self.engine._last_offsets[0], rq.option_spans, 0)
+        fitted = self.engine._fit(render_state(item["state"]), [rq.text])
+        if len(fitted) == 3:  # the pinned main commit returns the offsets (the server is concurrent)
+            s, q, offsets = fitted
+        else:  # PyPI 0.1.0 keeps them on the engine
+            (s, q), offsets = fitted, self.engine._last_offsets
+        idx = _option_token_index(offsets[0], rq.option_spans, 0)
         return s + q[0], [len(s) + i for i in idx]
 
     def encode(self, items: list[dict]):
