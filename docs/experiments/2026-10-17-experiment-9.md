@@ -9,10 +9,10 @@ omega on 2026-10-16 and 2026-10-17.
 
 - **On experiment 7 the deciders are better judges than nano-jev, and the gain survives their cost.** The fine-tuned
   2B with the small model's answer (qpa) reaches AIQ **0.708** against nano-jev qp's **0.673**: paired difference
-  **[+0.029, +0.038]**. Its judge cost (about 1,250 GFLOPs a question, 38× nano-jev and slightly more than the small model's answer) lowers it to 0.702, still
+  **[+0.030, +0.039]**. Its judge cost (about 1,250 GFLOPs a question, 38× nano-jev and slightly more than the small model's answer) lowers it to 0.702, still
   0.029 above nano-jev. The E4B qpa is higher still before cost (0.713) but about the same after it (0.700).
 - **Most of that gain needs the answer.** Reading only the question and passages (qp), the fine-tuned 2B gains
-  **+0.007 [+0.003, +0.011]** over nano-jev qp, and +0.003 once its cost is paid. nano-jev did not gain from the
+  **+0.007 [+0.004, +0.011]** over nano-jev qp, and +0.003 once its cost is paid. nano-jev did not gain from the
   answer (qpa 0.673); the deciders gain about 0.03 from it.
 - **Zero-shot, the E4B is already better than any nano-jev judge** (0.693, [+0.016, +0.024] over nano-jev qp; 0.683
   with its cost). The zero-shot 2B ties nano-jev ([−0.002, +0.006]).
@@ -46,14 +46,14 @@ omega on 2026-10-16 and 2026-10-17.
 
 | Judge | AIQ | With judge cost | GFLOPs a question | Minus nano-jev qp, 95% interval |
 |---|---|---|---|---|
-| E4B fine-tuned, qpa | **0.713** (seeds 0.709 ± 0.001) | 0.700 | 2,461 | [+0.034, +0.044] |
-| 2B fine-tuned, qpa | 0.708 (seeds 0.705 ± 0.001) | **0.702** | 1,250 | [+0.029, +0.038] |
+| E4B fine-tuned, qpa | **0.713** (seeds 0.709 ± 0.001) | 0.700 | 2,461 | [+0.035, +0.045] |
+| 2B fine-tuned, qpa | 0.708 (seeds 0.705 ± 0.001) | **0.702** | 1,250 | [+0.030, +0.039] |
 | E4B zero-shot, `correct` | 0.693 | 0.683 | 2,446 | [+0.016, +0.024] |
-| E4B zero-shot, `grounded` | 0.692 | 0.682 | 2,486 | [+0.015, +0.023] |
+| E4B zero-shot, `grounded` | 0.692 | 0.682 | 2,486 | [+0.015, +0.024] |
 | E4B fine-tuned, qp | 0.681 (seeds 0.678 ± 0.001) | 0.672 | 2,401 | [+0.004, +0.011] |
-| 2B fine-tuned, qp | 0.680 (seeds 0.678 ± 0.001) | 0.676 | 1,215 | [+0.003, +0.011] |
-| 2B zero-shot, `correct` | 0.675 | 0.671 | 1,238 | [−0.002, +0.006] |
-| 2B zero-shot, `grounded` | 0.675 | 0.671 | 1,258 | [−0.002, +0.005] |
+| 2B fine-tuned, qp | 0.680 (seeds 0.678 ± 0.001) | 0.676 | 1,215 | [+0.004, +0.011] |
+| 2B zero-shot, `correct` | 0.675 | 0.671 | 1,238 | [−0.001, +0.006] |
+| 2B zero-shot, `grounded` | 0.675 | 0.671 | 1,258 | [−0.002, +0.006] |
 | nano-jev fine-tuned, qp (experiment 7) | 0.673 (seeds 0.671 ± 0.000) | 0.673 | 32 | |
 | nano-jev fine-tuned, qpa | 0.673 (seeds 0.669 ± 0.004) | 0.673 | 33 | |
 | nano-jev zero-shot, `correct` | 0.664 | 0.664 | 33 | |
@@ -82,8 +82,8 @@ decider still picks (almost) always the 70B: accuracy 0.726–0.748 at 85–106 
 ## Hypotheses
 
 - **H9a (the fine-tuned 2B beats nano-jev qp by ≥ 0.005 AIQ, interval above zero): met, narrowly, and only before
-  its cost.** The qp judge gains +0.007 [+0.003, +0.011]; after its cost, +0.003. The qpa judge gains +0.035
-  [+0.029, +0.038], and +0.029 after its cost, which is the larger and more useful result.
+  its cost.** The qp judge gains +0.007 [+0.004, +0.011]; after its cost, +0.003. The qpa judge gains +0.035
+  [+0.030, +0.039], and +0.029 after its cost, which is the larger and more useful result.
 - **H9b (a decider beats the fixed-policy hull on experiment 8): not met.** No decider is above the hull; the
   fine-tuned E4B is below it.
 - **H9c (zero-shot deciders beat entropy with their judge cost included): met on experiment 7.** 2B 0.671 and E4B
