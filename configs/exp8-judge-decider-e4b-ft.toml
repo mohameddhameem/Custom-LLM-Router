@@ -50,7 +50,7 @@ lr = 1e-4
 weight_decay = 0.01
 warmup = 0.06
 batch_size = 16
-micro_batch = 4
+micro_batch = 1     # 4 ran out of memory on an L40S (five passages + five options per item)
 max_length = 512   # unused by the decider: it keeps its own window
 dev_fraction = 0.1
 
