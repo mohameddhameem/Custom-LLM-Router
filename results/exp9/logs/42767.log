@@ -1,0 +1,29 @@
+job 42767.pbs-omega on a-11, step exp9-judge7
+name, memory.used [MiB], memory.total [MiB], driver_version
+NVIDIA L40S, 14 MiB, 46068 MiB, 555.58.02
+torch 2.14.1+cu126 NVIDIA L40S
+train qp-large-helps-strands-decider-e4b-gemma4-v1-2610-A seed 0
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  58%|█████▊    | 1206/2076 [00:00<00:00, 12057.11it/s]Loading weights: 100%|██████████| 2076/2076 [00:00<00:00, 13149.60it/s]
+[W1016 18:03:47.201920537 CUDACachingAllocator.cpp:3934] memory allocation failed with OOM on device 0 while trying to allocate 457179136 bytes (free: 395116544, total: 47704637440).
+    epoch 1: train loss 0.4471 dev NLL 0.4096
+    epoch 2: train loss 0.3612 dev NLL 0.4492
+train qp-large-helps-strands-decider-e4b-gemma4-v1-2610-A seed 1
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  56%|█████▌    | 1164/2076 [00:00<00:00, 11621.03it/s]Loading weights: 100%|██████████| 2076/2076 [00:00<00:00, 12597.51it/s]
+    epoch 1: train loss 0.4505 dev NLL 0.3920
+    epoch 2: train loss 0.3577 dev NLL 0.3909
+train qp-large-helps-strands-decider-e4b-gemma4-v1-2610-A seed 2
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  60%|█████▉    | 1238/2076 [00:00<00:00, 12376.91it/s]Loading weights: 100%|██████████| 2076/2076 [00:00<00:00, 13144.50it/s]
+    epoch 1: train loss 0.4527 dev NLL 0.4068
+    epoch 2: train loss 0.3632 dev NLL 0.4240
+train qpa-large-helps-strands-decider-e4b-gemma4-v1-2610-A seed 0
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  57%|█████▋    | 1192/2076 [00:00<00:00, 11918.53it/s]Loading weights: 100%|██████████| 2076/2076 [00:00<00:00, 12872.13it/s]
+    epoch 1: train loss 0.3944 dev NLL 0.3452
+    epoch 2: train loss 0.2619 dev NLL 0.3752
+train qpa-large-helps-strands-decider-e4b-gemma4-v1-2610-A seed 1
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  57%|█████▋    | 1181/2076 [00:00<00:00, 11786.21it/s]Loading weights: 100%|██████████| 2076/2076 [00:00<00:00, 13045.60it/s]
+    epoch 1: train loss 0.4008 dev NLL 0.3422
+    epoch 2: train loss 0.2641 dev NLL 0.3587
+train qpa-large-helps-strands-decider-e4b-gemma4-v1-2610-A seed 2
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  59%|█████▊    | 1216/2076 [00:00<00:00, 12113.34it/s]Loading weights: 100%|██████████| 2076/2076 [00:00<00:00, 13164.67it/s]
+    epoch 1: train loss 0.4255 dev NLL 0.3592
+    epoch 2: train loss 0.2833 dev NLL 0.3619

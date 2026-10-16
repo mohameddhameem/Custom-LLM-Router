@@ -1,0 +1,158 @@
+job 42773.pbs-omega on a-11, step exp9-judge8
+name, memory.used [MiB], memory.total [MiB], driver_version
+NVIDIA L40S, 14 MiB, 46068 MiB, 555.58.02
+torch 2.14.1+cu126 NVIDIA L40S
+train qp seed 0: 3000 questions, label counts [2165, 431, 340, 42, 22]
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 11905.70it/s]
+[transformers] `causal_conv1d_fn` is falling back to its reference PyTorch implementation because `causal_conv1d` is not installed. This is correct but much slower; install `causal_conv1d` for the optimized kernel.
+train qpa seed 0: 3000 questions, label counts [2165, 431, 340, 42, 22]
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 11345.35it/s]
+train qp seed 0: 3000 questions, label counts [2165, 431, 340, 42, 22]
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 11723.71it/s]
+[transformers] `causal_conv1d_fn` is falling back to its reference PyTorch implementation because `causal_conv1d` is not installed. This is correct but much slower; install `causal_conv1d` for the optimized kernel.
+[W1016 19:33:24.608348951 CUDACachingAllocator.cpp:3934] memory allocation failed with OOM on device 0 while trying to allocate 142606336 bytes (free: 72155136, total: 47704637440).
+    epoch 1: train loss 0.9063 dev NLL 0.8304
+    epoch 2: train loss 0.7894 dev NLL 0.8738
+train qp seed 1: 3000 questions, label counts [2165, 431, 340, 42, 22]
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 10676.52it/s]
+    epoch 1: train loss 0.9090 dev NLL 0.8830
+    epoch 2: train loss 0.7839 dev NLL 0.8623
+train qp seed 2: 3000 questions, label counts [2165, 431, 340, 42, 22]
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 10388.69it/s]
+    epoch 1: train loss 0.9047 dev NLL 0.8530
+    epoch 2: train loss 0.7929 dev NLL 0.8872
+train qpa seed 0: 3000 questions, label counts [2165, 431, 340, 42, 22]
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 11056.74it/s]
+    epoch 1: train loss 0.8890 dev NLL 0.8220
+    epoch 2: train loss 0.7651 dev NLL 0.8367
+train qpa seed 1: 3000 questions, label counts [2165, 431, 340, 42, 22]
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 10911.48it/s]
+    epoch 1: train loss 0.8897 dev NLL 0.8709
+    epoch 2: train loss 0.7253 dev NLL 0.9228
+train qpa seed 2: 3000 questions, label counts [2165, 431, 340, 42, 22]
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 11091.27it/s]
+    epoch 1: train loss 0.8821 dev NLL 0.8401
+    epoch 2: train loss 0.7578 dev NLL 0.9103
+train qp seed 0: 3000 questions, label counts [2165, 431, 340, 42, 22]
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  57%|█████▋    | 1190/2076 [00:00<00:00, 11886.24it/s]Loading weights: 100%|██████████| 2076/2076 [00:00<00:00, 12817.16it/s]
+train qpa seed 0: 3000 questions, label counts [2165, 431, 340, 42, 22]
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  60%|█████▉    | 1237/2076 [00:00<00:00, 12362.08it/s]Loading weights: 100%|██████████| 2076/2076 [00:00<00:00, 12920.24it/s]
+train qp seed 0: 3000 questions, label counts [2165, 431, 340, 42, 22]
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  62%|██████▏   | 1285/2076 [00:00<00:00, 12840.09it/s]Loading weights: 100%|██████████| 2076/2076 [00:00<00:00, 13134.23it/s]
+[W1016 20:56:18.801990442 CUDACachingAllocator.cpp:3934] memory allocation failed with OOM on device 0 while trying to allocate 130023424 bytes (free: 116195328, total: 47704637440).
+[W1016 20:56:19.276076705 CUDACachingAllocator.cpp:3934] memory allocation failed with OOM on device 0 while trying to allocate 33554432 bytes (free: 34406400, total: 47704637440).
+[W1016 20:56:19.276189507 CUDACachingAllocator.cpp:3934] memory allocation failed with OOM on device 0 while trying to allocate 33554432 bytes (free: 34406400, total: 47704637440).
+Traceback (most recent call last):
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/bin/exp8-judge", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/src/stair/exp8_judge.py", line 217, in main
+    run_train(tables, plan, inputs, seed, out, args.device)
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/src/stair/exp8_judge.py", line 88, in run_train
+    history = fine_tune(judge, [items[i] for i in tr], y[tr], [items[i] for i in dev], y[dev], hp["epochs"],
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/src/stair/judge.py", line 242, in fine_tune
+    losses.append(accumulate(judge, [items[j] for j in b], target[b], micro_batch))
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/src/stair/judge.py", line 207, in accumulate
+    loss = torch.nn.functional.cross_entropy(judge.logits(items[j: j + micro_batch]),
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/src/stair/decider.py", line 102, in logits
+    out = self.model(input_ids=ids, attention_mask=mask, n_slots=torch.full((len(items),), k, device=self.device),
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1783, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1794, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/strands_decider/modeling.py", line 583, in forward
+    hidden = self.encode(input_ids, attention_mask, past_key_values=past_key_values)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/strands_decider/modeling.py", line 473, in encode
+    out = self.torso(
+          ^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1783, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1794, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/peft/peft_model.py", line 3186, in forward
+    return self.base_model(
+           ^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1783, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1794, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/peft/tuners/tuners_utils.py", line 359, in forward
+    return self.model(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1783, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1794, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/transformers/utils/generic.py", line 1068, in wrapper
+    output = func(self, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/transformers/utils/output_capturing.py", line 286, in wrapper
+    outputs = func(self, *args, **kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/transformers/models/gemma4/modeling_gemma4.py", line 1692, in forward
+    hidden_states = decoder_layer(
+                    ^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/transformers/modeling_layers.py", line 109, in __call__
+    return super().__call__(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1783, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1794, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/transformers/models/gemma4/modeling_gemma4.py", line 1412, in forward
+    hidden_states = self.mlp(hidden_states)
+                    ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1783, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1794, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/transformers/models/gemma4/modeling_gemma4.py", line 1076, in forward
+    down_proj = self.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1783, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1794, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/peft/tuners/lora/layer.py", line 1102, in forward
+    result = result + lora_B(lora_A(dropout(x))) * scaling
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1783, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1794, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/linear.py", line 134, in forward
+    return F.linear(input, self.weight, self.bias)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 32.00 MiB. GPU 0 has a total capacity of 44.43 GiB of which 32.81 MiB is free. Including non-PyTorch memory, this process has 44.38 GiB memory in use. Of the allocated memory 43.02 GiB is allocated by PyTorch, and 874.62 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+attempt 1/2 of exp9-judge8 failed at Fri Oct 16 20:56:20 +08 2026
+train qp seed 0: done
+train qpa seed 0: done
+train qp seed 0: done
+train qp seed 1: done
+train qp seed 2: done
+train qpa seed 0: done
+train qpa seed 1: done
+train qpa seed 2: done
+train qp seed 0: done
+train qpa seed 0: done
