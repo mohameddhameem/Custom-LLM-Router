@@ -53,6 +53,75 @@ small model (32 GFLOPs). The qp judge beats the best logistic regression router 
 (AIQ 0.673 against 0.665, paired interval [+0.004, +0.011]) and the entropy baseline, and the qpa judge ties the best
 cascade router (0.672). Like every router so far, none reaches always-large's F1 (66.9) at its operating point.
 
+## Experiment 8: the AgentTTS setting (lenient accuracy, 500 test questions)
+
+> **Metric caveat (added 2026-10-15): do not quote these accuracies or the H3 verdict until re-scoring.**
+> The lenient scorer used here counts an answer as correct when the gold answer appears anywhere in it. That
+> favours long answers. The fused answers average 220–260 words, against 41 for the 70B. On the 500 test questions:
+>
+> | Setup | Words | Lenient | Gold in the first 40 words | Gold in the first sentence |
+> |---|---|---|---|---|
+> | 3B, one answer | 87 | 0.608 | 0.354 | 0.178 |
+> | 70B, one answer | 41 | 0.680 | 0.616 | 0.524 |
+> | 3B, 10 samples fused | 252 | 0.726 | 0.466 | 0.390 |
+> | 3B, 40 samples fused | 223 | 0.756 | 0.508 | 0.422 |
+> | No model: nano-jev's top 5 passages pasted as the answer | | **0.798** | | |
+>
+> - **No model beats every model.** Pasting the passages scores 0.798, above every answer setup.
+> - **With length held fixed, the ranking reverses:** the 70B, not the fused 3B, is the best answerer.
+> - **Many late hits are wrong.** 167 of the 40-sample cell's 378 lenient hits occur only after its first sentence.
+>   In a random sample of 8 such hits, about 5 hedged or gave a different answer first and then quoted a passage
+>   that contains the gold. Example: the Peabody Hotel "named after George Peabody", while the gold is "ducks".
+> - **It also misses right answers:** "November 22, 1761" against the gold "22 November".
+> - **AgentTTS's 74.6 is affected too.** It answers in long form and was re-scored with a lenient scorer, so it is
+>   likely inflated the same way.
+>
+> **What stands and what does not.**
+> - **Stands:** retrieval (phase 0), the costs, data integrity, and the evaluation code. A CPU rerun of the
+>   five-option evaluation from the tracked judge probabilities reproduces `report.json` exactly.
+> - **Not established:** "H3 met (75.6 against 74.6)", "the fused 3B beats the 70B", and the judge's
+>   accuracy and gain, because its labels come from the lenient scorer.
+>
+> Re-scoring with an LLM grader and short-answer extraction is in [gpu-jobs-exp8-rescore.md](gpu-jobs-exp8-rescore.md).
+
+> **Re-scored with an LLM grader on 2026-10-15:** see [experiments/2026-10-15-experiment-8-rescored.md](experiments/2026-10-15-experiment-8-rescored.md). Under the grader the 70B (0.748 test) leads the 40-sample fused 3B (0.632); the judge sends nearly every question to the 70B; H3 is not assessed because AgentTTS's 74.6 is lenient.
+
+Graded accuracy on test (500 questions; grader Qwen2.5-14B on each model's committed short answer):
+
+| Cell | Lenient | Graded | Units | % of 929 |
+|---|---|---|---|---|
+| 3B, one answer (top 5) | 0.608 | 0.524 | 7.5 | 0.8% |
+| 3B, 10 samples fused | 0.726 | 0.588 | 64.9 | 7.0% |
+| 3B, 20 samples fused | 0.736 | 0.618 | 116.5 | 12.5% |
+| 3B, 40 samples fused | 0.756 | 0.632 | 220.0 | 23.7% |
+| 70B (4-bit), one answer (top 5) | 0.680 | **0.748** | 96.0 | 10.3% |
+| Judge qp / qpa, budget point (picks the 70B) | | 0.748 | 96.4 / 96.5 | 10.4% |
+
+
+Different questions, models and metric from runs 1-7: AgentTTS's 100-candidate pools, Llama-3.2-3B and Llama-3.1-70B
+reading nano-jev's top 5 passages, scored by lenient accuracy (the gold answer contained in the response). Cost is in
+AgentTTS units, as a share of its strong-everything cost (929). Details: [experiments/2026-10-14-experiment-8.md](experiments/2026-10-14-experiment-8.md); retrieval and answer cells: [experiment-8-plan.md](experiment-8-plan.md).
+
+| Policy | Lenient | Units | % of 929 | AIQ |
+|---|---|---|---|---|
+| 3B, one answer | 0.608 | 7.3 | 0.8% | |
+| 70B (4-bit), one answer | 0.680 | 93.6 | 10.1% | |
+| 3B, 10 samples fused | 0.726 | 64.7 | 7.0% | |
+| 3B, 20 samples fused | 0.736 | 116.3 | 12.5% | |
+| 3B, 40 samples fused | **0.756** | 219.8 | 23.7% | |
+| Entropy threshold / logistic regression (best operating point) | 0.680 | 92-97 | 10% | 0.652-0.657 |
+| **System One judge (qp, decides before any answer), 3 options** | **0.732** | **61.3** | **6.6%** | **0.695** |
+| **System One judge (qp), 5 options, budget point** | **0.754** | **180.3** | **19.4%** | **0.727** (own range) |
+| Oracle (cheapest correct option), 3 / 5 options | 0.796 / 0.850 | 19.4 / 28.2 | 2.1% / 3.0% | 0.783 / 0.838 |
+| *AgentTTS recipe, team's re-score* | *0.746* | *~938* | *~101%* | |
+
+The judge beats the best fixed mixture (AIQ +0.008) and the entropy and logistic regression routers (+0.02 to +0.06),
+all significant. With three options it did not reach AgentTTS's 74.6 (73.2 at best; H3 not met). Adding the 20- and 40-sample
+fused options ([experiments/2026-10-15-experiment-8-more-samples.md](experiments/2026-10-15-experiment-8-more-samples.md))
+meets H3: the 40-sample cell alone scores 75.6 at 23.7% of the cost and the judge 75.4 at 19.4%. The judge's AIQ gain over
+the fixed hull is no longer significant (p = 0.10), and the 40-sample gain is seen on test only (calib: 72.4 against 72.2 for 10 samples).
+AIQ is over each table's own cost range, so 0.727 and 0.695 are not comparable.
+
 ## Published reference points (answer EM / F1)
 
 | System | Type | Split | EM | F1 | Source |

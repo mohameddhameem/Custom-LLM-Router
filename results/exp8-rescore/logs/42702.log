@@ -1,0 +1,22 @@
+job 42702.pbs-omega on a-4 (CPU, queue short), step exp8-rescore-summary
+
+       split                 cell    n  lenient  graded_correct  commit_em  commit_f1  grounded  verdict_mass  answer_units  commit_units   units
+       calib llama3b-s10fuse-top5 1000    0.722           0.542      0.159      0.326     0.996         0.999        61.226         0.167  61.393
+       calib llama3b-s20fuse-top5 1000    0.726           0.559      0.178      0.344     0.994         1.000       110.295         0.161 110.456
+       calib llama3b-s40fuse-top5 1000    0.724           0.574      0.204      0.373     0.993         1.000       208.246         0.155 208.401
+       calib         llama3b-top3 1000    0.568           0.487      0.316      0.438     0.963         0.999         5.475         0.130   5.604
+       calib         llama3b-top5 1000    0.585           0.476      0.289      0.419     0.961         1.000         6.717         0.132   6.849
+       calib        llama70b-top5 1000    0.677           0.710      0.542      0.672     0.932         1.000        87.142         2.367  89.509
+router_train llama3b-s10fuse-top5 3000    0.718           0.570      0.153      0.320     0.991         1.000        61.766         0.169  61.934
+router_train llama3b-s20fuse-top5 3000    0.726           0.572      0.173      0.341     0.994         1.000       111.546         0.163 111.709
+router_train llama3b-s40fuse-top5 3000    0.720           0.586      0.194      0.369     0.993         0.999       210.515         0.158 210.673
+router_train         llama3b-top3 3000    0.572           0.515      0.328      0.443     0.963         1.000         5.498         0.131   5.629
+router_train         llama3b-top5 3000    0.605           0.518      0.316      0.437     0.959         1.000         6.765         0.133   6.898
+router_train        llama70b-top5 3000    0.666           0.708      0.529      0.658     0.918         1.000        88.202         2.363  90.565
+        test llama3b-s10fuse-top5  500    0.726           0.588      0.166      0.339     0.996         0.999        64.689         0.168  64.857
+        test llama3b-s20fuse-top5  500    0.736           0.618      0.206      0.381     0.988         1.000       116.324         0.162 116.485
+        test llama3b-s40fuse-top5  500    0.756           0.632      0.212      0.404     0.994         1.000       219.826         0.155 219.980
+        test         llama3b-top3  500    0.584           0.532      0.332      0.463     0.970         1.000         5.912         0.131   6.043
+        test         llama3b-top5  500    0.608           0.524      0.306      0.437     0.950         1.000         7.342         0.133   7.475
+        test        llama70b-top3  500    0.628           0.700      0.514      0.656     0.940         1.000        63.661         2.371  66.032
+        test        llama70b-top5  500    0.680           0.748      0.546      0.692     0.960         1.000        93.636         2.383  96.019

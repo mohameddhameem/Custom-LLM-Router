@@ -55,7 +55,7 @@ C_GRID = (0.01, 0.03, 0.1, 0.3, 1.0, 3.0, 10.0)
 CV_FOLDS = 5
 # Parallel CV workers. Each holds a copy of the data, so one per core on a 20-core machine ran out of
 # memory next to a loaded judge; 8 is still fast. Results do not depend on it. Override with ROUTER_JOBS.
-CV_JOBS = int(os.environ.get("ROUTER_JOBS", min(8, len(os.sched_getaffinity(0)))))
+CV_JOBS = int(os.environ.get("ROUTER_JOBS", min(8, len(os.sched_getaffinity(0)) if hasattr(os, "sched_getaffinity") else os.cpu_count() or 1)))
 COMPARATIVE = frozenset("both same first older younger earlier later more larger longer higher".split())
 
 

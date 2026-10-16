@@ -22,6 +22,7 @@ from transformers import (  # noqa: E402
 from stair import evaluate_routing, make_splits, router, run_experts  # noqa: E402
 from stair.evidence import CrossEncoderScorer, RerankerScorer  # noqa: E402
 from stair.experts import PROMPT, HFExpert  # noqa: E402
+from stair.rescore import GRADE_SYSTEM, GRADE_USER  # noqa: E402
 from synthetic import make_split  # noqa: E402
 
 CONFIGS = Path(__file__).parent.parent / "configs"
@@ -48,7 +49,7 @@ def tiny_models(tmp_path_factory):
     root = tmp_path_factory.mktemp("models")
     df = make_split(50, seed=3)
     texts = [PROMPT, "question: option: irrelevant partially relevant directly answers yes no user assistant",
-             CrossEncoderScorer.RELEVANCE[0], CrossEncoderScorer.SUFFICIENT[0]]
+             CrossEncoderScorer.RELEVANCE[0], CrossEncoderScorer.SUFFICIENT[0], GRADE_SYSTEM, GRADE_USER]
     texts += df["question"].tolist() + df["full_context"].tolist()
 
     lm_tok = build_tokenizer(texts, pair_template=False)
@@ -365,3 +366,123 @@ def test_pool_answer_end_to_end(tiny_models, tmp_path):
     pool_answer.main(["summary", "--plan", str(plan)])
     summary = pd.read_csv(out / "answers" / "summary.csv")
     assert set(summary["cell"]) == {"one", "fuse", "oracle"}
+
+
+def test_exp8_judge_trains_and_evaluates(tiny_models, tmp_path):
+    from stair import exp8_judge
+
+    rng = np.random.default_rng(0)
+    base = make_split(60, seed=5)
+
+    def table(n, offset):
+        df = base.iloc[offset: offset + n].reset_index(drop=True)
+        ok = rng.random((n, 4)) < [0.3, 0.5, 0.8, 0.9]
+        cost = np.tile([3.0, 13.0, 60.0, 120.0], (n, 1)) + rng.random((n, 4))
+        out = pd.DataFrame({"id": df["id"], "question": df["question"],
+                            "passages": [c.split(". ")[:3] for c in df["full_context"]],
+                            "pred0": ["alpha beta"] * n, "entropy0": rng.random(n),
+                            "nanojev": [rng.random(100) for _ in range(n)]})
+        return out, ok, cost
+
+    tables = {"router_train": table(30, 0), "calib": table(15, 30), "test": table(15, 45)}
+    plan = {"options": [{"label": "small, one"}, {"label": "small, fused"}, {"label": "large, one"}, {"label": "small, 40 fused"}],
+            "judge_dir": "judge-4opt",
+            "seeds": [0, 1], "inputs": ["qp", "qpa"], "init": str(tiny_models / "ce"), "strong_units": 929,
+            "budget_fraction": 0.25, "max_drop": 0.01, "bootstrap": 20, "agenttts_lenient": 0.746,
+            "agenttts_units": 938,
+            "train": {"epochs": 1, "lr": 1e-3, "weight_decay": 0.0, "warmup": 0.0, "batch_size": 8, "max_length": 64,
+                      "dev_fraction": 0.2}}
+    out = tmp_path / "exp8"
+    (out / "judge-4opt" / "eval").mkdir(parents=True)
+    for inputs in plan["inputs"]:
+        for seed in plan["seeds"]:
+            exp8_judge.run_train(tables, plan, inputs, seed, out, "cpu")
+    done = json.loads((out / "judge-4opt" / "qpa" / "seed1" / "done.json").read_text())
+    assert done["n_train"] + done["n_dev"] == 30 and len(done["history"]) == 1 and sum(done["label_counts"]) == 30
+    assert len(done["label_counts"]) == 4 and done["options"][-1] == "small, 40 fused"
+    assert not (out / "judge").exists()  # the judge_dir keeps other plans apart
+    before = (out / "judge-4opt" / "qp" / "seed0" / "done.json").stat().st_mtime
+    exp8_judge.run_train(tables, plan, "qp", 0, out, "cpu")
+    assert (out / "judge-4opt" / "qp" / "seed0" / "done.json").stat().st_mtime == before  # resumes
+
+    report = exp8_judge.run_eval(tables, plan, out)
+    assert {"judge qp", "judge qpa", "entropy threshold", "LR evidence (before)", "LR evidence+answer (after)",
+            "hull of fixed policies"} <= set(report["aiq"])
+    assert len(report["judges"]["judge qp"]["aiq_per_seed"]) == 2 and report["judges"]["judge qp"]["judge_units"] > 0
+    assert report["operating"]["judge qp"]["budget"]["calib"]["cost"] <= report["budget_units"]  # all fit the budget here
+    assert "judge qp - entropy threshold" in report["aiq_diff"]
+    clean = exp8_judge.run_eval(tables, plan, out, set(tables["test"][0]["id"][:5]), "-clean")
+    assert clean["n_test"] == 10 and (out / "judge-4opt" / "eval" / "report-clean.json").exists()
+    assert (out / "judge-4opt" / "eval" / "curves.csv").exists()
+
+
+def test_grader_verdict_mass_batched_matches_single(tiny_models):
+    import torch
+
+    from stair.rescore import Grader
+
+    g = Grader(str(tiny_models / "chat-lm"), "cpu", dtype="float32")
+    assert len(g.correct_ids) and len(g.incorrect_ids)  # the tiny vocabulary holds both verdict words
+    assert not set(g.correct_ids) & set(g.incorrect_ids)
+    prompts = g.grade_prompts(["Who directed the film?", "Who?", "Where was Kalo born?"], ["Kalo"] * 3,
+                              ["Kalo.", "It was Rimer, not Kalo, who directed it.", "Kalo was born in Rimer."])
+    p_b, m_b = g.verdict_probs(prompts, batch=3)
+    for i, prompt in enumerate(prompts):  # unpadded, by hand
+        ids = torch.tensor([g.tok(prompt, add_special_tokens=False)["input_ids"]])
+        last = torch.softmax(g.model(input_ids=ids).logits[0, -1].float(), -1)
+        pc, pi = last[g.correct_ids].sum().item(), last[g.incorrect_ids].sum().item()
+        assert p_b[i] == pytest.approx(pc / (pc + pi), abs=1e-5) and m_b[i] == pytest.approx(pc + pi, abs=1e-5)
+    written = g.written_verdicts(["Who?"], ["Kalo"], ["Kalo."])
+    assert written.shape == (1,)
+
+
+def test_rescore_validate_commit_and_run(tiny_models, tmp_path):
+    from stair import rescore
+
+    out = tmp_path / "exp8"
+    for d in ("pools", "scores", "answers/test", "answers/calib"):
+        (out / d).mkdir(parents=True)
+    ids = [f"q{i}" for i in range(6)]
+    for split in ("test", "calib"):
+        pd.DataFrame({"id": ids, "question": "Who directed the film?", "answer": "Kalo",
+                      "titles": [["Film", "Other"]] * 6, "texts": [["It was directed by Kalo.", "Unrelated."]] * 6,
+                      "gold_idx": [[0]] * 6}).to_parquet(out / "pools" / f"{split}.parquet")
+        pd.DataFrame({"id": ids, "nanojev": [[0.9, 0.1]] * 6, "tokens": [100] * 6}).to_parquet(out / "scores" / f"{split}.parquet")
+        pd.DataFrame({"id": ids, "pred": ["Kalo directed it.", "Rimer"] * 3, "samples": None, "lenient": [1.0, 0.0] * 3,
+                      "units": 2.0}).to_parquet(out / "answers" / split / "single.parquet")
+        pd.DataFrame({"id": ids, "pred": ["Kalo", "Rimer or Kalo"] * 3, "samples": [["Kalo", "Rimer"]] * 6,
+                      "lenient": 1.0, "units": 9.0}).to_parquet(out / "answers" / split / "fused.parquet")
+    plan = tmp_path / "answers.toml"
+    plan.write_text('[[cells]]\nname = "single"\nmodel = "m"\nparams = 3.0\ntop_k = 1\n'
+                    '[[cells]]\nname = "fused"\nmodel = "m"\nparams = 3.0\ntop_k = 2\nfuse = true\nsamples = 2\n')
+    known = tmp_path / "known.parquet"
+    pd.DataFrame({"id": ids, "question": "Who directed the film?", "answer": "Kalo", "large_pred": ["Kalo", "Rimer"] * 3,
+                  "large_em": [1.0, 0.0] * 3, "large_f1": [1.0, 0.0] * 3}).to_parquet(known)
+    common = ["--out", str(out), "--grader", str(tiny_models / "chat-lm"), "--device", "cpu", "--batch", "2",
+              "--answer-plan", str(plan), "--commit-model", str(tiny_models / "chat-lm")]
+    for step in ("commit", "run"):
+        with pytest.raises(SystemExit):
+            rescore.main([step, *common])  # no validation yet: refuses
+    rescore.main(["validate", *common, "--known", str(known), "--known-start", "0", "--known-count", "6",
+                  "--diagnostic-start", "0", "--commit-cells", "single", "--commit-cells", "fused", "--commit-count", "4"])
+    v = json.loads((out / "rescore" / "validation.json").read_text())
+    assert v["method"].startswith("v4") and isinstance(v["passed"], bool)  # a tiny model may fail
+    assert v["gate"]["known_n"] == 6 and 0 <= v["gate"]["written_agreement"] <= 1 and "diagnostic_not_gating" in v
+    assert set(v["commit"]) == {"single", "fused"} and v["commit"]["fused"]["n"] == 4
+    assert 0 <= v["commit"]["single"]["grounded"] <= 1 and 0 <= v["commit"]["single"]["grounded_when_correct"] <= 1
+    assert "p_correct" in pd.read_csv(out / "rescore" / "validation-commits.csv").columns
+    with pytest.raises(SystemExit):
+        rescore.main(["run", *common, "--skip-validation-check"])  # no committed answers yet
+    rescore.main(["commit", *common, "--skip-validation-check", "--chunk-size", "4"])
+    c = pd.read_parquet(out / "commit" / "test" / "fused.parquet")
+    assert c["id"].tolist() == ids and (c["commit_units"] > 0).all() and c["grounded"].isin([0.0, 1.0]).all()
+    rescore.main(["run", *common, "--skip-validation-check"])
+    d = pd.read_parquet(out / "rescore" / "test" / "single.parquet")
+    assert d["id"].tolist() == ids and d["p_correct"].between(0, 1).all()
+    assert set(d.columns) >= {"committed", "correct", "verdict_mass", "commit_em", "commit_f1", "grounded",
+                              "commit_units", "lenient"}
+    assert (d.loc[d["committed"] == "", "correct"] == 0).all()  # an empty commit is never correct
+    rescore.main(["summary", "--out", str(out)])
+    s = pd.read_csv(out / "rescore" / "summary.csv").set_index("cell")
+    assert s.loc["single", "n"] == 6 and s.loc["single", "answer_units"] == 2.0
+    assert s.loc["single", "units"] == pytest.approx(2.0 + d["commit_units"].mean())

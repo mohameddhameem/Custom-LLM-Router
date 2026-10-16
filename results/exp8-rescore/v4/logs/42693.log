@@ -1,0 +1,66 @@
+job 42693.pbs-omega on a-11, step exp8-rescore-validate
+name, memory.used [MiB], memory.total [MiB], driver_version
+NVIDIA L40S, 14 MiB, 46068 MiB, 555.58.02
+   Building stair @ file:///storage/home/dhameem.m.2025/Custom-LLM-Router
+      Built stair @ file:///storage/home/dhameem.m.2025/Custom-LLM-Router
+Uninstalled 1 package in 11ms
+Installed 1 package in 38ms
+torch 2.14.1+cu126 NVIDIA L40S
+Loading weights:   0%|          | 0/254 [00:00<?, ?it/s]Loading weights: 100%|██████████| 254/254 [00:00<00:00, 11372.74it/s]
+[transformers] Ignoring clean_up_tokenization_spaces=True for BPE tokenizer TokenizersBackend. The clean_up_tokenization post-processing step is designed for WordPiece tokenizers and is destructive for BPE (it strips spaces before punctuation). Set clean_up_tokenization_spaces=False to suppress this warning, or set clean_up_tokenization_spaces_for_bpe_even_though_it_will_corrupt_output=True to force cleanup anyway.
+Traceback (most recent call last):
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/bin/rescore", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/src/stair/rescore.py", line 497, in main
+    {"validate": cmd_validate, "commit": cmd_commit, "run": cmd_run, "summary": cmd_summary}[args.step](args)
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/src/stair/rescore.py", line 319, in cmd_validate
+    gen = load_generator(cells[names[0]], args)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/src/stair/rescore.py", line 270, in load_generator
+    return Generator(model, args.device, load_in_4bit=bool(cell.get("load_in_4bit")) and not args.commit_model)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/src/stair/pool_answer.py", line 133, in __init__
+    self.model = AutoModelForCausalLM.from_pretrained(model, **kwargs)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/transformers/models/auto/auto_factory.py", line 402, in from_pretrained
+    return model_class.from_pretrained(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/transformers/modeling_utils.py", line 4293, in from_pretrained
+    device_map = _get_device_map(model, device_map, max_memory, hf_quantizer)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/transformers/integrations/accelerate.py", line 374, in _get_device_map
+    hf_quantizer.validate_environment(device_map=device_map)
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/transformers/quantizers/quantizer_bnb_4bit.py", line 74, in validate_environment
+    raise ValueError(
+ValueError: Some modules are dispatched on the CPU or the disk. Make sure you have enough GPU RAM to fit the quantized model. If you want to dispatch the model on the CPU or the disk while keeping these modules in 32-bit, you need to set `llm_int8_enable_fp32_cpu_offload=True` and pass a custom `device_map` to `from_pretrained`. Check https://huggingface.co/docs/transformers/main/en/main_classes/quantization#offload-between-cpu-and-gpu for more details. 
+attempt 1/2 of exp8-rescore-validate failed at Thu Oct 15 12:13:23 +08 2026
+Loading weights:   0%|          | 0/254 [00:00<?, ?it/s]Loading weights: 100%|██████████| 254/254 [00:00<00:00, 11817.43it/s]
+[transformers] Ignoring clean_up_tokenization_spaces=True for BPE tokenizer TokenizersBackend. The clean_up_tokenization post-processing step is designed for WordPiece tokenizers and is destructive for BPE (it strips spaces before punctuation). Set clean_up_tokenization_spaces=False to suppress this warning, or set clean_up_tokenization_spaces_for_bpe_even_though_it_will_corrupt_output=True to force cleanup anyway.
+Traceback (most recent call last):
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/bin/rescore", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/src/stair/rescore.py", line 497, in main
+    {"validate": cmd_validate, "commit": cmd_commit, "run": cmd_run, "summary": cmd_summary}[args.step](args)
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/src/stair/rescore.py", line 319, in cmd_validate
+    gen = load_generator(cells[names[0]], args)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/src/stair/rescore.py", line 270, in load_generator
+    return Generator(model, args.device, load_in_4bit=bool(cell.get("load_in_4bit")) and not args.commit_model)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/src/stair/pool_answer.py", line 133, in __init__
+    self.model = AutoModelForCausalLM.from_pretrained(model, **kwargs)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/transformers/models/auto/auto_factory.py", line 402, in from_pretrained
+    return model_class.from_pretrained(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/transformers/modeling_utils.py", line 4293, in from_pretrained
+    device_map = _get_device_map(model, device_map, max_memory, hf_quantizer)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/transformers/integrations/accelerate.py", line 374, in _get_device_map
+    hf_quantizer.validate_environment(device_map=device_map)
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/transformers/quantizers/quantizer_bnb_4bit.py", line 74, in validate_environment
+    raise ValueError(
+ValueError: Some modules are dispatched on the CPU or the disk. Make sure you have enough GPU RAM to fit the quantized model. If you want to dispatch the model on the CPU or the disk while keeping these modules in 32-bit, you need to set `llm_int8_enable_fp32_cpu_offload=True` and pass a custom `device_map` to `from_pretrained`. Check https://huggingface.co/docs/transformers/main/en/main_classes/quantization#offload-between-cpu-and-gpu for more details. 
+attempt 2/2 of exp8-rescore-validate failed at Thu Oct 15 12:16:38 +08 2026

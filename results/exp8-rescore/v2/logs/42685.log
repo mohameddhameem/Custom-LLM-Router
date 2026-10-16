@@ -1,0 +1,55 @@
+job 42685.pbs-omega on a-11, step exp8-rescore-validate
+name, memory.used [MiB], memory.total [MiB], driver_version
+NVIDIA L40S, 14 MiB, 46068 MiB, 555.58.02
+   Building stair @ file:///storage/home/dhameem.m.2025/Custom-LLM-Router
+      Built stair @ file:///storage/home/dhameem.m.2025/Custom-LLM-Router
+Uninstalled 1 package in 10ms
+Installed 1 package in 59ms
+torch 2.14.1+cu126 NVIDIA L40S
+Loading weights:   0%|          | 0/579 [00:00<?, ?it/s]Loading weights:  50%|████▉     | 287/579 [00:00<00:00, 2861.27it/s]Loading weights: 100%|██████████| 579/579 [00:00<00:00, 4273.11it/s]
+{
+ "grader": "Qwen/Qwen2.5-14B-Instruct",
+ "revision": "cf98f3b3bbb457ad9e2bb7baf9a0125b6b88caa8",
+ "gate": {
+  "known": "results/gpu/test.parquet rows 1000-1499",
+  "dumps": "calib pools",
+  "known_n": 500,
+  "known_em1_n": 269,
+  "known_f10_n": 109,
+  "agree_em1_correct": 0.9962825278810409,
+  "agree_f10_incorrect": 0.9174311926605505,
+  "known_graded_correct": 0.714,
+  "known_em": 0.538,
+  "dump_n": 1000,
+  "dump_graded_correct": 0.619,
+  "written_parsed": 0.9993333333333333,
+  "written_agreement": 0.9906604402935291,
+  "verdict_mass_mean": 0.9990057117541631
+ },
+ "thresholds": {
+  "min_agree_em1": 0.95,
+  "min_agree_f10": 0.8,
+  "max_dump_correct": 0.05,
+  "min_gen_agreement": 0.95,
+  "min_verdict_mass": 0.9
+ },
+ "diagnostic_not_gating": {
+  "known": "rows 500-999",
+  "dumps": "test pools",
+  "known_n": 500,
+  "known_em1_n": 267,
+  "known_f10_n": 112,
+  "agree_em1_correct": 0.9925093632958801,
+  "agree_f10_incorrect": 0.875,
+  "known_graded_correct": 0.716,
+  "known_em": 0.534,
+  "dump_n": 500,
+  "dump_graded_correct": 0.666,
+  "written_parsed": 1.0,
+  "written_agreement": 0.995,
+  "verdict_mass_mean": 0.9992935942411423
+ },
+ "seconds": 619.5297142919153,
+ "passed": false
+}
+VALIDATION FAILED (see runs/exp8/rescore/validation.json)

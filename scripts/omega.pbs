@@ -6,14 +6,26 @@
 #
 # Submit from the repo root. PBS passes no environment by default: give STEP (and CONFIG, RUN,
 # PILOT, ...) with -v. The log is written live to runs/logs/<jobid>.log.
+#
+# Size every job (SMU OMEGA user guide; docs/omega-cluster.md "Good practice on OMEGA"):
+# - Walltime: the default below is 4 h. Long steps pass their own on the command line, which
+#   overrides it: qsub -l walltime=12:00:00 -v STEP=... scripts/omega.pbs. Each job sheet gives one
+#   per step.
+# - Resources: light steps (nano-jev scoring, judges) can ask for less:
+#   -l select=1:ncpus=4:ngpus=1:mem=32gb.
+# - Accounting: OMEGA bills jobs to a project. Run `project_summary` and, if the course or supervisor
+#   gives a project ID, add `-P <project id>` to qsub (or un-comment the -P line below).
+# CPU-only steps do not belong here: use scripts/omega-cpu.pbs (queue short).
 #PBS -N router
 #PBS -q GPU
 #PBS -l select=1:ncpus=8:ngpus=1:mem=64gb
-#PBS -l walltime=24:00:00
+#PBS -l walltime=04:00:00
+##PBS -P Personal
 #PBS -j oe
 #PBS -r y
 #PBS -m abe
 #PBS -M dhameem.m.2025@engd.smu.edu.sg
+# TODO before the project submission: remove the -M address above (the repo is private for now).
 set -euo pipefail
 
 cd "$PBS_O_WORKDIR"
@@ -24,8 +36,13 @@ export PATH="$HOME/.local/bin:$PATH"  # uv
 echo "job $PBS_JOBID on $(hostname), step ${STEP:?pass -v STEP=pilot|full|eval}"
 nvidia-smi --query-gpu=name,memory.used,memory.total,driver_version --format=csv
 uv run python -c "import torch; assert torch.cuda.is_available(), 'torch cannot use the GPU'; print('torch', torch.__version__, torch.cuda.get_device_name(0))"
-# Every step resumes from its finished chunks, so a transient failure (Hub/network, CUDA) is retried.
-ATTEMPTS=${ATTEMPTS:-3}
+# Experiment 8's gated Llama models are cached by `exp8-prepare` on the login node: the jobs read the cache,
+# so no Hugging Face token has to reach the compute node (qstat -f would show it to other users).
+case "$STEP" in exp8-score|exp8-pilot|exp8-answer|exp8-judge|exp8-rescore-validate|exp8-rescore|exp8-judge-graded) export HF_HUB_OFFLINE=1 ;; esac
+# Every step resumes from its finished chunks, so a transient failure (CUDA, filesystem) is retried
+# once. A deterministic bug would fail every attempt and burn allocation, so the default is 2;
+# pass -v ATTEMPTS=1 for short jobs.
+ATTEMPTS=${ATTEMPTS:-2}
 for attempt in $(seq "$ATTEMPTS"); do
   bash scripts/run_cluster.sh "$STEP" && exit 0
   echo "attempt $attempt/$ATTEMPTS of $STEP failed at $(date)"

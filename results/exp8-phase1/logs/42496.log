@@ -1,0 +1,20 @@
+job 42496.pbs-omega on a-11, step exp8-score
+name, memory.used [MiB], memory.total [MiB], driver_version
+NVIDIA L40S, 14 MiB, 46068 MiB, 555.58.02
+   Building stair @ file:///storage/home/dhameem.m.2025/Custom-LLM-Router
+      Built stair @ file:///storage/home/dhameem.m.2025/Custom-LLM-Router
+Uninstalled 1 package in 14ms
+Installed 1 package in 74ms
+torch 2.14.1+cu126 NVIDIA L40S
+test: 500 pools, 20 chunks, 0 to score
+saved runs/exp8/scores/test.parquet
+calib: 1000 pools, 40 chunks, 0 to score
+saved runs/exp8/scores/calib.parquet
+router_train: 3000 pools, 120 chunks, 0 to score
+saved runs/exp8/scores/router_train.parquet
+test: 500 pools of 100.1 | nano-jev 3317 GFLOPs = 2.88 AgentTTS units per question, 0.3 s per question (device: see provenance.jsonl)
+  all        n=500   both gold in top-k  @2: nano-jev 0.544 BM25 0.244 | @3: nano-jev 0.652 BM25 0.338 | @5: nano-jev 0.772 BM25 0.460 | @10: nano-jev 0.860 BM25 0.602
+  bridge     n=403   both gold in top-k  @2: nano-jev 0.447 BM25 0.228 | @3: nano-jev 0.576 BM25 0.318 | @5: nano-jev 0.717 BM25 0.429 | @10: nano-jev 0.826 BM25 0.553
+  comparison n=97    both gold in top-k  @2: nano-jev 0.948 BM25 0.309 | @3: nano-jev 0.969 BM25 0.423 | @5: nano-jev 1.000 BM25 0.588 | @10: nano-jev 1.000 BM25 0.804
+  clean      n=438   both gold in top-k  @2: nano-jev 0.534 BM25 0.237 | @3: nano-jev 0.646 BM25 0.338 | @5: nano-jev 0.776 BM25 0.457 | @10: nano-jev 0.858 BM25 0.598
+saved runs/exp8/recall-test.json

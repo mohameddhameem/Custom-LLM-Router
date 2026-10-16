@@ -1,9 +1,43 @@
 # Experiment 8 (plan): cheap retrieval + System One routing on the AgentTTS setting
 
-**Status:** phase 0 done on 2026-10-11 (CPU, local). Results are below: **go** for phase 1. Phase
-1 is built and ready for the omega GPU: the `pool-answer` command, the cells in
-[`configs/exp8.toml`](../configs/exp8.toml) and the job sheet [gpu-jobs-exp8.md](gpu-jobs-exp8.md).
-Phase 2 also runs on the GPU, the default for anything heavy.
+> **Metric caveat (added 2026-10-15): do not quote these accuracies or the H3 verdict until re-scoring.**
+> The lenient scorer used here counts an answer as correct when the gold answer appears anywhere in it. That
+> favours long answers. The fused answers average 220–260 words, against 41 for the 70B. On the 500 test questions:
+>
+> | Setup | Words | Lenient | Gold in the first 40 words | Gold in the first sentence |
+> |---|---|---|---|---|
+> | 3B, one answer | 87 | 0.608 | 0.354 | 0.178 |
+> | 70B, one answer | 41 | 0.680 | 0.616 | 0.524 |
+> | 3B, 10 samples fused | 252 | 0.726 | 0.466 | 0.390 |
+> | 3B, 40 samples fused | 223 | 0.756 | 0.508 | 0.422 |
+> | No model: nano-jev's top 5 passages pasted as the answer | | **0.798** | | |
+>
+> - **No model beats every model.** Pasting the passages scores 0.798, above every answer setup.
+> - **With length held fixed, the ranking reverses:** the 70B, not the fused 3B, is the best answerer.
+> - **Many late hits are wrong.** 167 of the 40-sample cell's 378 lenient hits occur only after its first sentence.
+>   In a random sample of 8 such hits, about 5 hedged or gave a different answer first and then quoted a passage
+>   that contains the gold. Example: the Peabody Hotel "named after George Peabody", while the gold is "ducks".
+> - **It also misses right answers:** "November 22, 1761" against the gold "22 November".
+> - **AgentTTS's 74.6 is affected too.** It answers in long form and was re-scored with a lenient scorer, so it is
+>   likely inflated the same way.
+>
+> **What stands and what does not.**
+> - **Stands:** retrieval (phase 0), the costs, data integrity, and the evaluation code. A CPU rerun of the
+>   five-option evaluation from the tracked judge probabilities reproduces `report.json` exactly.
+> - **Not established:** "H3 met (75.6 against 74.6)", "the fused 3B beats the 70B", and the judge's
+>   accuracy and gain, because its labels come from the lenient scorer.
+>
+> Re-scoring with an LLM grader and short-answer extraction is in [gpu-jobs-exp8-rescore.md](gpu-jobs-exp8-rescore.md).
+
+> **Re-scored with an LLM grader on 2026-10-15:** see [experiments/2026-10-15-experiment-8-rescored.md](experiments/2026-10-15-experiment-8-rescored.md). Under the grader the 70B (0.748 test) leads the 40-sample fused 3B (0.632); the judge sends nearly every question to the 70B; H3 is not assessed because AgentTTS's 74.6 is lenient.
+
+**Status:** phase 0 done on 2026-10-11 (CPU, local): **go**. Phase 1 (the GPU answer runs) done on
+2026-10-12 to 2026-10-14; results are below and in [`results/exp8-phase1/`](../results/exp8-phase1/). Phases 2 and 3
+(the option-choosing judge, [`configs/exp8-judge.toml`](../configs/exp8-judge.toml), and its evaluation) ran on
+2026-10-14; see [the write-up](experiments/2026-10-14-experiment-8.md) and `results/exp8-phase2/`. **With three options H3 was
+not met** (73.2 lenient at 6.6% of the cost, against 74.6 for AgentTTS, a gap inside the noise). **With 20- and 40-sample
+fused options added (2026-10-15, [write-up](experiments/2026-10-15-experiment-8-more-samples.md), `results/exp8-phase2b/`)
+H3 is met:** always-40 scores 75.6 at 23.7% and the judge 75.4 at 19.4%; the 40-sample gain appears on test only.
 
 **Found while building phase 1:** AgentTTS's fusion call (Archon's fuser) repeats the whole user
 message twice, and that message holds all ~100 candidate passages. So the call reads roughly 26k+
@@ -182,6 +216,62 @@ needed.
 - **Cost:** nano-jev (2.9) + a 70B answer is about 13% of strong-everything (929).
 - **Optional variant: hop-2 re-scoring.** Re-rank with the question + the top-1 passage, to recover
   bridge questions. It costs one more nano-jev pass, minutes on the GPU.
+
+## Phase 1 results (2026-10-12 to 2026-10-14)
+
+**Execution.** Seven PBS jobs, all exit 0 on the first attempt with no retries (the backups never ran). The 70B in 4-bit
+did not fit one 46 GB L40S, so its jobs ran on 2 GPUs (`device_map="auto"`).
+
+| Job | Cell(s) | GPUs | Wall time |
+|---|---|---|---|
+| 42567 | `llama70b-top5`, all splits | 2 | 4 h 40 min |
+| 42569 | `llama70b-top3`, test only | 2 | 27 min |
+| 42584 | `llama3b-top5`, all splits | 1 | 56 min |
+| 42585 | `llama3b-top3`, all splits | 1 | 38 min |
+| 42586 | `llama3b-s10fuse-top5`, test | 1 | 1 h 28 min |
+| 42587 | `llama3b-s10fuse-top5`, calib | 1 | 2 h 52 min |
+| 42588 | `llama3b-s10fuse-top5`, router_train | 1 | 8 h 44 min |
+
+Before them, the nano-jev scores of all 4,500 pools (job 42496) reproduced phase 0's recall exactly, and a 20-question
+pilot (jobs 42498, 42499) found the 2-GPU requirement. The logs have no errors, and every answer file has the expected
+rows (500, 1,000, 3,000), unique ids and no empty answers.
+
+**Test set (500 questions).** Lenient accuracy is the primary metric. Cost is in AgentTTS units and as a share of
+strong-everything (929 units).
+
+| Cell | Lenient | Units | % of 929 | s per question |
+|---|---|---|---|---|
+| 3B, top 3, once | 0.584 | 5.9 | 0.6% | 0.5 |
+| 3B, top 5, once | 0.608 | 7.3 | 0.8% | 0.8 |
+| **3B, top 5, 10 samples fused** | **0.726** | **64.7** | **7.0%** | 10.6 |
+| 70B, top 3, once | 0.628 | 63.7 | 6.9% | 3.2 |
+| 70B, top 5, once | 0.680 | 93.6 | 10.1% | 3.7 |
+| Oracle (cheapest correct cell) | 0.814 | 14.2 | 1.5% | |
+| *AgentTTS recipe, as re-scored by the team* | *0.746* | *~938* | *~101%* | |
+
+The calib and router_train splits give the same picture (3B fused 0.722 and 0.718, 70B top 5 0.677 and 0.666, oracle
+0.815 and 0.803).
+
+**Reading the table.**
+
+- **H2 is not met at the 2-point margin.** The 70B reading nano-jev's top 5 scores 68.0, which is 4.2 below the 72.2 of
+  72B retrieval + 70B answering, at 10% of its cost. With 500 questions the sampling noise is about ±4 points, so this
+  is not a clear shortfall either.
+- **Ten fused samples of the 3B beat one 70B answer** (72.6 against 68.0) at 69% of its cost, and sit 2 points under
+  AgentTTS's 74.6 at 7% of its cost. A paired test is part of phase 3; I do not claim significance yet.
+- **More passages help both models:** top 5 beats top 3 by 2.4 points for the 3B and 5.2 for the 70B.
+- **The oracle is the headroom for H3.** Always picking the cheapest correct cell reaches 81.4 lenient at 14 units. A
+  judge needs 74.6 at no more than 232 units (25%); the fused 3B alone is already at 72.6 for 65 units.
+
+**Caveats.**
+
+- **Strict EM is about 0** (F1 0.02–0.13), because both models answer in full sentences. That is why lenient is the
+  primary metric. The lenient scorer is a placeholder until the team's is shared. The answers are cached, so only
+  scoring reruns.
+- **10 samples, not AgentTTS's 40,** to keep the GPU time down; and the 70B is 4-bit NF4, while the team's reproduction
+  used AWQ.
+- **The 3B top-5 costs 7.3 units against AgentTTS's 3,** because it reads five full passages rather than a short
+  prompt. Costs are measured tokens, so they are comparable only within our own cells.
 
 ## Dependencies
 

@@ -1,0 +1,38 @@
+job 42681.pbs-omega on a-11, step exp8-judge
+name, memory.used [MiB], memory.total [MiB], driver_version
+NVIDIA L40S, 14 MiB, 46068 MiB, 555.58.02
+   Building stair @ file:///storage/home/dhameem.m.2025/Custom-LLM-Router
+      Built stair @ file:///storage/home/dhameem.m.2025/Custom-LLM-Router
+Uninstalled 1 package in 13ms
+Installed 1 package in 55ms
+torch 2.14.1+cu126 NVIDIA L40S
+train qp seed 0: 3000 questions, label counts [2318, 425, 151, 69, 37]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 13795.02it/s]
+    epoch 1: train loss 0.9273 dev NLL 0.7796
+    epoch 2: train loss 0.7433 dev NLL 0.7845
+    epoch 3: train loss 0.6648 dev NLL 0.8632
+train qp seed 1: 3000 questions, label counts [2318, 425, 151, 69, 37]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 10719.89it/s]
+    epoch 1: train loss 0.9470 dev NLL 0.8143
+    epoch 2: train loss 0.7522 dev NLL 0.7737
+    epoch 3: train loss 0.6809 dev NLL 0.8232
+train qp seed 2: 3000 questions, label counts [2318, 425, 151, 69, 37]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 10575.47it/s]
+    epoch 1: train loss 0.9431 dev NLL 0.7707
+    epoch 2: train loss 0.7498 dev NLL 0.7534
+    epoch 3: train loss 0.6841 dev NLL 0.7745
+train qpa seed 0: 3000 questions, label counts [2318, 425, 151, 69, 37]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11419.80it/s]
+    epoch 1: train loss 0.9044 dev NLL 0.7962
+    epoch 2: train loss 0.7488 dev NLL 0.7641
+    epoch 3: train loss 0.6923 dev NLL 0.7994
+train qpa seed 1: 3000 questions, label counts [2318, 425, 151, 69, 37]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 10726.44it/s]
+    epoch 1: train loss 0.9098 dev NLL 0.7664
+    epoch 2: train loss 0.7465 dev NLL 0.7592
+    epoch 3: train loss 0.6656 dev NLL 0.8218
+train qpa seed 2: 3000 questions, label counts [2318, 425, 151, 69, 37]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 10762.45it/s]
+    epoch 1: train loss 0.9217 dev NLL 0.7607
+    epoch 2: train loss 0.7413 dev NLL 0.7844
+    epoch 3: train loss 0.6677 dev NLL 0.8128
