@@ -133,7 +133,11 @@ def smoke(path: str, device: str | None = None, batch: int = 3) -> dict:
     from strands_decider.schema import ChoiceQuestion
 
     j = DeciderJudge(path, device, score_batch=batch)
-    ours, tokens = j.probabilities(SMOKE_ITEMS)
+    # one item at a time (the items have different option counts), then a padded batch of the two 2-option ones
+    singles = [j.probabilities([it]) for it in SMOKE_ITEMS]
+    ours, tokens = [p[0] for p, _ in singles], np.array([t[0] for _, t in singles])
+    batched, _ = j.probabilities(SMOKE_ITEMS[:2])
+    batch_gap = float(np.abs(batched - np.stack(ours[:2])).max())
     theirs = []
     for it in SMOKE_ITEMS:
         ans = j.engine.ask(it["state"], {"q": ChoiceQuestion(instructions=it["question"],
@@ -142,9 +146,10 @@ def smoke(path: str, device: str | None = None, batch: int = 3) -> dict:
     gap = max(float(np.abs(np.asarray(o) - np.asarray(t)).max()) for o, t in zip(ours, theirs))
     report = {"model": path, "device": j.device, "params_b": j.params_b, "choice_temperature": j.choice_temperature,
               "window": j.window, "tokens": tokens.tolist(), "max_abs_gap_vs_engine": gap,
+              "max_abs_gap_batched_vs_single": batch_gap,
               "sums": [float(p.sum()) for p in ours], "ours": [p.round(4).tolist() for p in ours], "engine": theirs}
     # the engine rounds to 4 decimals; batching pads, so allow bf16-level drift
-    report["passed"] = bool(gap < 0.02 and all(abs(s - 1) < 1e-4 for s in report["sums"]))
+    report["passed"] = bool(gap < 0.02 and batch_gap < 0.02 and all(abs(s - 1) < 1e-4 for s in report["sums"]))
     return report
 
 
