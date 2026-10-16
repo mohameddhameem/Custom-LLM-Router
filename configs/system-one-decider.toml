@@ -6,6 +6,8 @@ tau = 0.8
 max_drop = 0.01
 seeds = [0, 1, 2]
 eval_dir = "eval-decider"
+# Every judge's AIQ is also bootstrapped against these (paired over questions): H9a's interval vs nano-jev
+paired_references = ["judge/qp-large-helps-nanojev-A", "judge/qpa-large-helps-nanojev-A"]
 # Zero-shot: nano-jev's grounded question and "is the proposed answer correct?", for each checkpoint
 # (columns zs_<name>_grounded / zs_<name>_correct, in runs/system-one/zeroshot/<name>/A)
 zero_shot_judge = [

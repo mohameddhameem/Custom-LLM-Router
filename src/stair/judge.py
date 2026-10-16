@@ -433,7 +433,7 @@ def run_eval(pair: str, plan: dict, out: Path, unit: str, n_boot: int, seed: int
     for col, spec in specs.items():
         routers[col] = {"score_column": col, "label": spec["label"], "post": spec["post"], "tuning": None}
     report, curves = evaluate(test, calib, routers, plan["tau"], plan.get("max_drop", 0.01), n_boot, seed,
-                              references=LR_REFERENCES)
+                              references=LR_REFERENCES + tuple(f"router:{c}" for c in plan.get("paired_references", [])))
 
     cmin, cmax = test["small_cost"].mean(), test["large_cost"].mean()
     judges = {}
