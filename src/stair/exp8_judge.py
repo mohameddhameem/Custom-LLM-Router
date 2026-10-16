@@ -80,7 +80,7 @@ def run_train(tables: dict, plan: dict, inputs: str, seed: int, out: Path, devic
     tr, dev = train_test_split(np.arange(len(df)), test_size=hp["dev_fraction"], random_state=seed,
                                stratify=y if counts.min() >= 2 else None)
     items = items_for(df, labels, inputs)
-    judge = make_judge(plan["init"], device, hp["max_length"], plan.get("score_batch"))
+    judge = make_judge(plan["init"], device, hp.get("max_length", 512), plan.get("score_batch"))
     start = time.perf_counter()
     if plan.get("zero_shot"):  # the checkpoint's own calibrated choice, no training
         history = []
