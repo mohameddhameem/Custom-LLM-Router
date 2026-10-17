@@ -20,6 +20,10 @@
 #   bash scripts/run_cluster.sh exp9-smoke     # experiment 9: the Strands Decider wrapper against its own engine (GPU, ~10 min)
 #   bash scripts/run_cluster.sh exp9-judge7    # experiment 9 on experiment 7's pair A: zero-shot + fine-tuned deciders (GPU, hours)
 #   bash scripts/run_cluster.sh exp9-judge8    # experiment 9 on experiment 8's five options, PLANS=<configs> (GPU, hours)
+#   bash scripts/run_cluster.sh common-prepare # experiments 7+9 under the team's common setup: splits + dev subsets (CPU job)
+#   bash scripts/run_cluster.sh common-experts # ... experts on the common train draw (GPU, ~1 h)
+#   bash scripts/run_cluster.sh common-judges  # ... judges, J=zeroshot|train (GPU, hours); common-eval: reports (CPU job)
+# The common-setup steps are documented in docs/gpu-jobs-common.md.
 # Experiment 9's steps are documented in docs/gpu-jobs-exp9.md.
 # Where each step runs: login node = `prepare` (downloads + light parquet export) and `exp8-prepare` (downloads); CPU job
 # (scripts/omega-cpu.pbs, queue short) = `eval`, `exp8-pools`, `exp8-rescore-summary`; every other step is a GPU job
@@ -35,7 +39,7 @@
 # the large expert changed) instead of recomputing them: see run-experts --reuse-from.
 set -euo pipefail
 
-STEP=${1:?usage: run_cluster.sh prepare|pilot|full|eval|judge-pilot|judge|exp8-prepare|exp8-score|exp8-pilot|exp8-answer|exp8-judge|exp8-rescore-validate|exp8-rescore|exp8-judge-graded|exp8-pools|exp8-rescore-summary|exp9-smoke|exp9-judge7|exp9-judge8|save-judges}
+STEP=${1:?usage: run_cluster.sh prepare|pilot|full|eval|judge-pilot|judge|exp8-prepare|exp8-score|exp8-pilot|exp8-answer|exp8-judge|exp8-rescore-validate|exp8-rescore|exp8-judge-graded|exp8-pools|exp8-rescore-summary|exp9-smoke|exp9-judge7|exp9-judge8|save-judges|common-prepare|common-experts|common-judges|common-eval}
 CONFIG=${CONFIG:-configs/gpu.toml}
 RUN=${RUN:-runs/gpu}
 DATA=${DATA:-data/hotpotqa}
@@ -152,6 +156,27 @@ EOF
     $BIN judge "${J7STEP:-all}" --plan configs/system-one-decider.toml --out runs/system-one ${ONLY:-} \
       --exclude data/hotpotqa/nanojev_validation_ids.txt
     ;;
+  common-prepare)  # CPU job: the team's common splits, and calib/test cut from runs/gpu's dev cache (no model calls)
+    $BIN make-splits --standard --exclude "$DATA/nanojev_train_ids.txt" --out "$DATA/splits-common.json"
+    for split in calib test; do
+      $BIN subset-cache --from runs/gpu --splits "$DATA/splits-common.json" --split "$split" --run runs/common --name "$split"
+    done
+    ;;
+  common-experts)  # GPU: nano-jev + 1.5B + 7B on the common train draw (~1 h, as the old router_train)
+    experts runs/common router_train "$DATA/distractor_train.parquet" --splits "$DATA/splits-common.json" --split router_train
+    ;;
+  common-judges)  # GPU: J=zeroshot|train (default train), PLAN (default the lenient plan), ONLY="--only <judge> ..."
+    $BIN judge "${J:-train}" --plan "${PLAN:-configs/system-one-common.toml}" --data-dir "$DATA" \
+      --out "${JOUT:-runs/common-judges}" ${ONLY:-} --save-model
+    ;;
+  common-eval)  # CPU job: reports for both metrics (all 500, and without nano-jev's questions) + the team results file
+    $BIN judge eval --plan configs/system-one-common.toml --data-dir "$DATA" --out runs/common-judges \
+      --exclude "$DATA/nanojev_validation_ids.txt"
+    $BIN judge eval --plan configs/system-one-common-f1.toml --data-dir "$DATA" --out runs/common-judges-f1 \
+      --exclude "$DATA/nanojev_validation_ids.txt"
+    $BIN export-common --plan configs/system-one-common.toml --out runs/common-judges \
+      --csv results/common/systemOne-hotpotqa-test.csv
+    ;;
   save-judges)  # retrain judges and keep their weights (for Hugging Face): PLAN=<config>, ONLY="--only <judge> ..."
     $BIN judge train --plan "${PLAN:?PLAN=<judge config>}" --data-dir "$DATA" --out "${JUDGE_OUT:-runs/judge-models}" ${ONLY:-} --save-model
     ;;
@@ -161,7 +186,7 @@ EOF
     done
     ;;
   *)
-    echo "unknown step: $STEP (prepare|pilot|full|eval|judge-pilot|judge|exp8-prepare|exp8-score|exp8-pilot|exp8-answer|exp8-judge|exp8-rescore-validate|exp8-rescore|exp8-judge-graded|exp8-pools|exp8-rescore-summary|exp9-smoke|exp9-judge7|exp9-judge8|save-judges)" >&2
+    echo "unknown step: $STEP (prepare|pilot|full|eval|judge-pilot|judge|exp8-prepare|exp8-score|exp8-pilot|exp8-answer|exp8-judge|exp8-rescore-validate|exp8-rescore|exp8-judge-graded|exp8-pools|exp8-rescore-summary|exp9-smoke|exp9-judge7|exp9-judge8|save-judges|common-prepare|common-experts|common-judges|common-eval)" >&2
     exit 2
     ;;
 esac

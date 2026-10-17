@@ -45,9 +45,12 @@ import numpy as np
 import pandas as pd
 
 from stair import provenance
-from stair.evaluate_routing import COST_UNITS, aiq, curve, evaluate, expert_params, with_cost_unit
+from stair_common.cost import UNIT_GFLOPS
+
+from stair.evaluate_routing import aiq, curve, evaluate, expert_params, with_cost_unit
 from stair.evidence import paragraph_text, passages_state, resolve_checkpoint
 from stair.decider import DeciderJudge, is_decider, params_b
+from stair.metrics import metric_view
 from stair.router import escalation_label, train_routers
 
 log = logging.getLogger(__name__)
@@ -60,7 +63,8 @@ CORRECT = ("Is the proposed answer correct? Question: {question} Proposed answer
 ZERO_SHOT = ("grounded", "correct")  # zero-shot questions; columns <prefix>_grounded, <prefix>_correct
 JUDGE_PARAMS_B = 0.0334  # nano-jev / MiniLM-L12-H384, billions
 SPLIT_DATA = {"router_train": "distractor_train.parquet", "calib": "distractor_train.parquet",
-              "test": "distractor_validation.parquet"}
+              "test": "distractor_validation.parquet"}  # a plan's [split_data] overrides (common: calib is dev)
+JUDGE_COST_UNITS = ("flops", "tokens", "agenttts")
 LR_REFERENCES = ("router:question+evidence/large-helps", "router:question+evidence+small/large-helps")
 
 
@@ -91,13 +95,14 @@ def read_paragraphs(path: Path, ids: set[str], batch_size: int = 2048) -> dict[s
     return out
 
 
-def load_pair_split(run: Path, data_dir: Path, split: str, paragraphs: dict[str, list[str]] | None = None) -> pd.DataFrame:
+def load_pair_split(run: Path, data_dir: Path, split: str, paragraphs: dict[str, list[str]] | None = None,
+                    split_data: dict[str, str] | None = None) -> pd.DataFrame:
     """A pair's cached split, plus the small expert's passages rebuilt from the dataset."""
     cache = pd.read_parquet(run / f"{split}.parquet")
     cfg = tomllib.loads((run / "config.toml").read_text())
     k = next(e for e in cfg["experts"] if e["name"] == "small").get("top_k")
     if paragraphs is None:
-        paragraphs = read_paragraphs(data_dir / SPLIT_DATA[split], set(cache["id"]))
+        paragraphs = read_paragraphs(data_dir / (split_data or SPLIT_DATA)[split], set(cache["id"]))
     passages = []
     for qid, scores in zip(cache["id"], cache["para_scores"]):
         order = np.argsort(-np.asarray(scores), kind="stable")  # run-experts' ranking
@@ -275,13 +280,14 @@ class Splits:
     """Loaded pair splits, cached across steps. The pairs share their questions, so each dataset
     file's paragraphs are read once (only for the questions needed) and reused by every pair."""
 
-    def __init__(self, pairs: dict[str, Path], data_dir: Path):
+    def __init__(self, pairs: dict[str, Path], data_dir: Path, split_data: dict[str, str] | None = None):
         self.pairs, self.data_dir, self._cache = pairs, data_dir, {}
+        self.split_data = {**SPLIT_DATA, **(split_data or {})}
         self._paragraphs: dict[str, dict[str, list[str]]] = {}
 
     def get(self, pair: str, split: str) -> pd.DataFrame:
         if (pair, split) not in self._cache:
-            file = SPLIT_DATA[split]
+            file = self.split_data[split]
             known = self._paragraphs.setdefault(file, {})
             ids = set(pd.read_parquet(self.pairs[pair] / f"{split}.parquet", columns=["id"])["id"])
             if ids - known.keys():
@@ -335,7 +341,7 @@ def run_train(splits: Splits, spec: dict, seed: int, plan: dict, out: Path, devi
     hp = {**plan["train"], **spec.get("train", {})}  # a judge may override the plan's settings (a decider's LoRA)
     log.info(f"train {name} seed {seed}")
     df = splits.get(spec["train_pair"], "router_train")
-    y = escalation_label(df, plan["tau"], spec["label"])
+    y = escalation_label(metric_view(df, plan.get("metric", "f1")), plan["tau"], spec["label"])
     tr, dev = train_test_split(np.arange(len(df)), test_size=hp["dev_fraction"], stratify=y, random_state=seed)
     if hp.get("max_questions") and len(tr) > hp["max_questions"]:  # e.g. the CPU plan: a stratified subsample
         tr, _ = train_test_split(tr, train_size=hp["max_questions"], stratify=y[tr], random_state=seed)
@@ -411,8 +417,9 @@ def run_eval(pair: str, plan: dict, out: Path, unit: str, n_boot: int, seed: int
     run = Path(plan["pairs"][pair])
     params = expert_params(tomllib.loads((run / "config.toml").read_text()))
     data, specs = {}, {}
+    metric = plan.get("metric", "f1")
     for split in ("calib", "test"):
-        df = pd.read_parquet(run / f"{split}.parquet")
+        df = metric_view(pd.read_parquet(run / f"{split}.parquet"), metric)
         cols, specs = judge_columns(out, pair, split, plan)
         if len(cols):
             df = df.merge(cols, on="id", how="left", validate="1:1")
@@ -428,7 +435,8 @@ def run_eval(pair: str, plan: dict, out: Path, unit: str, n_boot: int, seed: int
     if missing:
         raise ValueError(f"judge scores missing for some questions: {missing}")
 
-    lr_routers = routers or train_routers(pd.read_parquet(run / "router_train.parquet"), plan["tau"], seed)
+    lr_routers = routers or train_routers(metric_view(pd.read_parquet(run / "router_train.parquet"), metric),
+                                          plan["tau"], seed)
     routers = dict(lr_routers)
     for col, spec in specs.items():
         routers[col] = {"score_column": col, "label": spec["label"], "post": spec["post"], "tuning": None}
@@ -441,16 +449,19 @@ def run_eval(pair: str, plan: dict, out: Path, unit: str, n_boot: int, seed: int
         tokens = test.get(f"{col}_tokens")
         params = judge_params_b(spec["init"]) if "init" in spec else 0.0
         gflops = 2 * params * float(tokens.mean()) if tokens is not None else 0.0  # sufficiency: already paid
+        judge_cost = gflops / UNIT_GFLOPS if unit == "agenttts" else gflops  # in the curves' unit
         pts = [p for p in report_curve(curves, f"router:{col}")]
         entry = {**spec, "aiq": report["aiq"][f"router:{col}"], "judge_gflops": gflops, "judge_params_b": params,
-                 "aiq_with_judge_cost": aiq([{**p, "cost": p["cost"] + gflops} for p in pts], cmin, cmax)}
+                 "judge_cost": judge_cost,
+                 "aiq_with_judge_cost": aiq([{**p, "cost": p["cost"] + judge_cost} for p in pts], cmin, cmax)}
         seed_cols = [c for c in test.columns if c.startswith(f"{col}#")]
         if seed_cols:
             per_seed = [aiq(curve(test, test[c].to_numpy(), spec["post"]), cmin, cmax) for c in seed_cols]
             entry |= {"aiq_per_seed": per_seed, "aiq_seed_mean": float(np.mean(per_seed)),
                       "aiq_seed_sd": float(np.std(per_seed, ddof=1)) if len(per_seed) > 1 else 0.0}
         judges[col] = entry
-    report = {"pair": pair, "run": str(run), "cost_unit": unit, "excluded": len(exclude), **report, "judges": judges}
+    report = {"pair": pair, "run": str(run), "metric": metric, "cost_unit": unit, "excluded": len(exclude), **report,
+              "judges": judges}
 
     target = out / plan.get("eval_dir", "eval") / pair
     target.mkdir(parents=True, exist_ok=True)
@@ -500,7 +511,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--micro-batch", type=int,
                         help="train: questions per forward/backward pass (memory only; default: whole batch on GPU, 2 on CPU)")
     parser.add_argument("--score-batch", type=int, help="questions per inference batch (default 64 on GPU, 16 on CPU)")
-    parser.add_argument("--cost", choices=COST_UNITS[:2], default="flops")
+    parser.add_argument("--cost", choices=JUDGE_COST_UNITS, help="cost unit (default: the plan's `cost`, else flops)")
     parser.add_argument("--bootstrap", type=int, default=1000)
     parser.add_argument("--seed", type=int, default=0, help="eval: seed for routers' CV and the bootstrap")
     parser.add_argument("--exclude", type=Path, action="append", default=[],
@@ -515,7 +526,8 @@ def main(argv: list[str] | None = None) -> None:
     args.out.mkdir(parents=True, exist_ok=True)
     shutil.copy(args.plan, args.out / "plan.toml")
     provenance.record(args.out, f"judge-{args.step}", plan=str(args.plan), **provenance.environment())
-    splits = Splits(plan["pairs"], args.data_dir)
+    splits = Splits(plan["pairs"], args.data_dir, plan.get("split_data"))
+    args.cost = args.cost or plan.get("cost", "flops")
     if args.step in ("zeroshot", "all"):
         for path, prefix, folder in zero_shot_judges(plan):
             run_zeroshot(splits, list(plan["pairs"]), path, args.out, args.device, args.score_batch, prefix, folder)

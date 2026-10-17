@@ -1,5 +1,5 @@
 version = 1
-revision = 5
+revision = 3
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '3.14' and sys_platform == 'win32'",
@@ -2163,6 +2163,7 @@ dependencies = [
     { name = "pyarrow" },
     { name = "scikit-learn" },
     { name = "scipy" },
+    { name = "stair-common" },
 ]
 
 [package.optional-dependencies]
@@ -2191,6 +2192,7 @@ requires-dist = [
     { name = "pyarrow", specifier = ">=25.0.1" },
     { name = "scikit-learn", specifier = ">=1.9.1" },
     { name = "scipy", specifier = ">=1.14" },
+    { name = "stair-common", git = "https://github.com/mohameddhameem/STAIR.git?subdirectory=common&rev=6706452031b0d58d0de6cde27a531471db32b081" },
     { name = "strands-decider", marker = "sys_platform != 'linux' and extra == 'decider'", git = "https://github.com/strands-labs/strands-decider?rev=6039cf8b64c6074e75804000c07ac3d4cce795f7" },
     { name = "strands-decider", extras = ["cuda"], marker = "sys_platform == 'linux' and extra == 'decider'", git = "https://github.com/strands-labs/strands-decider?rev=6039cf8b64c6074e75804000c07ac3d4cce795f7" },
     { name = "torch", marker = "extra == 'llm'", specifier = ">=2.14.0", index = "https://download.pytorch.org/whl/cu126" },
@@ -2200,6 +2202,15 @@ provides-extras = ["llm", "decider"]
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest", specifier = ">=9.1.1" }]
+
+[[package]]
+name = "stair-common"
+version = "0.1.0"
+source = { git = "https://github.com/mohameddhameem/STAIR.git?subdirectory=common&rev=6706452031b0d58d0de6cde27a531471db32b081#6706452031b0d58d0de6cde27a531471db32b081" }
+dependencies = [
+    { name = "numpy" },
+    { name = "pandas" },
+]
 
 [[package]]
 name = "starlette"

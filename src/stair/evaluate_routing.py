@@ -42,13 +42,15 @@ import pandas as pd
 from scipy.optimize import minimize_scalar
 
 from stair import provenance
-from stair.metrics import normalize_answer
+from stair_common.cost import UNIT_GFLOPS
+
+from stair.metrics import METRICS, metric_view, normalize_answer
 from stair.router import LABELS, escalation_label, predict_escalation
 
 log = logging.getLogger(__name__)
 
 RATES = np.round(np.linspace(0, 1, 21), 2)
-COST_UNITS = ("flops", "tokens", "seconds")
+COST_UNITS = ("flops", "tokens", "seconds", "agenttts")  # agenttts: flops / one 3B pass of 128+64 tokens
 CPT_FRACTIONS = (0.5, 0.8)
 CURVE_COLUMNS = ("small_f1", "large_f1", "small_em", "large_em", "small_cost", "large_cost", "small_uncertainty")
 BASELINES = ("small-entropy (post)", "random")
@@ -70,11 +72,11 @@ def with_cost_unit(df: pd.DataFrame, unit: str, params: dict[str, float | None])
     """Copy of df whose small_cost/large_cost are in `unit` (cached costs are tokens)."""
     df = df.copy()
     for name in ("small", "large"):
-        if unit == "flops":
+        if unit in ("flops", "agenttts"):
             if params.get(name) is None:
                 raise ValueError(f"no parameter count for expert '{name}': add `params = <billions>` to its "
                                  "config or use --cost tokens")
-            df[f"{name}_cost"] = 2 * params[name] * df[f"{name}_cost"]
+            df[f"{name}_cost"] = 2 * params[name] * df[f"{name}_cost"] / (UNIT_GFLOPS if unit == "agenttts" else 1)
         elif unit == "seconds":
             df[f"{name}_cost"] = df[f"{name}_seconds"]
     return df
@@ -317,6 +319,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--run", type=Path, required=True)
     parser.add_argument("--max-drop", type=float, default=0.01, help="allowed relative F1 drop vs always-large at the operating point")
     parser.add_argument("--cost", choices=COST_UNITS, default="flops", help="cost unit (see module docstring)")
+    parser.add_argument("--metric", choices=METRICS, default="f1",
+                        help="per-question score for labels, curves and AIQ: F1, or the team's lenient ruler (0/1)")
     parser.add_argument("--exclude", type=Path, action="append", default=[],
                         help="file with test question ids to drop (e.g. ones nano-jev was tuned on); repeatable. "
                              "Writes report-clean.json and curves-clean.csv")
@@ -331,7 +335,9 @@ def main(argv: list[str] | None = None) -> None:
     saved = pickle.loads((args.run / "routers.pkl").read_bytes())
     cfg = tomllib.loads((args.run / "config.toml").read_text())
     params = expert_params(cfg)
-    test = pd.read_parquet(args.run / "test.parquet")
+    test = metric_view(pd.read_parquet(args.run / "test.parquet"), args.metric)
+    if saved.get("metric", "f1") != args.metric:
+        raise ValueError(f"routers.pkl was trained with metric {saved.get('metric', 'f1')!r}; rerun train-router --metric {args.metric}")
     excluded = set()
     for path in args.exclude:
         excluded |= {line.strip() for line in path.read_text().splitlines() if line.strip()}
@@ -340,7 +346,7 @@ def main(argv: list[str] | None = None) -> None:
         test = test[~test["id"].isin(excluded)].reset_index(drop=True)
         log.info(f"excluded {before - len(test)} of {before} test questions")
     calib_path = args.run / "calib.parquet"
-    calib = pd.read_parquet(calib_path) if calib_path.exists() else None
+    calib = metric_view(pd.read_parquet(calib_path), args.metric) if calib_path.exists() else None
 
     single = {}
     for unit in COST_UNITS:
@@ -359,7 +365,7 @@ def main(argv: list[str] | None = None) -> None:
     calib = with_cost_unit(calib, args.cost, params) if calib is not None else None
 
     report, curves = evaluate(test, calib, saved["routers"], saved["tau"], args.max_drop, args.bootstrap, args.seed)
-    report = {"cost_unit": args.cost, "expert_params_b": params, "excluded_files": [str(p) for p in args.exclude],
+    report = {"metric": args.metric, "cost_unit": args.cost, "expert_params_b": params, "excluded_files": [str(p) for p in args.exclude],
               **report, "single_expert_costs": single, "scorer_cost": scorer_cost}
     suffix = "-clean" if excluded else ""
     (args.run / f"report{suffix}.json").write_text(json.dumps(report, indent=1))
