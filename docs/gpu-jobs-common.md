@@ -11,7 +11,8 @@ Experiment 8 follows in a later sheet.
 calib and test come from `runs/gpu`'s cache of all 7,405 dev questions. It was made with the same experts and model
 revisions, which `subset-cache` checks, so only router_train needs new model calls.
 
-Run every command from the repo root on OMEGA, after `git pull` and `uv sync` on the login node. Each step resumes.
+Run every command from the repo root on OMEGA, after `git pull` and `uv sync --extra llm --extra decider` on the login
+node. A bare `uv sync` removes torch, and the GPU jobs then fail at once. Each step resumes.
 
 | # | Command | Where | Time | Output |
 |---|---|---|---|---|
