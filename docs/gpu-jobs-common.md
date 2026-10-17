@@ -32,3 +32,23 @@ node. A bare `uv sync` removes torch, and the GPU jobs then fail at once. Each s
   - `report-clean.json` drops the 62 that nano-jev saw in its own calibration and test (the standard asks for both).
   - `"metric"` and `"cost_unit"` name the ruler and the unit.
 - **Cost:** the judge's own cost is included in `aiq_with_judge_cost`, in AgentTTS units.
+
+## Experiment 8 (runs/exp8-common)
+
+- **Test:** dev[500:1000], unchanged. Its pools, nano-jev scores, answers and grades are copied from `runs/exp8`
+  (same questions, same pool seed).
+- **router_train:** 1,000 questions from the common train run. This is a third of the old 3,000, the user's choice to
+  keep the GPU time to about a day.
+- **calib:** dev[0:500].
+
+`E` stands for `EXP8_OUT=runs/exp8-common,PLAN=configs/exp8-common.toml,SPLITS=calib router_train`.
+
+| # | Command | Where | Time |
+|---|---|---|---|
+| 8.1 | `qsub -l walltime=01:00:00 -v STEP=exp8c-pools,EXP8_TRAIN=1000 scripts/omega-cpu.pbs` (after `common-experts`) | CPU | minutes |
+| 8.2 | `qsub -l walltime=01:00:00 -v "STEP=exp8-score,$E" scripts/omega.pbs` | GPU | minutes |
+| 8.3 | `qsub -v "STEP=exp8-answer,$E,CELLS=<cells>" scripts/omega.pbs`, one job per cell group: `llama3b-top5 llama70b-top5` (4 h); `llama3b-s10fuse-top5` (8 h); `llama3b-s20fuse-top5` (12 h); `llama3b-s40fuse-top5` (12 h) | GPU | ~45 GPU-s a question in all |
+| 8.4 | `qsub -l walltime=12:00:00 -v "STEP=exp8-rescore,EXP8_OUT=runs/exp8-common,SPLITS=calib router_train" scripts/omega.pbs` | GPU | hours |
+| 8.5 | `qsub -l walltime=03:00:00 -v STEP=exp8-judge,PLAN=configs/exp8-judge-common.toml scripts/omega.pbs` (the standard ruler; doesn't need 8.4) | GPU | <1 h |
+| 8.6 | `qsub -l walltime=03:00:00 -v STEP=exp8-judge-graded,PLAN=configs/exp8-judge-graded-common.toml scripts/omega.pbs` (after 8.4) | GPU | <1 h |
+| 8.7 | `qsub -l walltime=10:00:00 -v "STEP=exp9-judge8,PLANS=configs/exp8-judge-decider-2b-ft-common.toml configs/exp8-judge-decider-e4b-ft-common.toml configs/exp8-judge-decider-2b-zs-common.toml configs/exp8-judge-decider-e4b-zs-common.toml" scripts/omega.pbs` (after 8.4) | GPU | hours |
