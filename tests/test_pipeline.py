@@ -86,6 +86,15 @@ def test_bootstrap_intervals():
     full = evaluate_routing.policy_curves(a, scores)
     point = aiq(full["router:good"], 1.0, 5.0)
     assert out["aiq_ci95"]["router:good"][0] <= point <= out["aiq_ci95"]["router:good"][1]
+    assert "aiq_diff_with_cost" not in out
+
+    # with-cost: a free judge reproduces the plain differences; a costly one loses AIQ against every baseline
+    free = evaluate_routing.bootstrap(a, scores, {}, 200, seed=0, policy_costs={"router:good": np.zeros(n)})
+    assert free["aiq_diff_with_cost"]["router:good - random"] == out["aiq_diff"]["router:good - random"]
+    costly = evaluate_routing.bootstrap(a, scores, {}, 200, seed=0, policy_costs={"router:good": np.full(n, 1.0)})
+    with_cost, plain = costly["aiq_diff_with_cost"]["router:good - random"], out["aiq_diff"]["router:good - random"]
+    assert with_cost["ci95"][1] < plain["ci95"][1]
+    assert costly["aiq_diff_with_cost"]["router:noise - random"] == out["aiq_diff"]["router:noise - random"]
 
 
 def test_escalation_labels():

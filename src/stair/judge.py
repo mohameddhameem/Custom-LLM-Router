@@ -440,8 +440,14 @@ def run_eval(pair: str, plan: dict, out: Path, unit: str, n_boot: int, seed: int
     routers = dict(lr_routers)
     for col, spec in specs.items():
         routers[col] = {"score_column": col, "label": spec["label"], "post": spec["post"], "tuning": None}
+    policy_costs = {}  # each judge's own per-question cost, in the curves' unit, for the with-cost bootstrap
+    for col, spec in specs.items():
+        if f"{col}_tokens" in test and "init" in spec:
+            gflops = 2 * judge_params_b(spec["init"]) * test[f"{col}_tokens"].to_numpy(dtype=float)
+            policy_costs[f"router:{col}"] = gflops / UNIT_GFLOPS if unit == "agenttts" else gflops
     report, curves = evaluate(test, calib, routers, plan["tau"], plan.get("max_drop", 0.01), n_boot, seed,
-                              references=LR_REFERENCES + tuple(f"router:{c}" for c in plan.get("paired_references", [])))
+                              references=LR_REFERENCES + tuple(f"router:{c}" for c in plan.get("paired_references", [])),
+                              policy_costs=policy_costs)
 
     cmin, cmax = test["small_cost"].mean(), test["large_cost"].mean()
     judges = {}

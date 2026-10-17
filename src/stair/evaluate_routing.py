@@ -144,11 +144,18 @@ def policy_curves(a: dict[str, np.ndarray], scores: dict[str, tuple[np.ndarray, 
 
 def bootstrap(a: dict[str, np.ndarray], scores: dict[str, tuple[np.ndarray, bool]],
               operating: dict[str, tuple[np.ndarray, bool]], n_boot: int, seed: int,
-              references: tuple[str, ...] = ()) -> dict:
-    """Paired bootstrap over questions: AIQ intervals, AIQ differences, operating-point F1 vs always-large."""
+              references: tuple[str, ...] = (), policy_costs: dict[str, np.ndarray] | None = None) -> dict:
+    """Paired bootstrap over questions: AIQ intervals, AIQ differences, operating-point F1 vs always-large.
+
+    `policy_costs` (policy -> its own per-question cost, e.g. a judge's) adds "aiq_diff_with_cost": the same
+    differences with each such policy's curve shifted by its mean cost on the resampled questions (as
+    `aiq_with_judge_cost`); policies without a cost enter unchanged.
+    """
     rng = np.random.default_rng(seed)
     n = len(a["small_f1"])
+    policy_costs = policy_costs or {}
     aiqs: dict[str, list[float]] = {}
+    aiqs_cost: dict[str, list[float]] = {}
     op_gaps: dict[str, list[float]] = {name: [] for name in operating}
     for _ in range(n_boot):
         idx = rng.integers(0, n, n)
@@ -157,6 +164,9 @@ def bootstrap(a: dict[str, np.ndarray], scores: dict[str, tuple[np.ndarray, bool
         cmin, cmax = s["small_cost"].mean(), s["large_cost"].mean()
         for name, pts in curves.items():
             aiqs.setdefault(name, []).append(aiq(pts, cmin, cmax))
+            extra = float(policy_costs[name][idx].mean()) if name in policy_costs else 0.0
+            aiqs_cost.setdefault(name, []).append(
+                aiq([{**p, "cost": p["cost"] + extra} for p in pts], cmin, cmax) if extra else aiqs[name][-1])
         for name, (esc, post) in operating.items():
             op_gaps[name].append(outcome(s, esc[idx], post)["f1"] - s["large_f1"].mean())
 
@@ -167,8 +177,15 @@ def bootstrap(a: dict[str, np.ndarray], scores: dict[str, tuple[np.ndarray, bool
     aiqs_np = {name: np.asarray(v) for name, v in aiqs.items()}
     diffs = {f"{name} - {base}": summary(aiqs_np[name] - aiqs_np[base])
              for name in scores for base in (*BASELINES, *references) if base != name and base in aiqs_np}
-    return {"n": n_boot, "seed": seed, "aiq_ci95": {name: summary(v)["ci95"] for name, v in aiqs_np.items()},
-            "aiq_diff": diffs, "op_f1_minus_large": {name: summary(v) for name, v in op_gaps.items()}}
+    out = {"n": n_boot, "seed": seed, "aiq_ci95": {name: summary(v)["ci95"] for name, v in aiqs_np.items()},
+           "aiq_diff": diffs, "op_f1_minus_large": {name: summary(v) for name, v in op_gaps.items()}}
+    if policy_costs:
+        cost_np = {name: np.asarray(v) for name, v in aiqs_cost.items()}
+        out["aiq_ci95_with_cost"] = {name: summary(cost_np[name])["ci95"] for name in policy_costs if name in cost_np}
+        out["aiq_diff_with_cost"] = {f"{name} - {base}": summary(cost_np[name] - cost_np[base])
+                                     for name in scores for base in (*BASELINES, *references)
+                                     if base != name and base in cost_np}
+    return out
 
 
 def aiq(points: list[dict], cmin: float, cmax: float) -> float:
@@ -265,7 +282,8 @@ def breakdowns(df: pd.DataFrame, escalate: np.ndarray, post: bool = False) -> di
 
 
 def evaluate(test: pd.DataFrame, calib: pd.DataFrame | None, routers: dict, tau: float, max_drop: float,
-             n_boot: int = 0, seed: int = 0, references: tuple[str, ...] = ()) -> tuple[dict, pd.DataFrame]:
+             n_boot: int = 0, seed: int = 0, references: tuple[str, ...] = (),
+             policy_costs: dict[str, np.ndarray] | None = None) -> tuple[dict, pd.DataFrame]:
     n = len(test)
     oracle = (test["large_f1"] > test["small_f1"]).to_numpy()
     cmin, cmax = test["small_cost"].mean(), test["large_cost"].mean()
@@ -308,7 +326,7 @@ def evaluate(test: pd.DataFrame, calib: pd.DataFrame | None, routers: dict, tau:
         for key, value in breakdowns(test, esc).items():
             report.setdefault(key, {})[single] = value
     if n_boot:
-        report["bootstrap"] = bootstrap(a, scores_by_policy, operating, n_boot, seed, references)
+        report["bootstrap"] = bootstrap(a, scores_by_policy, operating, n_boot, seed, references, policy_costs)
 
     rows = [{"policy": name, **p} for name, pts in curves.items() for p in pts]
     return report, pd.DataFrame(rows)
