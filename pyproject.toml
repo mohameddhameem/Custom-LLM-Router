@@ -13,7 +13,7 @@ dependencies = [
     "pyarrow>=25.0.1",
     "scikit-learn>=1.9.1",
     "scipy>=1.14",
-    "stair-common",
+    "stair-common[plot]",
 ]
 
 [project.scripts]
@@ -53,7 +53,7 @@ decider = [
 # omega's GPU node has driver 555 (CUDA 12.5): the default cu130 wheels cannot use it, cu126 can.
 [tool.uv.sources]
 torch = { index = "pytorch-cu126" }
-stair-common = { git = "https://github.com/mohameddhameem/STAIR.git", subdirectory = "common", rev = "6706452031b0d58d0de6cde27a531471db32b081" }
+stair-common = { git = "https://github.com/mohameddhameem/STAIR.git", subdirectory = "common", rev = "052ebe4be06666b174eaef19b36c131c366064ef" }
 
 [[tool.uv.index]]
 name = "pytorch-cu126"

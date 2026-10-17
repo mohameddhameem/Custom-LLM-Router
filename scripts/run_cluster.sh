@@ -188,7 +188,7 @@ EOF
     $BIN judge eval --plan configs/system-one-common-f1.toml --data-dir "$DATA" --out runs/common-judges-f1 \
       --exclude "$DATA/nanojev_validation_ids.txt"
     $BIN export-common --plan configs/system-one-common.toml --out runs/common-judges \
-      --csv results/common/systemOne-hotpotqa-test.csv
+      --csv results/common/systemOne-hotpotqa-test.csv       --history results/common/training-history.csv --plot results/common/loss-curves.png
     ;;
   save-judges)  # retrain judges and keep their weights (for Hugging Face): PLAN=<config>, ONLY="--only <judge> ..."
     $BIN judge train --plan "${PLAN:?PLAN=<judge config>}" --data-dir "$DATA" --out "${JUDGE_OUT:-runs/judge-models}" ${ONLY:-} --save-model

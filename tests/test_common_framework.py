@@ -82,3 +82,18 @@ def test_exported_rows_pass_the_team_validator():
     assert df["lenient"].tolist() == [1, 1, 0, 0]
     assert df["units_answer"].tolist() == [1.0, 4.0, 1.0, 4.0]  # post judge: an escalation pays both experts
     assert df["units"].tolist() == pytest.approx([1.6, 4.6, 1.6, 4.6])
+
+
+def test_export_histories(tmp_path):
+    import json
+
+    from stair.export_common import histories
+    for seed in (0, 1):
+        d = tmp_path / "judges" / "qpa-large-helps-nanojev-A" / f"seed{seed}"
+        d.mkdir(parents=True)
+        d.joinpath("done.json").write_text(json.dumps({"history": [
+            {"epoch": 1, "train_loss": 0.7, "dev_nll": 0.6, "seconds": 1.0},
+            {"epoch": 2, "train_loss": 0.5, "dev_nll": 0.65, "seconds": 1.0}]}))
+    hist = histories(tmp_path)
+    assert len(hist) == 4 and set(hist["seed"]) == {0, 1} and hist["val_loss"].tolist()[:2] == [0.6, 0.65]
+    assert histories(tmp_path / "none").empty
