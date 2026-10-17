@@ -49,6 +49,7 @@ PILOT=${PILOT:-500}
 TAU=${TAU:-0.8}
 BIN=${BIN-uv run}  # "uv run", or BIN="" with the project venv activated
 REUSE=${REUSE:-}
+EXP8_OUT=${EXP8_OUT:-runs/exp8}  # runs/exp8-common for the common-setup redo (docs/gpu-jobs-common.md)
 
 experts() {  # experts <run> <name> <data file> [run-experts options...]; one model on the GPU per command
   local run=$1 name=$2 data=$3
@@ -114,8 +115,8 @@ EOF
     [ -f runs/exp8/nanojev_validation_ids.txt ] || $BIN nanojev-ids --out runs/exp8
     ;;
   exp8-score)
-    for split in test calib router_train; do $BIN pools score --name "$split" --device cuda; done
-    $BIN pools recall --name test --exclude runs/exp8/nanojev_validation_ids.txt
+    for split in ${SPLITS:-test calib router_train}; do $BIN pools score --out "$EXP8_OUT" --name "$split" --device cuda; done
+    $BIN pools recall --out "$EXP8_OUT" --name test --exclude runs/exp8/nanojev_validation_ids.txt
     ;;
   exp8-pilot)
     $BIN pool-answer run --plan "${PLAN:-configs/exp8.toml}" --split test --limit "${EXP8_PILOT:-20}" --chunk-size 10
@@ -136,10 +137,10 @@ EOF
     ;;
   exp8-rescore)
     for split in ${SPLITS:-test calib router_train}; do
-      $BIN rescore commit --split "$split"   # the cells' own models (3B, 70B in 4-bit) finish their answers
-      $BIN rescore run --split "$split" --grader "${GRADER:-Qwen/Qwen2.5-14B-Instruct}"
+      $BIN rescore commit --out "$EXP8_OUT" --split "$split"   # the cells' own models (3B, 70B in 4-bit) finish their answers
+      $BIN rescore run --out "$EXP8_OUT" --split "$split" --grader "${GRADER:-Qwen/Qwen2.5-14B-Instruct}"
     done
-    $BIN rescore summary
+    $BIN rescore summary --out "$EXP8_OUT"
     ;;
   exp8-rescore-summary)  # CPU job: rewrites runs/exp8/rescore/summary.csv from the graded files
     $BIN rescore summary
@@ -155,6 +156,18 @@ EOF
   exp9-judge7)  # J7STEP=zeroshot|train|eval|all; ONLY="--only <judge name>" to run one judge
     $BIN judge "${J7STEP:-all}" --plan configs/system-one-decider.toml --out runs/system-one ${ONLY:-} \
       --exclude data/hotpotqa/nanojev_validation_ids.txt
+    ;;
+  exp8c-pools)  # CPU job, after common-experts: experiment 8's pools for the common setup in runs/exp8-common.
+    # test = dev[500:1000] as before: its pools, scores, answers and grades are copied (same questions, same seed).
+    mkdir -p runs/exp8-common/pools runs/exp8-common/scores runs/exp8-common/answers runs/exp8-common/rescore
+    for d in pools scores; do cp -n runs/exp8/$d/test.parquet runs/exp8-common/$d/; done
+    cp -rn runs/exp8/answers/test runs/exp8-common/answers/
+    [ -d runs/exp8/rescore/test ] && cp -rn runs/exp8/rescore/test runs/exp8-common/rescore/
+    cp -n runs/exp8/nanojev_validation_ids.txt runs/exp8-common/
+    [ -f runs/exp8-common/pools/router_train.parquet ] || $BIN pools build --out runs/exp8-common --source train \
+      --ids runs/common/router_train.parquet --count "${EXP8_TRAIN:-3000}" --name router_train
+    [ -f runs/exp8-common/pools/calib.parquet ] || $BIN pools build --out runs/exp8-common --source validation \
+      --start 0 --count 500 --name calib
     ;;
   common-prepare)  # CPU job: the team's common splits, and calib/test cut from runs/gpu's dev cache (no model calls)
     $BIN make-splits --standard --exclude "$DATA/nanojev_train_ids.txt" --out "$DATA/splits-common.json"

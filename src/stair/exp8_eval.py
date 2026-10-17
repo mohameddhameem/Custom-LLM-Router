@@ -130,9 +130,11 @@ def diff(boot: dict, a: str, b: str) -> dict:
 def load_tables(out, split: str, options: list[str], state_k: int, metric: str = "lenient", rescore_dir=None):
     """Question table (pool_answer.load_split) plus ok/cost/entropy/pred matrices over the common ids.
 
-    `metric` is the correctness column: "lenient" from the answer files, or a column of the re-scored
-    files in `rescore_dir/<split>/<cell>.parquet` (stair.rescore: "correct" from the LLM grader on the
-    self-committed answer, "commit_em"). Then each option's cost includes its commit step (`commit_units`).
+    `metric` is the correctness column: "lenient" from the answer files (the old placeholder scorer),
+    "lenient_std" (the team's standard ruler, stair_common.score.lenient, on the same response: AgentTTS-comparable),
+    or a column of the re-scored files in `rescore_dir/<split>/<cell>.parquet` (stair.rescore: "correct" from the LLM
+    grader on the self-committed answer, "commit_em"). Then each option's cost includes its commit step
+    (`commit_units`).
     """
     from pathlib import Path
 
@@ -145,6 +147,12 @@ def load_tables(out, split: str, options: list[str], state_k: int, metric: str =
     df = load_split(out, split, state_k, None).set_index("id").loc[ids].reset_index()
     if metric == "lenient":
         ok = np.stack([answers[o].loc[ids, "lenient"].to_numpy() >= 0.5 for o in options], axis=1)
+    elif metric == "lenient_std":
+        from stair_common.score import lenient
+
+        golds = df["answer"].astype(str).to_numpy()
+        ok = np.stack([[bool(lenient(str(p or ""), [g])) for p, g in zip(answers[o].loc[ids, "pred"], golds)]
+                       for o in options], axis=1)
     else:
         if rescore_dir is None:
             raise ValueError(f"metric {metric!r} needs rescore_dir (the stair.rescore output)")
@@ -154,7 +162,7 @@ def load_tables(out, split: str, options: list[str], state_k: int, metric: str =
             raise ValueError(f"re-scored answers missing for {missing} on {split}: run `rescore run --split {split}`")
         ok = np.stack([graded[o].loc[ids, metric].to_numpy() >= 0.5 for o in options], axis=1)
     cost = np.stack([answers[o].loc[ids, "units"].to_numpy() for o in options], axis=1)
-    if metric != "lenient":  # the self-commit step (stair.rescore, version 4) is part of each option's cost
+    if metric not in ("lenient", "lenient_std"):  # the self-commit step (stair.rescore, version 4) is part of each option's cost
         cost = cost + np.stack([graded[o].loc[ids, "commit_units"].to_numpy() if "commit_units" in graded[o]
                                 else np.zeros(len(ids)) for o in options], axis=1)
     df["entropy0"] = answers[options[0]].loc[ids, "entropy"].to_numpy()

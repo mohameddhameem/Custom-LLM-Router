@@ -108,6 +108,18 @@ def test_load_tables_uses_the_chosen_metric(tmp_path):
         ev.load_tables(out, "test", ["cheap", "strong"], 2, metric="correct", rescore_dir=out / "rescore")
 
 
+def test_load_tables_standard_ruler(tmp_path):
+    out = _out_dir(tmp_path)
+    # gold "Kalo": contained; "about" is the ruler's quantity guard; whole words only; empty; case; wrong
+    preds = ["It was Kalo.", "about Kalo and more", "Kalorama", "", "kalo", "no idea"]
+    for cell in ("cheap", "strong"):
+        f = out / "answers" / "test" / f"{cell}.parquet"
+        pd.read_parquet(f).assign(pred=preds).to_parquet(f)
+    _, ok, cost = ev.load_tables(out, "test", ["cheap", "strong"], 2, metric="lenient_std")
+    assert ok[:, 0].tolist() == [True, False, False, False, True, False]
+    assert cost[0].tolist() == [1.0, 9.0]  # no commit step under the response-level ruler
+
+
 def test_rescore_helpers():
     from stair.rescore import committed_text, grounded
 
