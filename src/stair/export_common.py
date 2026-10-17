@@ -1,7 +1,8 @@
 """Write a judge plan's test results in the team's shared layout (stair_common.schema), one row per question,
 policy and seed, and validate them.
 
-    export-common --plan configs/system-one-common.toml --out runs/common-judges --csv results/common/systemOne-hotpotqa-test.csv         --history results/common/training-history.csv --plot results/common/loss-curves.png
+    export-common --plan configs/system-one-common.toml --out runs/common-judges --csv results/common/systemOne-hotpotqa-test.csv \
+        --history results/common/training-history.csv --plot results/common/loss-curves.png
 
 Policies: always-small, always-large, and every finished judge at its operating point, per seed. The operating
 point is the plan's: the cheapest threshold whose calib score (the plan's metric) is within max_drop of always-large.
@@ -118,6 +119,15 @@ def main(argv: list[str] | None = None) -> None:
     df.to_csv(args.csv, index=False)
     summary = df.groupby(["policy", "seed"])[["lenient", "em", "f1", "units"]].mean().groupby("policy").mean()
     log.info(f"{len(df)} rows -> {args.csv}\n{summary.round(3).to_string()}")
+    if args.history or args.plot:
+        hist = histories(args.out)
+        validate_history(hist)
+        if args.history:
+            args.history.parent.mkdir(parents=True, exist_ok=True)
+            hist.to_csv(args.history, index=False)
+        if args.plot and len(hist):
+            plot_history(hist, args.plot)
+        log.info(f"{hist.groupby(['model', 'seed']).ngroups} training histories -> {args.history} {args.plot}")
 
 
 if __name__ == "__main__":
