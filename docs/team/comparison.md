@@ -1,7 +1,9 @@
 # How the three lines of work compare
 
 Ours is this repo (experiments 7–9, final report sections 4.5–4.7 and 5.1). The teammates' lines are summarised in
-[nonLLM.md](nonLLM.md) and [selfLearnt.md](selfLearnt.md). Snapshot 2026-10-16/17.
+[nonLLM.md](nonLLM.md) and [selfLearnt.md](selfLearnt.md). Snapshot 2026-10-17. team-member-3's folder on `main`
+([jonathan.md](jonathan.md)) holds the team's standard lenient scorer and one router result. The repo doesn't describe
+that router yet, so it gets no column below.
 
 | | **Ours: System One judge** | **team-member-1: nonLLM** | **team-member-2: selfLearnt** |
 |---|---|---|---|
@@ -12,14 +14,16 @@ Ours is this repo (experiments 7–9, final report sections 4.5–4.7 and 5.1). 
 | Test set | 7,405 HotpotQA questions (experiment 7); AgentTTS's 500 (experiment 8) | Team split: test 1,481 of 7,405 | AgentTTS's 500 (cluster); 400 (Colab) |
 | Metric | F1 / EM (experiment 7); LLM-graded correctness of a committed short answer (experiment 8) | Lenient + strict on the stored grid; official EM/F1 with an extractor in the sampling run | Containment (AgentTTS's), plus FLOPs; Colab: corrected label |
 | Cost | GFLOPs (2 × params × tokens), judge cost included; AgentTTS units in experiment 8 | Pipeline units 2.0 / 5.7 / 5.7 / 9.4; token-work proxy | AgentTTS budget formula + FLOPs; Colab: cost index |
-| Best result so far | Experiment 7: AIQ 0.673 (nano-jev) → 0.708 (2B decider, qpa), +0.030 to +0.039 paired. Experiment 8: 0.748 graded at 10.3% of strong-everything, but judge only ties the hull | Routers +0.9 to +1.3 points over cost-matched fixed policies (stored grid, lenient) | Colab: fine-tuned 0.8B retriever → Qwen 32B 84.0% at 43.5% of the stand-in's compute |
-| Status | Done (experiments 7–9 merged); report drafted | Instruct GGUF sampling running; 500-question cohort tables pending | Cluster run not started at the snapshot |
+| Best result so far | Experiment 7: AIQ 0.673 (nano-jev) → 0.708 (2B decider, qpa), +0.030 to +0.039 paired. Experiment 8: 0.748 graded at 10.3% of strong-everything, but judge only ties the hull | Routers +0.9 to +1.3 points over cost-matched fixed policies (stored grid, lenient). 500-question cohort: a gold-assisted oracle over pair × k reaches 82.8% lenient vs 37.8% for SS×40, at 46–58% less cost (upper bound, training questions) | Colab: fine-tuned 0.8B retriever → Qwen 32B 84.0% at 43.5% of the stand-in's compute |
+| Status | Done (experiments 7–9 merged); judge weights saved for Hugging Face | 500-question cohort done; full Strong sampling running | Pipeline dry run (80 questions) done; cluster run not published yet |
 
 ## Where the numbers can and cannot be compared
 
 - **Metrics differ.** Our experiment 8 found that lenient containment overstates long fused answers by up to 0.14
   (graded vs lenient); team-member-2's cluster results and AgentTTS's 74.2 / 74.6 are containment. Comparing them with
-  our graded 0.748 needs the same grader on their answers (`stair.rescore` in this repo).
+  our graded 0.748 needs the same grader on their answers (`stair.rescore` in this repo). The team now has a standard
+  lenient scorer, team-member-3's `lenient_match_agenttts.py`, which reproduces AgentTTS's 0.746. Scoring our experiment 8
+  answers with it as well would give a number on the team's scale next to our graded one.
 - **Test sets differ.** Experiment 8 and selfLearnt's cluster workstreams share AgentTTS's 500 questions, the only
   shared test set. nonLLM uses the team's 1,481-question test split; our experiment 7 uses all 7,405 with its own
   calib/test split.
@@ -32,7 +36,8 @@ Ours is this repo (experiments 7–9, final report sections 4.5–4.7 and 5.1). 
 
 ## What to watch as the branches evolve
 
-- nonLLM: the 500-question cohort tables (pair × budget), then a validation-selected budget on test.
+- nonLLM: a validation-selected (non-oracle) budget on test, now that the 500-question cohort tables are in.
+- team-member-3: what the 75.96 router is (models, inputs, cost unit), and the `wip/` folder.
 - selfLearnt: workstreams 1–2 on the 500 questions (AgentTTS reproduced, strongest models), then 4–5. Workstream 1's
   answers are what our H3 needs, graded with our grader.
 - Any change to the shared split or metric.

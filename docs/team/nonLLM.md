@@ -1,4 +1,4 @@
-# team-member-1: `nonLLM` (snapshot `b6302ce`, 2026-10-16)
+# team-member-1: `nonLLM` (snapshot `da4f08f`, 2026-10-17)
 
 Two lines of work: (1) cheap **non-LLM routers** that pick weak or strong models per pipeline stage, and (2) a large
 **answer-sampling experiment** that runs AgentTTS's HotpotQA pipeline with 1–40 answer samples per question.
@@ -19,13 +19,13 @@ servers (L40S, RTX A5000), not on OMEGA.
 **Result on the stored grid (test, 1,481):** fixed policies WW 31.8% / WS 43.6% / SW 41.7% / SS 53.5% lenient; the
 routers reach 37.1–41.7% lenient at 35–51% of SS's cost, **+0.85 to +1.30 points** over the cost-matched mixture of
 fixed policies. Stage classifiers are near chance (balanced accuracy 50–57%). Lenient oracle 61.2%.
-([results/measured_v1/REPORT.md](https://github.com/mohameddhameem/STAIR/blob/b6302ce/nonLLM/results/measured_v1/REPORT.md))
+([results/measured_v1/REPORT.md](https://github.com/mohameddhameem/STAIR/blob/da4f08f/nonLLM/results/measured_v1/REPORT.md))
 
 **Rerun with real models** (Qwen2.5 1.5B / 7B Base, GGUF Q4_K_M, all 1,481 test questions, official EM/F1): always-SS
 EM 18.2 / F1 27.1, the best routers EM 10–12, oracle EM 25.7. Low absolute scores; the member notes prompts and
 quantisation differ from the stored grid.
-([results/full_pipeline_test_v1/REPORT.md](https://github.com/mohameddhameem/STAIR/blob/b6302ce/nonLLM/results/full_pipeline_test_v1/REPORT.md);
-a 20-question validation pilot: [live_qa_val20_v1](https://github.com/mohameddhameem/STAIR/blob/b6302ce/nonLLM/results/live_qa_val20_v1/REPORT.md))
+([results/full_pipeline_test_v1/REPORT.md](https://github.com/mohameddhameem/STAIR/blob/da4f08f/nonLLM/results/full_pipeline_test_v1/REPORT.md);
+a 20-question validation pilot: [live_qa_val20_v1](https://github.com/mohameddhameem/STAIR/blob/da4f08f/nonLLM/results/live_qa_val20_v1/REPORT.md))
 
 ## 2. Adaptive answer sampling (AgentTTS pipeline)
 
@@ -42,16 +42,49 @@ a 20-question validation pilot: [live_qa_val20_v1](https://github.com/mohameddha
 
 - **The Base-model run failed** (completed 2026-10-14): test EM 0% for every pair and budget, F1 under 1.1%; outputs
   repeated instructions or invented content. Archived as invalid, not as evidence against sampling.
-  ([adaptive_sampling40_base](https://github.com/mohameddhameem/STAIR/blob/b6302ce/nonLLM/results/adaptive_sampling40_base/README.md))
+  ([adaptive_sampling40_base](https://github.com/mohameddhameem/STAIR/blob/da4f08f/nonLLM/results/adaptive_sampling40_base/README.md))
 - **Instruct GGUF rerun** started 2026-10-15 on one server's four L40S GPUs (one GPU had an ECC error and was repaired).
 - **12-question Strong pilot** (training questions): with extraction, strict-EM hits out of 12 at k = 1 / 40 are
   WW 2 / 4, WS 5 / 3, SW 2 / 2, SS 4 / 3; more samples do not reliably help.
-  ([priority_strong_12](https://github.com/mohameddhameem/STAIR/blob/b6302ce/nonLLM/results/adaptive_sampling40_instruct_gguf/priority_strong_12/README.md))
-- **Latest (2026-10-16):** a frozen **500-question cohort** of training questions for the pair-and-budget comparison
-  (80,000 extraction records), with automatic budget tables. Results not yet committed.
-  ([COHORT_500.md](https://github.com/mohameddhameem/STAIR/blob/b6302ce/nonLLM/experiments/adaptive_sampling/COHORT_500.md))
+  ([priority_strong_12](https://github.com/mohameddhameem/STAIR/blob/da4f08f/nonLLM/results/adaptive_sampling40_instruct_gguf/priority_strong_12/README.md))
+- **500-question cohort, completed 2026-10-17:** a frozen cohort of training questions for the pair-and-budget
+  comparison. All 500 questions have every pair and every k = 1..40 (80,000 reader records). After it, the full
+  Strong run resumed on all four GPUs.
+  ([COHORT_500.md](https://github.com/mohameddhameem/STAIR/blob/da4f08f/nonLLM/experiments/adaptive_sampling/COHORT_500.md);
+  results in [cohort_500/](https://github.com/mohameddhameem/STAIR/tree/da4f08f/nonLLM/results/adaptive_sampling40_instruct_gguf/cohort_500))
 - **Queued:** 40 retrieval samples per model, with retrieval prefixes, after the current run.
-  ([FOLLOWUP_RETRIEVAL40.md](https://github.com/mohameddhameem/STAIR/blob/b6302ce/nonLLM/experiments/adaptive_sampling/FOLLOWUP_RETRIEVAL40.md))
+  ([FOLLOWUP_RETRIEVAL40.md](https://github.com/mohameddhameem/STAIR/blob/da4f08f/nonLLM/experiments/adaptive_sampling/FOLLOWUP_RETRIEVAL40.md))
+
+**500-question cohort results.** W = 1.5B and S = 7B. The first letter is the retrieval model and the second the
+answer/fusion model.
+
+| Pair | Any k correct (strict EM) | Best single k (strict hits) | Any k correct (lenient EM) | Never correct (lenient) |
+|---|---|---|---|---|
+| WW | 225 | k = 13: 111 | 283 | 217 |
+| WS | 279 | k = 1: 145 | 342 | 158 |
+| SW | 257 | k = 3: 142 | 313 | 187 |
+| SS | 288 | k = 8: 168 | 346 | 154 |
+| any pair | | | 414 | 86 |
+
+([table.md](https://github.com/mohameddhameem/STAIR/blob/da4f08f/nonLLM/results/adaptive_sampling40_instruct_gguf/cohort_500/table.md),
+[lenient_ranges/table.md](https://github.com/mohameddhameem/STAIR/blob/da4f08f/nonLLM/results/adaptive_sampling40_instruct_gguf/cohort_500/lenient_ranges/table.md))
+
+- **Most successes come early.** For SS under lenient EM, 215 questions are first right at k = 1, and only 20 first
+  at k > 10. Success sets are often non-contiguous: more samples can turn a right answer wrong.
+- **Oracle against SS×40** (lenient EM; cost proxy = billions of parameters × tokens):
+
+  | Policy | Correct / 500 | Cost reduction | Mean k |
+  |---|---|---|---|
+  | SS×40 | 189 (37.8%) | 0% | 40 |
+  | oracle: smallest k, then cheapest | 414 (82.8%) | 45.6% | 9.0 |
+  | oracle: cheapest, then smallest k | 414 (82.8%) | 57.8% | 11.6 |
+
+  ([oracle_cost/comparison.md](https://github.com/mohameddhameem/STAIR/blob/da4f08f/nonLLM/results/adaptive_sampling40_instruct_gguf/cohort_500/oracle_cost/comparison.md))
+
+  The oracle picks the pair and k after seeing the gold answer, so it is a retrospective upper bound, not a
+  policy. The member labels the cohort "descriptive": it is chosen by availability from training questions, not
+  held-out. New scripts: `gguf_cohort_budget_ranges.py`, `gguf_cohort_oracle_cost.py`, `plot_cohort_budget_report.py`
+  (with an English PDF/PNG report).
 
 ## Cautions the member records
 
@@ -62,9 +95,9 @@ a 20-question validation pilot: [live_qa_val20_v1](https://github.com/mohameddha
 
 ## Key files
 
-- [nonLLM/README.md](https://github.com/mohameddhameem/STAIR/blob/b6302ce/nonLLM/README.md), `baselines.py`,
+- [nonLLM/README.md](https://github.com/mohameddhameem/STAIR/blob/da4f08f/nonLLM/README.md), `baselines.py`,
   `report_baselines.py`
-- [experiments/adaptive_sampling/](https://github.com/mohameddhameem/STAIR/tree/b6302ce/nonLLM/experiments/adaptive_sampling):
+- [experiments/adaptive_sampling/](https://github.com/mohameddhameem/STAIR/tree/da4f08f/nonLLM/experiments/adaptive_sampling):
   README, EXPERIMENT_PLAN, GGUF_RUN, STRONG_PILOT, COHORT_500, REPAIR
-- [deployment/](https://github.com/mohameddhameem/STAIR/tree/b6302ce/nonLLM/deployment): live and full-pipeline evaluation scripts
-- [results/](https://github.com/mohameddhameem/STAIR/tree/b6302ce/nonLLM/results)
+- [deployment/](https://github.com/mohameddhameem/STAIR/tree/da4f08f/nonLLM/deployment): live and full-pipeline evaluation scripts
+- [results/](https://github.com/mohameddhameem/STAIR/tree/da4f08f/nonLLM/results)

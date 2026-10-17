@@ -1,4 +1,4 @@
-# team-member-2: `selfLearnt*` (snapshots `dcaa60b`, `badb9ba`, `69161f5`, 2026-10-16)
+# team-member-2: `selfLearnt*` (snapshots `3726447`, `0aa1743`, `69161f5`, 2026-10-17)
 
 **"No router: the models learn their own work by fine-tuning, and a rulebook learnt from experiments decides, per
 question, when to escalate to a bigger model."** The cheapest retriever always runs; rules escalate retrieval and
@@ -9,7 +9,13 @@ Three branches:
 - `selfLearnt`: the method and the full-scale pipeline for the SMU **Origami** cluster (Slurm, vLLM).
 - `selfLearnt-colab-dev`: the development history (Google Colab, one A100, 28 Sep – 13 Oct; notebooks 00–28,
   the experiment log).
-- `selfLearnt-runs`: live status page of the cluster run. At this snapshot: **"No cluster run has started yet."**
+- `selfLearnt-runs`: live status page of the cluster run. At this snapshot it is still the placeholder: **"No cluster
+  run has started yet."**
+
+**Pipeline dry run (on `selfLearnt-colab-dev`, 2026-10-16):** the full cluster pipeline ran end to end, all 14 stages
+and workstreams 1–5, on 80 test questions with tiny training. Its numbers check the plumbing; they are not results.
+For example, AgentTTS's searched setting scores 43.8% there, against 0.742 reported.
+([dry-run comparison.md](https://github.com/mohameddhameem/STAIR/blob/0aa1743/selfLearnt/pipeline/dryrun_workspace/runs/dryrun/results/comparison.md))
 
 ## Method
 
@@ -48,13 +54,17 @@ about 4.5 days on 2 GPUs. Differences from AgentTTS forced by availability: Pyth
 | Untrained Qwen 7B → Qwen 32B (AgentTTS-style stand-in) | 76.8% | 57.5% | 100 |
 | Fine-tuned Qwen 3B → Qwen 32B | 84.5% | 64.2% | 57.6 |
 | **Fine-tuned Qwen3.5 0.8B → Qwen 32B** | **84.0%** | 63.5% | **43.5** |
+| Fine-tuned 0.6B → Qwen 32B | 83.2% | 62.7% | 42.2 |
 | Fine-tuned 0.5B → Qwen 32B | 79.5% | 60.0% | 41.7 |
 | Fine-tuned 0.8B → Llama 8B | 77.2% | 54.8% | 16.9 |
 | Cascade 0.5B → 0.6B → 0.8B retrievers, Qwen 32B | 83.5% | 63.2% | 44.9 |
-| Gold passages → Qwen 32B (ceiling) | 84.5% | | |
+| Gold passages → Qwen 32B (ceiling; from the earlier table) | 84.5% | | |
 
-([selfLearnt/README.md](https://github.com/mohameddhameem/STAIR/blob/dcaa60b/selfLearnt/README.md),
-[colab_dev/README.md](https://github.com/mohameddhameem/STAIR/blob/badb9ba/selfLearnt/colab_dev/README.md))
+All rows except the ceiling come from notebook 26's run. The 3B and 0.6B rows were re-run there; the earlier 84.2% for
+the 3B, with "−42% compute", is superseded. The 3B, 0.8B and 0.6B are statistically tied (0.8B vs 3B: −0.3 points,
+−1.3 to +0.8). Since 2026-10-17 this table lives only on `selfLearnt-colab-dev`; the `selfLearnt` README links to it
+and will report only the cluster run.
+([colab_dev/README.md](https://github.com/mohameddhameem/STAIR/blob/0aa1743/selfLearnt/colab_dev/README.md))
 
 **What the Colab sets found** (from the archive's summary):
 
@@ -77,9 +87,9 @@ about 4.5 days on 2 GPUs. Differences from AgentTTS forced by availability: Pyth
 
 ## Key files
 
-- [selfLearnt/README.md](https://github.com/mohameddhameem/STAIR/blob/dcaa60b/selfLearnt/README.md)
-- [pipeline/configs/default.yaml](https://github.com/mohameddhameem/STAIR/blob/dcaa60b/selfLearnt/pipeline/configs/default.yaml)
+- [selfLearnt/README.md](https://github.com/mohameddhameem/STAIR/blob/3726447/selfLearnt/README.md)
+- [pipeline/configs/default.yaml](https://github.com/mohameddhameem/STAIR/blob/3726447/selfLearnt/pipeline/configs/default.yaml)
   (models, rules, guardrails); `pipeline/stair/` (agenttts.py, train.py, probe.py, rulebook.py, report.py)
-- [colab_dev/docs/Experiment_Plan_and_Log.md](https://github.com/mohameddhameem/STAIR/blob/badb9ba/selfLearnt/colab_dev/docs/Experiment_Plan_and_Log.md)
+- [colab_dev/docs/Experiment_Plan_and_Log.md](https://github.com/mohameddhameem/STAIR/blob/0aa1743/selfLearnt/colab_dev/docs/Experiment_Plan_and_Log.md)
   (full design and log)
 - [selfLearnt-runs README](https://github.com/mohameddhameem/STAIR/blob/69161f5/README.md) (run status)
