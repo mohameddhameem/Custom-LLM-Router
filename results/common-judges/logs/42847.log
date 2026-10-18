@@ -1,0 +1,87 @@
+job 42847.pbs-omega on a-4 (CPU, queue short), step common-eval
+   Building stair @ file:///storage/home/dhameem.m.2025/Custom-LLM-Router
+      Built stair @ file:///storage/home/dhameem.m.2025/Custom-LLM-Router
+Uninstalled 1 package in 10ms
+Installed 1 package in 47ms
+  question/small-fails: 5 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised'] | {'C': 1.0, 'cv_folds': 5, 'cv_log_loss': 0.5905701951296299}
+  question+evidence/small-fails: 10 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 1.0, 'cv_folds': 5, 'cv_log_loss': 0.5442372894139581}
+  evidence/small-fails: 5 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.1, 'cv_folds': 5, 'cv_log_loss': 0.5673581042057343}
+  evidence+small/small-fails: 10 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.03, 'cv_folds': 5, 'cv_log_loss': 0.5146705153005501}
+  question+evidence+small/small-fails: 15 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 1.0, 'cv_folds': 5, 'cv_log_loss': 0.49599827239221117}
+  question/large-helps: 5 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.4249625113006278}
+  question+evidence/large-helps: 10 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.39287335559710984}
+  evidence/large-helps: 5 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.03, 'cv_folds': 5, 'cv_log_loss': 0.40127923055866066}
+  evidence+small/large-helps: 10 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.1, 'cv_folds': 5, 'cv_log_loss': 0.3821578781569126}
+  question+evidence+small/large-helps: 15 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 1.0, 'cv_folds': 5, 'cv_log_loss': 0.3732507028891659}
+eval A: AIQ entropy 0.6973
+  judge/qpa-large-helps-strands-decider-e4b-gemma4-v1-2610-A AIQ 0.7399 (seeds 0.7337 ± 0.0058) | +judge cost 0.7077 (7401 GFLOPs)
+  judge/qpa-large-helps-strands-decider-2b-hobson-v21-A AIQ 0.7338 (seeds 0.7287 ± 0.0019) | +judge cost 0.7185 (3760 GFLOPs)
+  zs_strands-decider-e4b-gemma4-v1-2610_grounded AIQ 0.7255 | +judge cost 0.7163 (2492 GFLOPs)
+  zs_strands-decider-e4b-gemma4-v1-2610_correct AIQ 0.7250 | +judge cost 0.7159 (2451 GFLOPs)
+  zs_strands-decider-2b-hobson-v21_correct      AIQ 0.7147 | +judge cost 0.7107 (1241 GFLOPs)
+  zs_strands-decider-2b-hobson-v21_grounded     AIQ 0.7093 | +judge cost 0.7056 (1262 GFLOPs)
+  zs_nano-jev_correct                           AIQ 0.7069 | +judge cost 0.7068 (33 GFLOPs)
+  judge/qp-large-helps-strands-decider-2b-hobson-v21-A AIQ 0.7058 (seeds 0.7049 ± 0.0047) | +judge cost 0.6960 (3655 GFLOPs)
+  judge/qp-large-helps-strands-decider-e4b-gemma4-v1-2610-A AIQ 0.7056 (seeds 0.7036 ± 0.0047) | +judge cost 0.6868 (7220 GFLOPs)
+  judge/qpa-small-fails-nanojev-A               AIQ 0.7010 (seeds 0.7001 ± 0.0035) | +judge cost 0.7007 (100 GFLOPs)
+  judge/qp-small-fails-nanojev-A                AIQ 0.7001 (seeds 0.6978 ± 0.0050) | +judge cost 0.6998 (97 GFLOPs)
+  judge/qpa-large-helps-nanojev-A               AIQ 0.6979 (seeds 0.6959 ± 0.0039) | +judge cost 0.6977 (100 GFLOPs)
+  zs_nano-jev_grounded                          AIQ 0.6962 | +judge cost 0.6961 (34 GFLOPs)
+  judge/qp-large-helps-nanojev-A                AIQ 0.6961 (seeds 0.6935 ± 0.0020) | +judge cost 0.6959 (97 GFLOPs)
+  zs_sufficient                                 AIQ 0.6865 | +judge cost 0.6865 (0 GFLOPs)
+  judge/qa-large-helps-nanojev-A                AIQ 0.6808 (seeds 0.6760 ± 0.0052) | +judge cost 0.6807 (17 GFLOPs)
+  judge/q-large-helps-nanojev-A                 AIQ 0.6758 (seeds 0.6723 ± 0.0022) | +judge cost 0.6758 (22 GFLOPs)
+eval A-clean: AIQ entropy 0.6963
+  judge/qpa-large-helps-strands-decider-e4b-gemma4-v1-2610-A AIQ 0.7371 (seeds 0.7300 ± 0.0016) | +judge cost 0.7072 (7465 GFLOPs)
+  judge/qpa-large-helps-strands-decider-2b-hobson-v21-A AIQ 0.7303 (seeds 0.7276 ± 0.0024) | +judge cost 0.7163 (3792 GFLOPs)
+  zs_strands-decider-e4b-gemma4-v1-2610_correct AIQ 0.7256 | +judge cost 0.7168 (2473 GFLOPs)
+  zs_strands-decider-e4b-gemma4-v1-2610_grounded AIQ 0.7246 | +judge cost 0.7158 (2513 GFLOPs)
+  zs_strands-decider-2b-hobson-v21_correct      AIQ 0.7163 | +judge cost 0.7123 (1252 GFLOPs)
+  judge/qp-large-helps-strands-decider-e4b-gemma4-v1-2610-A AIQ 0.7092 (seeds 0.7039 ± 0.0070) | +judge cost 0.6900 (7284 GFLOPs)
+  zs_strands-decider-2b-hobson-v21_grounded     AIQ 0.7085 | +judge cost 0.7051 (1273 GFLOPs)
+  zs_nano-jev_correct                           AIQ 0.7049 | +judge cost 0.7048 (34 GFLOPs)
+  judge/qp-large-helps-strands-decider-2b-hobson-v21-A AIQ 0.7044 (seeds 0.7037 ± 0.0061) | +judge cost 0.6954 (3686 GFLOPs)
+  judge/qpa-small-fails-nanojev-A               AIQ 0.6993 (seeds 0.6993 ± 0.0029) | +judge cost 0.6990 (101 GFLOPs)
+  zs_nano-jev_grounded                          AIQ 0.6992 | +judge cost 0.6991 (34 GFLOPs)
+  judge/qpa-large-helps-nanojev-A               AIQ 0.6976 (seeds 0.6937 ± 0.0024) | +judge cost 0.6974 (101 GFLOPs)
+  judge/qp-large-helps-nanojev-A                AIQ 0.6941 (seeds 0.6925 ± 0.0024) | +judge cost 0.6939 (98 GFLOPs)
+  judge/qp-small-fails-nanojev-A                AIQ 0.6939 (seeds 0.6932 ± 0.0052) | +judge cost 0.6937 (98 GFLOPs)
+  zs_sufficient                                 AIQ 0.6888 | +judge cost 0.6888 (0 GFLOPs)
+  judge/qa-large-helps-nanojev-A                AIQ 0.6793 (seeds 0.6757 ± 0.0043) | +judge cost 0.6793 (17 GFLOPs)
+  judge/q-large-helps-nanojev-A                 AIQ 0.6707 (seeds 0.6717 ± 0.0009) | +judge cost 0.6707 (22 GFLOPs)
+  question/small-fails: 5 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised'] | {'C': 1.0, 'cv_folds': 5, 'cv_log_loss': 0.6192302524953336}
+  question+evidence/small-fails: 10 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 1.0, 'cv_folds': 5, 'cv_log_loss': 0.57768206509243}
+  evidence/small-fails: 5 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.1, 'cv_folds': 5, 'cv_log_loss': 0.59975434357853}
+  evidence+small/small-fails: 10 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.5205597710710568}
+  question+evidence+small/small-fails: 15 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.5098295365296576}
+  question/large-helps: 5 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.43449146989454485}
+  question+evidence/large-helps: 10 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.4085745615066549}
+  evidence/large-helps: 5 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency'] | {'C': 0.03, 'cv_folds': 5, 'cv_log_loss': 0.4153861307987903}
+  evidence+small/large-helps: 10 dense features ['ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.1, 'cv_folds': 5, 'cv_log_loss': 0.39787599352865505}
+  question+evidence+small/large-helps: 15 dense features ['q_starts_aux', 'q_has_or', 'q_comparative', 'q_num_tokens', 'q_num_capitalised', 'ev_top1', 'ev_top2_sum', 'ev_margin_2_3', 'ev_entropy', 'ev_sufficiency', 'small_uncertainty', 'small_entropy_max', 'small_entropy_first', 'small_generated_tokens', 'small_says_yesno'] | {'C': 0.3, 'cv_folds': 5, 'cv_log_loss': 0.3900278606033193}
+eval A: AIQ entropy 0.6973
+  judge/qpa-large-helps-strands-decider-2b-hobson-v21-A AIQ 0.7269 (seeds 0.7243 ± 0.0020) | +judge cost 0.7129 (3760 GFLOPs)
+  judge/qp-large-helps-nanojev-A                AIQ 0.7008 (seeds 0.6962 ± 0.0003) | +judge cost 0.7005 (97 GFLOPs)
+  judge/qpa-large-helps-nanojev-A               AIQ 0.6984 (seeds 0.6954 ± 0.0022) | +judge cost 0.6981 (100 GFLOPs)
+  zs_sufficient                                 AIQ 0.6845 | +judge cost 0.6845 (0 GFLOPs)
+eval A-clean: AIQ entropy 0.7024
+  judge/qpa-large-helps-strands-decider-2b-hobson-v21-A AIQ 0.7278 (seeds 0.7257 ± 0.0015) | +judge cost 0.7155 (3792 GFLOPs)
+  judge/qpa-large-helps-nanojev-A               AIQ 0.7026 (seeds 0.6986 ± 0.0022) | +judge cost 0.7024 (101 GFLOPs)
+  judge/qp-large-helps-nanojev-A                AIQ 0.7021 (seeds 0.7003 ± 0.0026) | +judge cost 0.7019 (98 GFLOPs)
+  zs_sufficient                                 AIQ 0.6925 | +judge cost 0.6925 (0 GFLOPs)
+16000 rows -> results/common/systemOne-hotpotqa-test.csv
+                                                      lenient     em     f1   units
+policy                                                                             
+always-large                                            0.674  0.534  0.679  19.889
+always-small                                            0.654  0.524  0.655   1.259
+q-large-helps-nanojev-A                                 0.661  0.525  0.662  10.738
+qa-large-helps-nanojev-A                                0.675  0.528  0.674  14.062
+qp-large-helps-nanojev-A                                0.688  0.542  0.684   6.553
+qp-large-helps-strands-decider-2b-hobson-v21-A          0.693  0.552  0.690   4.418
+qp-large-helps-strands-decider-e4b-gemma4-v1-2610-A     0.685  0.547  0.683   4.962
+qp-small-fails-nanojev-A                                0.687  0.539  0.683   5.990
+qpa-large-helps-nanojev-A                               0.691  0.550  0.690   8.264
+qpa-large-helps-strands-decider-2b-hobson-v21-A         0.693  0.551  0.688   3.678
+qpa-large-helps-strands-decider-e4b-gemma4-v1-2610-A    0.697  0.555  0.692   4.748
+qpa-small-fails-nanojev-A                               0.693  0.549  0.689   6.707
+30 training histories -> results/common/training-history.csv results/common/loss-curves.png

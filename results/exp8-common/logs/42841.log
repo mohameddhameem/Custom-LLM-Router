@@ -1,0 +1,86 @@
+job 42841.pbs-omega on a-11, step exp8-rescore-validate
+name, memory.used [MiB], memory.total [MiB], driver_version
+NVIDIA L40S, 14 MiB, 46068 MiB, 555.58.02
+NVIDIA L40S, 1872 MiB, 46068 MiB, 555.58.02
+torch 2.14.1+cu126 NVIDIA L40S
+Loading weights:   0%|          | 0/254 [00:00<?, ?it/s]Loading weights: 100%|██████████| 254/254 [00:00<00:00, 11131.40it/s]
+[transformers] Ignoring clean_up_tokenization_spaces=True for BPE tokenizer TokenizersBackend. The clean_up_tokenization post-processing step is designed for WordPiece tokenizers and is destructive for BPE (it strips spaces before punctuation). Set clean_up_tokenization_spaces=False to suppress this warning, or set clean_up_tokenization_spaces_for_bpe_even_though_it_will_corrupt_output=True to force cleanup anyway.
+Loading weights:   0%|          | 0/723 [00:00<?, ?it/s]Loading weights:   0%|          | 1/723 [00:00<03:28,  3.46it/s]Loading weights:   0%|          | 2/723 [00:00<03:10,  3.79it/s]Loading weights:   1%|          | 5/723 [00:00<01:14,  9.64it/s]Loading weights:   2%|▏         | 13/723 [00:00<00:29, 24.19it/s]Loading weights:   2%|▏         | 16/723 [00:00<00:28, 25.14it/s]Loading weights:   3%|▎         | 23/723 [00:01<00:21, 32.97it/s]Loading weights:   4%|▍         | 31/723 [00:01<00:17, 40.37it/s]Loading weights:   5%|▍         | 36/723 [00:01<00:17, 40.35it/s]Loading weights:   6%|▌         | 41/723 [00:01<00:16, 40.45it/s]Loading weights:   7%|▋         | 49/723 [00:01<00:15, 44.69it/s]Loading weights:   7%|▋         | 54/723 [00:01<00:15, 42.15it/s]Loading weights:   8%|▊         | 59/723 [00:01<00:16, 40.37it/s]Loading weights:   9%|▉         | 67/723 [00:02<00:14, 45.25it/s]Loading weights:  10%|▉         | 72/723 [00:02<00:14, 44.06it/s]Loading weights:  11%|█         | 77/723 [00:02<00:14, 43.17it/s]Loading weights:  12%|█▏        | 85/723 [00:02<00:13, 47.66it/s]Loading weights:  12%|█▏        | 90/723 [00:02<00:14, 44.65it/s]Loading weights:  13%|█▎        | 95/723 [00:02<00:14, 42.30it/s]Loading weights:  14%|█▍        | 103/723 [00:02<00:13, 45.44it/s]Loading weights:  15%|█▍        | 108/723 [00:02<00:14, 42.90it/s]Loading weights:  16%|█▌        | 113/723 [00:03<00:14, 41.12it/s]Loading weights:  17%|█▋        | 121/723 [00:03<00:13, 44.63it/s]Loading weights:  17%|█▋        | 126/723 [00:03<00:14, 42.48it/s]Loading weights:  18%|█▊        | 131/723 [00:03<00:14, 40.91it/s]Loading weights:  19%|█▉        | 139/723 [00:03<00:13, 44.30it/s]Loading weights:  20%|█▉        | 144/723 [00:03<00:13, 42.16it/s]Loading weights:  21%|██        | 149/723 [00:03<00:14, 40.70it/s]Loading weights:  22%|██▏       | 157/723 [00:04<00:12, 44.33it/s]Loading weights:  22%|██▏       | 162/723 [00:04<00:13, 41.51it/s]Loading weights:  23%|██▎       | 167/723 [00:04<00:14, 37.51it/s]Loading weights:  24%|██▍       | 172/723 [00:04<00:14, 38.76it/s]Loading weights:  24%|██▍       | 176/723 [00:04<00:15, 35.30it/s]Loading weights:  25%|██▌       | 181/723 [00:04<00:14, 38.30it/s]Loading weights:  26%|██▌       | 185/723 [00:04<00:14, 36.10it/s]Loading weights:  26%|██▋       | 191/723 [00:05<00:12, 41.77it/s]Loading weights:  27%|██▋       | 196/723 [00:05<00:14, 35.80it/s]Loading weights:  28%|██▊       | 202/723 [00:05<00:12, 41.27it/s]Loading weights:  29%|██▊       | 207/723 [00:05<00:13, 39.02it/s]Loading weights:  29%|██▉       | 212/723 [00:05<00:13, 37.45it/s]Loading weights:  30%|███       | 217/723 [00:05<00:12, 40.24it/s]Loading weights:  31%|███       | 222/723 [00:05<00:14, 34.67it/s]Loading weights:  32%|███▏      | 229/723 [00:05<00:11, 42.14it/s]Loading weights:  32%|███▏      | 234/723 [00:06<00:12, 39.53it/s]Loading weights:  33%|███▎      | 239/723 [00:06<00:12, 37.81it/s]Loading weights:  34%|███▎      | 244/723 [00:06<00:11, 40.41it/s]Loading weights:  34%|███▍      | 249/723 [00:06<00:13, 34.88it/s]Loading weights:  35%|███▌      | 256/723 [00:06<00:11, 42.32it/s]Loading weights:  36%|███▌      | 261/723 [00:06<00:11, 39.72it/s]Loading weights:  37%|███▋      | 266/723 [00:06<00:12, 37.96it/s]Loading weights:  37%|███▋      | 271/723 [00:07<00:11, 40.57it/s]Loading weights:  38%|███▊      | 276/723 [00:07<00:12, 34.96it/s]Loading weights:  39%|███▉      | 283/723 [00:07<00:10, 41.47it/s]Loading weights:  40%|███▉      | 288/723 [00:07<00:11, 39.18it/s]Loading weights:  41%|████      | 293/723 [00:07<00:11, 37.64it/s]Loading weights:  41%|████      | 298/723 [00:07<00:10, 40.33it/s]Loading weights:  42%|████▏     | 303/723 [00:07<00:12, 34.85it/s]Loading weights:  43%|████▎     | 310/723 [00:08<00:09, 42.32it/s]Loading weights:  44%|████▎     | 315/723 [00:08<00:10, 39.74it/s]Loading weights:  44%|████▍     | 320/723 [00:08<00:10, 37.99it/s]Loading weights:  45%|████▍     | 325/723 [00:08<00:09, 40.62it/s]Loading weights:  46%|████▌     | 330/723 [00:08<00:11, 35.02it/s]Loading weights:  47%|████▋     | 337/723 [00:08<00:09, 42.45it/s]Loading weights:  47%|████▋     | 342/723 [00:08<00:09, 39.82it/s]Loading weights:  48%|████▊     | 347/723 [00:09<00:09, 38.00it/s]Loading weights:  49%|████▊     | 352/723 [00:09<00:09, 40.59it/s]Loading weights:  49%|████▉     | 357/723 [00:09<00:10, 34.91it/s]Loading weights:  50%|█████     | 364/723 [00:09<00:08, 41.31it/s]Loading weights:  51%|█████     | 369/723 [00:09<00:09, 37.22it/s]Loading weights:  52%|█████▏    | 374/723 [00:09<00:09, 34.96it/s]Loading weights:  52%|█████▏    | 379/723 [00:09<00:09, 36.97it/s]Loading weights:  53%|█████▎    | 383/723 [00:10<00:09, 34.27it/s]Loading weights:  54%|█████▎    | 388/723 [00:10<00:09, 36.78it/s]Loading weights:  54%|█████▍    | 392/723 [00:10<00:09, 34.28it/s]Loading weights:  55%|█████▍    | 397/723 [00:10<00:08, 36.97it/s]Loading weights:  55%|█████▌    | 401/723 [00:10<00:09, 34.09it/s]Loading weights:  56%|█████▌    | 406/723 [00:10<00:08, 36.90it/s]Loading weights:  57%|█████▋    | 410/723 [00:10<00:09, 34.13it/s]Loading weights:  57%|█████▋    | 415/723 [00:10<00:08, 37.15it/s]Loading weights:  58%|█████▊    | 419/723 [00:11<00:08, 34.03it/s]Loading weights:  59%|█████▊    | 424/723 [00:11<00:08, 36.71it/s]Loading weights:  59%|█████▉    | 428/723 [00:11<00:08, 34.19it/s]Loading weights:  60%|█████▉    | 433/723 [00:11<00:07, 37.50it/s]Loading weights:  60%|██████    | 437/723 [00:11<00:08, 35.02it/s]Loading weights:  61%|██████    | 442/723 [00:11<00:07, 38.29it/s]Loading weights:  62%|██████▏   | 446/723 [00:11<00:07, 35.70it/s]Loading weights:  62%|██████▏   | 451/723 [00:11<00:07, 38.86it/s]Loading weights:  63%|██████▎   | 455/723 [00:12<00:07, 36.07it/s]Loading weights:  64%|██████▎   | 460/723 [00:12<00:06, 39.16it/s]Loading weights:  64%|██████▍   | 465/723 [00:12<00:07, 33.40it/s]Loading weights:  65%|██████▌   | 472/723 [00:12<00:06, 41.22it/s]Loading weights:  66%|██████▌   | 477/723 [00:12<00:06, 38.65it/s]Loading weights:  67%|██████▋   | 482/723 [00:12<00:06, 36.93it/s]Loading weights:  67%|██████▋   | 487/723 [00:12<00:05, 39.60it/s]Loading weights:  68%|██████▊   | 492/723 [00:13<00:06, 34.14it/s]Loading weights:  69%|██████▉   | 499/723 [00:13<00:05, 41.52it/s]Loading weights:  70%|██████▉   | 504/723 [00:13<00:05, 39.06it/s]Loading weights:  70%|███████   | 509/723 [00:13<00:05, 37.42it/s]Loading weights:  71%|███████   | 514/723 [00:13<00:05, 40.14it/s]Loading weights:  72%|███████▏  | 519/723 [00:13<00:05, 35.06it/s]Loading weights:  73%|███████▎  | 526/723 [00:13<00:04, 42.81it/s]Loading weights:  73%|███████▎  | 531/723 [00:13<00:04, 40.28it/s]Loading weights:  74%|███████▍  | 536/723 [00:14<00:04, 38.64it/s]Loading weights:  75%|███████▍  | 541/723 [00:14<00:04, 41.13it/s]Loading weights:  76%|███████▌  | 546/723 [00:14<00:04, 35.60it/s]Loading weights:  76%|███████▋  | 553/723 [00:14<00:03, 43.05it/s]Loading weights:  77%|███████▋  | 558/723 [00:14<00:04, 40.49it/s]Loading weights:  78%|███████▊  | 563/723 [00:14<00:04, 37.55it/s]Loading weights:  79%|███████▊  | 568/723 [00:14<00:03, 39.73it/s]Loading weights:  79%|███████▉  | 573/723 [00:15<00:04, 34.30it/s]Loading weights:  80%|████████  | 580/723 [00:15<00:03, 41.92it/s]Loading weights:  81%|████████  | 585/723 [00:15<00:03, 39.78it/s]Loading weights:  82%|████████▏ | 590/723 [00:15<00:03, 38.30it/s]Loading weights:  82%|████████▏ | 595/723 [00:15<00:03, 41.00it/s]Loading weights:  83%|████████▎ | 600/723 [00:15<00:03, 35.59it/s]Loading weights:  84%|████████▍ | 608/723 [00:15<00:02, 40.21it/s]Loading weights:  85%|████████▍ | 614/723 [00:16<00:02, 44.46it/s]Loading weights:  86%|████████▌ | 619/723 [00:16<00:02, 38.20it/s]Loading weights:  86%|████████▋ | 625/723 [00:16<00:02, 42.75it/s]Loading weights:  87%|████████▋ | 630/723 [00:16<00:02, 40.33it/s]Loading weights:  88%|████████▊ | 635/723 [00:16<00:02, 38.64it/s]Loading weights:  89%|████████▊ | 640/723 [00:16<00:02, 41.20it/s]Loading weights:  89%|████████▉ | 645/723 [00:16<00:02, 35.48it/s]Loading weights:  90%|█████████ | 652/723 [00:17<00:01, 42.89it/s]Loading weights:  91%|█████████ | 657/723 [00:17<00:01, 40.18it/s]Loading weights:  92%|█████████▏| 662/723 [00:17<00:01, 38.39it/s]Loading weights:  92%|█████████▏| 667/723 [00:17<00:01, 41.07it/s]Loading weights:  93%|█████████▎| 672/723 [00:17<00:01, 35.47it/s]Loading weights:  94%|█████████▍| 679/723 [00:17<00:01, 43.05it/s]Loading weights:  95%|█████████▍| 684/723 [00:17<00:00, 40.40it/s]Loading weights:  95%|█████████▌| 689/723 [00:17<00:00, 38.71it/s]Loading weights:  96%|█████████▌| 695/723 [00:18<00:00, 43.53it/s]Loading weights:  97%|█████████▋| 700/723 [00:18<00:00, 37.16it/s]Loading weights:  98%|█████████▊| 706/723 [00:18<00:00, 42.16it/s]Loading weights:  98%|█████████▊| 711/723 [00:18<00:00, 40.09it/s]Loading weights:  99%|█████████▉| 716/723 [00:18<00:00, 38.76it/s]Loading weights: 100%|██████████| 723/723 [00:18<00:00, 46.23it/s]Loading weights: 100%|██████████| 723/723 [00:18<00:00, 38.53it/s]
+Loading weights:   0%|          | 0/579 [00:00<?, ?it/s]Loading weights:  29%|██▉       | 168/579 [00:00<00:00, 1574.46it/s]Loading weights:  56%|█████▋    | 326/579 [00:00<00:00, 751.17it/s] Loading weights: 100%|██████████| 579/579 [00:00<00:00, 1369.04it/s]
+{
+ "method": "v4: self-commit by the answering model, then grade the committed answer",
+ "thresholds": {
+  "min_agree_em1": 0.95,
+  "min_agree_f10": 0.8,
+  "min_gen_agreement": 0.95,
+  "min_verdict_mass": 0.9,
+  "min_commit_grounded": 0.9,
+  "min_commit_nonempty": 0.98
+ },
+ "commit": {
+  "llama3b-top5": {
+   "n": 200,
+   "grounded": 0.965,
+   "nonempty": 1.0,
+   "mean_commit_units": 0.13372213541666667,
+   "lenient_of_response": 0.64,
+   "commit_em": 0.325,
+   "graded_correct": 0.52,
+   "n_graded_correct": 104,
+   "grounded_when_correct": 0.9807692307692307
+  },
+  "llama3b-s40fuse-top5": {
+   "n": 200,
+   "grounded": 0.99,
+   "nonempty": 1.0,
+   "mean_commit_units": 0.156153125,
+   "lenient_of_response": 0.76,
+   "commit_em": 0.17,
+   "graded_correct": 0.63,
+   "n_graded_correct": 126,
+   "grounded_when_correct": 0.9920634920634921
+  },
+  "llama70b-top5": {
+   "n": 200,
+   "grounded": 0.9,
+   "nonempty": 1.0,
+   "mean_commit_units": 2.3735572916666667,
+   "lenient_of_response": 0.745,
+   "commit_em": 0.57,
+   "graded_correct": 0.715,
+   "n_graded_correct": 143,
+   "grounded_when_correct": 0.972027972027972
+  }
+ },
+ "grader": "Qwen/Qwen2.5-14B-Instruct",
+ "revision": "cf98f3b3bbb457ad9e2bb7baf9a0125b6b88caa8",
+ "gate": {
+  "known": "results/gpu/test.parquet rows 1000-1499",
+  "known_n": 500,
+  "known_em1_n": 269,
+  "known_f10_n": 109,
+  "agree_em1_correct": 0.9962825278810409,
+  "agree_f10_incorrect": 0.9174311926605505,
+  "known_graded_correct": 0.714,
+  "known_em": 0.538,
+  "written_parsed": 0.998,
+  "written_agreement": 0.9939879759519038,
+  "verdict_mass_mean": 0.998499545454979
+ },
+ "diagnostic_not_gating": {
+  "known": "rows 500-999",
+  "known_n": 500,
+  "known_em1_n": 267,
+  "known_f10_n": 112,
+  "agree_em1_correct": 0.9925093632958801,
+  "agree_f10_incorrect": 0.875,
+  "known_graded_correct": 0.716,
+  "known_em": 0.534,
+  "written_parsed": 1.0,
+  "written_agreement": 0.996,
+  "verdict_mass_mean": 0.9996368474960328
+ },
+ "seconds": 534.2082992754877,
+ "passed": true
+}
+VALIDATION PASSED (see runs/exp8-common/rescore/validation.json)

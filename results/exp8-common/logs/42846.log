@@ -1,0 +1,64 @@
+job 42846.pbs-omega on a-11, step exp9-judge8
+name, memory.used [MiB], memory.total [MiB], driver_version
+NVIDIA L40S, 14 MiB, 46068 MiB, 555.58.02
+torch 2.14.1+cu126 NVIDIA L40S
+train qp seed 0: 1000 questions, label counts [737, 139, 44, 24, 56]
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 11847.27it/s]
+[transformers] `causal_conv1d_fn` is falling back to its reference PyTorch implementation because `causal_conv1d` is not installed. This is correct but much slower; install `causal_conv1d` for the optimized kernel.
+[W1018 14:18:59.094027049 CUDACachingAllocator.cpp:3934] memory allocation failed with OOM on device 0 while trying to allocate 408944640 bytes (free: 40697856, total: 47704637440).
+    epoch 1: train loss 0.9750 dev NLL 0.8765
+    epoch 2: train loss 0.7647 dev NLL 0.9459
+train qp seed 1: 1000 questions, label counts [737, 139, 44, 24, 56]
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 11258.93it/s]
+    epoch 1: train loss 0.9786 dev NLL 0.8504
+    epoch 2: train loss 0.7875 dev NLL 0.8029
+train qp seed 2: 1000 questions, label counts [737, 139, 44, 24, 56]
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 10860.80it/s]
+    epoch 1: train loss 0.9783 dev NLL 0.8587
+    epoch 2: train loss 0.7905 dev NLL 0.9055
+train qpa seed 0: 1000 questions, label counts [737, 139, 44, 24, 56]
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 10881.67it/s]
+    epoch 1: train loss 0.9642 dev NLL 0.8779
+    epoch 2: train loss 0.7647 dev NLL 0.8698
+train qpa seed 1: 1000 questions, label counts [737, 139, 44, 24, 56]
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 11173.17it/s]
+    epoch 1: train loss 0.9539 dev NLL 0.7925
+    epoch 2: train loss 0.7711 dev NLL 0.7560
+train qpa seed 2: 1000 questions, label counts [737, 139, 44, 24, 56]
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 10792.33it/s]
+    epoch 1: train loss 0.9542 dev NLL 0.8540
+    epoch 2: train loss 0.7666 dev NLL 0.8919
+train qp seed 0: 1000 questions, label counts [737, 139, 44, 24, 56]
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  55%|█████▌    | 1148/2076 [00:00<00:00, 11473.04it/s]Loading weights: 100%|██████████| 2076/2076 [00:00<00:00, 12404.27it/s]
+    epoch 1: train loss 0.9838 dev NLL 0.8708
+    epoch 2: train loss 0.8355 dev NLL 0.9023
+[W1018 14:54:23.504571090 CUDACachingAllocator.cpp:3934] memory allocation failed with OOM on device 0 while trying to allocate 1356857344 bytes (free: 1038942208, total: 47704637440).
+train qp seed 1: 1000 questions, label counts [737, 139, 44, 24, 56]
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  53%|█████▎    | 1098/2076 [00:00<00:00, 10978.75it/s]Loading weights: 100%|██████████| 2076/2076 [00:00<00:00, 12500.92it/s]
+    epoch 1: train loss 0.9691 dev NLL 0.8259
+    epoch 2: train loss 0.8000 dev NLL 0.7766
+train qp seed 2: 1000 questions, label counts [737, 139, 44, 24, 56]
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  55%|█████▍    | 1139/2076 [00:00<00:00, 11389.01it/s]Loading weights: 100%|██████████| 2076/2076 [00:00<00:00, 12901.34it/s]
+    epoch 1: train loss 0.9836 dev NLL 0.8909
+    epoch 2: train loss 0.8463 dev NLL 0.9026
+train qpa seed 0: 1000 questions, label counts [737, 139, 44, 24, 56]
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  55%|█████▌    | 1148/2076 [00:00<00:00, 11477.60it/s]Loading weights: 100%|██████████| 2076/2076 [00:00<00:00, 12562.25it/s]
+    epoch 1: train loss 0.9486 dev NLL 0.9029
+    epoch 2: train loss 0.7328 dev NLL 0.8823
+train qpa seed 1: 1000 questions, label counts [737, 139, 44, 24, 56]
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  59%|█████▊    | 1218/2076 [00:00<00:00, 12179.37it/s]Loading weights: 100%|██████████| 2076/2076 [00:00<00:00, 12907.04it/s]
+    epoch 1: train loss 0.9366 dev NLL 0.8042
+    epoch 2: train loss 0.7822 dev NLL 0.7565
+train qpa seed 2: 1000 questions, label counts [737, 139, 44, 24, 56]
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  56%|█████▌    | 1157/2076 [00:00<00:00, 11556.48it/s]Loading weights: 100%|██████████| 2076/2076 [00:00<00:00, 12594.85it/s]
+    epoch 1: train loss 0.9514 dev NLL 0.8401
+    epoch 2: train loss 0.7908 dev NLL 0.8955
+train qp seed 0: 1000 questions, label counts [737, 139, 44, 24, 56]
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 11796.35it/s]
+[transformers] `causal_conv1d_fn` is falling back to its reference PyTorch implementation because `causal_conv1d` is not installed. This is correct but much slower; install `causal_conv1d` for the optimized kernel.
+train qpa seed 0: 1000 questions, label counts [737, 139, 44, 24, 56]
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 10863.87it/s]
+train qp seed 0: 1000 questions, label counts [737, 139, 44, 24, 56]
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  56%|█████▌    | 1159/2076 [00:00<00:00, 11541.22it/s]Loading weights: 100%|██████████| 2076/2076 [00:00<00:00, 12897.41it/s]
+train qpa seed 0: 1000 questions, label counts [737, 139, 44, 24, 56]
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  57%|█████▋    | 1184/2076 [00:00<00:00, 11828.14it/s]Loading weights: 100%|██████████| 2076/2076 [00:00<00:00, 12700.26it/s]

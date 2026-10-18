@@ -1,35 +1,69 @@
 # Experiments 7, 8 and 9 redone on the team's common standard
 
-**Draft.** Experiments 7 and 9 are complete. Experiment 8 is waiting on jobs 42832–42835.
+**Complete.** Experiments 7, 8 and 9 have all been run and evaluated.
 
-These are the original experiments, rerun with the STAIR `common/` package (`stair_common` at STAIR `main` `052ebe4`),
-so that our numbers can be compared directly with the rest of the team's. Original reports:
+These are the original experiments, rerun with the STAIR `common/` package so that our numbers can be compared
+directly with the rest of the team's.
+- The runs used `stair_common` at STAIR `main` `052ebe4`.
+- The final re-evaluations (jobs 42847 and 42848) used 0.2.0 (`c906e3d`). Its scoring and cost functions are the same;
+  only docstrings and the schema check changed.
+
+Original reports:
 - [experiment 7](2026-10-07-system-one-router.md);
 - [experiment 8](2026-10-14-experiment-8.md);
 - [experiment 9](2026-10-17-experiment-9.md).
 
-Job sheet: [gpu-jobs-common.md](../gpu-jobs-common.md). Run on OMEGA on 2026-10-17 and 2026-10-18.
+Job sheet: [gpu-jobs-common.md](../gpu-jobs-common.md). Run on OMEGA on 2026-10-17 and 2026-10-18. Outputs:
+[results/common](../../results/common/README.md).
 
 **Result:**
 
-- **Decider judges that read the small model's answer (qpa) are the only routers that beat the baselines, even
-  after paying for themselves.**
-  - The fine-tuned E4B qpa reaches AIQ **0.740** and the 2B qpa **0.734**; with their own cost they are 0.729 each.
-  - Paired with cost, the E4B beats the entropy threshold by **[+0.012, +0.051]** and the best LR cascade router by
-    **[+0.003, +0.040]**. The 2B beats them by [+0.010, +0.054] and [+0.002, +0.042].
-  - Both also beat the nano-jev judges by about +0.01 to +0.05.
+- **Decider judges that read the small model's answer (qpa) are the only routers that beat entropy and the nano-jev
+  judges, even after paying for themselves.**
+  - One fine-tuned judge (one seed, one forward pass) scores AIQ **0.724** with its own cost. That holds for the E4B
+    (0.719–0.729 across seeds) and the 2B (0.722–0.726).
+  - With cost, all six single-seed qpa deciders beat the entropy threshold, by **[+0.001, +0.041]** to
+    **[+0.009, +0.051]**. They also beat both nano-jev judges, by about +0.03.
+  - They lead the best LR cascade router (0.706) by about +0.02. But five of the six intervals touch zero (the 2B's
+    seed 0 is [−0.003, +0.036]), so on 500 questions that comparison is a tie.
   - The same order holds on the clean subset and with F1 labels.
-- **The 33M nano-jev judges no longer beat the baselines.** qp scores 0.696 and qpa 0.698, which ties entropy (0.697)
-  and the LR routers. In the original experiment 7, qp was +0.011 over entropy on 7,405 questions. On 500 questions
-  that margin is inside the noise.
-- **Without the answer, the deciders tie everything.** The qp deciders score 0.706. The zero-shot E4B (0.726) beats
-  entropy and nano-jev, but ties the LR cascade router once its cost is paid ([−0.008, +0.028]).
-- **One epoch is enough.** Every judge's best validation loss is at epoch 1, except nano-jev qa at epoch 2.
-  Validation loss rises after that, so the extra epochs (3 for nano-jev, 2 for the deciders) cost GPU time but don't
-  change any result (see [Loss curves](#loss-curves)).
+- **Averaging three seeds doesn't pay for itself.** The mean of three judges scores higher before cost (E4B 0.740,
+  2B 0.734), but it runs all three models. With three passes, the E4B mean falls to 0.708, which ties entropy. One
+  judge is the better deployment.
+- **The 33M nano-jev judges no longer beat the baselines.**
+  - qp scores 0.696 and qpa 0.698, which ties entropy (0.697) and the LR routers.
+  - In the original experiment 7, qp was +0.011 over entropy on 7,405 questions. On 500 questions that margin is
+    inside the noise.
+- **Without the answer, the deciders tie everything.**
+  - The qp deciders score 0.698–0.702 as one judge with its cost.
+  - The zero-shot E4B (0.716 with its cost) beats entropy and nano-jev, but ties the LR cascade router
+    ([−0.005, +0.028]).
+- **Experiment 8, with five answer options (lenient):**
+  - **The answer options:** 3B ×40 fused is the most accurate single option: 0.746, equal to AgentTTS, at 71 units.
+    It is cheaper and better than the 70B (0.670 at 94 units).
+  - **nano-jev qpa:** it matches the best mix of fixed options (0.714 vs 0.716). It beats entropy by
+    **[+0.008, +0.044]**, and both LR routers by about as much.
+  - **On the LLM grade:** the 70B is the best option (0.748). There, the judge beats the fixed mix but only ties
+    entropy.
+- **The deciders don't help with five options.**
+  - Before cost, a fine-tuned qpa decider is level with nano-jev qpa (2B 0.668–0.672, nano-jev 0.665–0.669, graded).
+  - Its 2.6–5.1 units a question then leave one judge tied with entropy, and the mean of three seeds below it.
+- **One epoch is enough** for experiments 7 and 9. Every judge's best validation loss is at epoch 1, except
+  nano-jev qa at epoch 2 (see [Loss curves](#loss-curves)).
 
-**For the report:** typed-decision routing works at about 2B parameters when the judge reads the small model's
-answer. The 33M judge doesn't get there on this test set.
+**For the report:**
+- A typed-decision judge of about 2B parameters, reading the small model's answer, beats uncertainty thresholds and
+  the 33M judge, even after paying for itself.
+- Against a feature-based LR cascade router, its +0.02 is not detectable on 500 questions.
+- With more answer options than two, the cheap 33M judge does as well as the deciders, at a twentieth of their cost
+  or less.
+
+**Correction (2026-10-18).** The first draft of this page made two errors:
+- **Judge cost:** it charged the decider judges' three-seed mean the cost of one pass, although it runs three models.
+  That made its "with own cost" figures (0.729, and [+0.003, +0.040] over the LR cascade router) too high. The
+  figures above charge the three-seed mean three passes, and add each single seed at one pass.
+- **Experiment 8 baselines:** they escalated to the most expensive option, which under Eq. 8 is the 70B. They now
+  escalate to the most accurate option on calib.
 
 ## What changed from the original runs
 
@@ -39,7 +73,8 @@ answer. The 33M judge doesn't get there on this test set.
 | Calibration (picks the operating point) | Our own calib split | dev[0:500], the team's val split |
 | Judge training data | Our own split | The team's train draw from the HotpotQA train file |
 | Correctness labels and headline metric | F1 | Lenient accuracy (`stair_common.score`); F1 rerun as a check |
-| Cost unit | GFLOPs | AgentTTS units (`stair_common.cost`, 1 unit = 1,152 GFLOPs); samples from one prompt pay it once (AgentTTS Eq. 8), which matters only for experiment 8's sampled cells |
+| Cost unit | GFLOPs | AgentTTS units (`stair_common.cost`, 1 unit = 1,152 GFLOPs). Samples from one prompt pay it once (AgentTTS Eq. 8), which matters only for experiment 8's sampled cells |
+| Judge cost | One pass | One pass per model run: a seed alone pays one, the three-seed mean pays three |
 | Bootstrap | Paired, AIQ without the judge's cost | Paired, also **with each router's own cost** |
 | Models | Pair A: Qwen2.5-1.5B (small) / 7B (large), nano-jev v1.0 retriever | Unchanged |
 
@@ -50,89 +85,120 @@ Baselines on the 500 test questions (lenient):
 
 ## Experiments 7 and 9: AIQ, 500 test questions, lenient, AgentTTS units
 
-AIQ is the area under the accuracy-vs-cost curve. The "with own cost" column adds the judge's compute, and its 95%
-interval comes from the with-cost bootstrap (1,000 resamples). For fine-tuned judges, the figure pools 3 seeds.
+AIQ is the area under the accuracy-vs-cost curve. The columns:
+- **AIQ:** without the judge's cost. For fine-tuned judges it is the mean of the 3 seeds' scores.
+- **One judge, with its cost:** each seed's judge on its own, charged one pass. The figure is the mean over the
+  seeds, with their range in brackets. The next table gives each seed's interval.
+- **Mean of 3 seeds, with its cost:** charged three passes. Its 95% interval comes from the with-cost bootstrap
+  (1,000 resamples).
 
-| Router | Decides | AIQ [95% CI] | With own cost [95% CI] | Original (7,405 q, F1, GFLOPs) |
-|---|---|---|---|---|
-| Oracle | | 0.774 [0.738, 0.809] | | 0.755 |
-| Decider E4B fine-tuned, **qpa** | after | **0.740** [0.703, 0.777] | **0.729** [0.693, 0.765] | 0.713 (0.700 with cost) |
-| Decider 2B fine-tuned, **qpa** | after | **0.734** [0.699, 0.770] | **0.729** [0.694, 0.766] | 0.708 (0.702) |
-| Decider E4B zero-shot, `grounded` | after | 0.726 [0.693, 0.763] | 0.716 [0.683, 0.754] | 0.692 |
-| Decider E4B zero-shot, `correct` | after | 0.725 [0.695, 0.763] | 0.716 [0.685, 0.753] | 0.693 |
-| Decider 2B zero-shot, `correct` | after | 0.715 [0.679, 0.751] | 0.711 [0.675, 0.746] | 0.675 |
-| nano-jev zero-shot, `correct` | after | 0.707 [0.674, 0.746] | 0.707 | 0.664 |
-| Best LR cascade router (question+evidence+small) | after | 0.706 [0.672, 0.745] | | 0.672 |
-| Decider 2B fine-tuned, qp | before | 0.706 [0.672, 0.743] | 0.702 [0.669, 0.740] | 0.680 |
-| Decider E4B fine-tuned, qp | before | 0.706 [0.673, 0.748] | 0.699 [0.667, 0.740] | 0.681 |
-| Best LR router before the small model (question+evidence) | before | 0.700 [0.667, 0.740] | | 0.665 |
-| nano-jev qpa (experiment 7) | after | 0.698 [0.667, 0.738] | 0.698 | 0.673 |
-| Small-entropy threshold | after | 0.697 [0.661, 0.735] | | 0.662 |
-| nano-jev qp (experiment 7) | before | 0.696 [0.663, 0.736] | 0.696 | 0.673 |
-| nano-jev qa | after | 0.681 [0.647, 0.719] | | 0.649 |
-| nano-jev q | before | 0.676 [0.641, 0.711] | | 0.647 |
-| Random | | 0.664 [0.630, 0.699] | | 0.641 |
+| Router | Decides | AIQ [95% CI] | One judge, with its cost | Mean of 3 seeds, with its cost [95% CI] | Original (7,405 q, F1, GFLOPs) |
+|---|---|---|---|---|---|
+| Oracle | | 0.774 [0.738, 0.809] | | | 0.755 |
+| Decider E4B fine-tuned, **qpa** | after | **0.740** [0.703, 0.777] | **0.724** (0.719–0.729) | 0.708 [0.673, 0.744] | 0.713 |
+| Decider 2B fine-tuned, **qpa** | after | **0.734** [0.699, 0.770] | **0.724** (0.722–0.726) | 0.718 [0.683, 0.755] | 0.708 |
+| Decider E4B zero-shot, `grounded` | after | 0.726 [0.693, 0.763] | 0.716 [0.683, 0.754] | | 0.692 |
+| Decider E4B zero-shot, `correct` | after | 0.725 [0.695, 0.763] | 0.716 [0.685, 0.753] | | 0.693 |
+| Decider 2B zero-shot, `correct` | after | 0.715 [0.679, 0.751] | 0.711 [0.675, 0.746] | | 0.675 |
+| nano-jev zero-shot, `correct` | after | 0.707 [0.674, 0.746] | 0.707 | | 0.664 |
+| Best LR cascade router (question+evidence+small) | after | 0.706 [0.672, 0.745] | | | 0.672 |
+| Decider 2B fine-tuned, qp | before | 0.706 [0.672, 0.743] | 0.702 (0.697–0.706) | 0.696 [0.662, 0.732] | 0.680 |
+| Decider E4B fine-tuned, qp | before | 0.706 [0.673, 0.748] | 0.698 (0.693–0.702) | 0.687 [0.653, 0.725] | 0.681 |
+| Best LR router before the small model (question+evidence) | before | 0.700 [0.667, 0.740] | | | 0.665 |
+| nano-jev qpa (experiment 7) | after | 0.698 [0.667, 0.738] | 0.696 (0.693–0.700) | 0.698 | 0.673 |
+| Small-entropy threshold | after | 0.697 [0.661, 0.735] | | | 0.662 |
+| nano-jev qp (experiment 7) | before | 0.696 [0.663, 0.736] | 0.693 (0.692–0.695) | 0.696 | 0.673 |
+| nano-jev qa | after | 0.681 [0.647, 0.719] | | | 0.649 |
+| nano-jev q | before | 0.676 [0.641, 0.711] | | | 0.647 |
+| Random | | 0.664 [0.630, 0.699] | | | 0.641 |
 
-The "with own cost" figures are the point estimates in `report.json` (`aiq_with_judge_cost`); the intervals are the
-with-cost bootstrap. nano-jev's own cost (33M parameters) changes AIQ by less than 0.001.
+The judges' own cost, in units a question for one pass:
+- nano-jev, 0.03;
+- the 2B decider, about 1.1;
+- the E4B decider, about 2.1.
 
-Absolute AIQs are not comparable across the last column and the rest: the test set, labels and cost unit all
+The questions themselves cost 0.91 (always-small) to 19.5 (always-large) units, so the deciders' cost is large next to
+the small model's. nano-jev's cost changes AIQ by less than 0.001.
+
+Absolute AIQs are not comparable between the last column and the rest: the test set, labels and cost unit all
 changed. The **order** is what carries over:
 - the deciders' qpa judges come first, as in experiment 9;
 - nano-jev drops from "best cheap router" to level with entropy.
 
 ### Paired differences with each router's own cost (95% interval, 1,000 resamples)
 
+For one judge, the three intervals are seeds 0, 1 and 2.
+
 | Pair | Difference | Verdict |
 |---|---|---|
-| E4B qpa − entropy | [+0.012, +0.051] | better |
-| E4B qpa − best LR cascade router | [+0.003, +0.040] | better |
-| E4B qpa − nano-jev qp | [+0.013, +0.047] | better |
-| E4B qpa − nano-jev qpa | [+0.011, +0.046] | better |
-| 2B qpa − entropy | [+0.010, +0.054] | better |
-| 2B qpa − best LR cascade router | [+0.002, +0.042] | better |
-| 2B qpa − nano-jev qpa | [+0.011, +0.047] | better |
+| E4B qpa, one judge − entropy | [+0.006, +0.043], [+0.009, +0.051], [+0.001, +0.041] | better |
+| E4B qpa, one judge − best LR cascade router | [−0.004, +0.033], [+0.001, +0.040], [−0.007, +0.031] | tie (one seed better) |
+| E4B qpa, one judge − nano-jev qp | [+0.006, +0.040], [+0.012, +0.047], [+0.004, +0.038] | better |
+| E4B qpa, one judge − nano-jev qpa | [+0.005, +0.038], [+0.010, +0.045], [+0.002, +0.035] | better |
+| 2B qpa, one judge − entropy | [+0.003, +0.049], [+0.008, +0.049], [+0.005, +0.048] | better |
+| 2B qpa, one judge − best LR cascade router | [−0.003, +0.036], [−0.002, +0.039], [−0.003, +0.037] | tie |
+| 2B qpa, one judge − nano-jev qpa | [+0.006, +0.041], [+0.008, +0.044], [+0.005, +0.044] | better |
+| E4B qpa, mean of 3 seeds − entropy | [−0.009, +0.028] | tie |
+| 2B qpa, mean of 3 seeds − entropy | [+0.002, +0.042] | better |
+| 2B qpa, mean of 3 seeds − best LR cascade router | [−0.007, +0.032] | tie |
 | E4B zero-shot `correct` − entropy | [+0.001, +0.041] | better, just |
 | E4B zero-shot `correct` − best LR cascade router | [−0.005, +0.028] | tie |
-| 2B / E4B qp − entropy, LR routers, nano-jev | all straddle 0 | tie |
+| 2B / E4B qp, one judge − entropy, LR routers, nano-jev | all straddle 0 | tie |
+| E4B qp, mean of 3 seeds − best LR cascade router | [−0.035, −0.001] | worse |
 | nano-jev qp − entropy | [−0.021, +0.022] | tie |
 | nano-jev qpa − entropy | [−0.019, +0.024] | tie |
 | nano-jev qp − best LR router before the small model | [−0.016, +0.009] | tie |
 | nano-jev q − entropy | [−0.041, −0.004] | worse |
 
 Checks:
-- **Clean subset** (438 questions without nano-jev's own validation questions): E4B qpa 0.737, 2B qpa 0.730, best LR
-  cascade router 0.700, nano-jev qpa 0.698, entropy 0.696. Same order.
-- **F1 labels** (`runs/common-judges-f1`): 2B qpa 0.727, best LR cascade router 0.702, nano-jev qp 0.701, entropy
-  0.697. Same order. The E4B wasn't retrained on F1 labels.
+- **Clean subset** (438 questions without nano-jev's own validation questions):
+  - one judge with its cost: E4B qpa 0.721, 2B qpa 0.723;
+  - best LR cascade router 0.700, nano-jev qpa 0.698, entropy 0.696.
+  - Same order.
+- **F1 labels** (`runs/common-judges-f1`):
+  - 2B qpa: 0.720 as one judge with its cost; the mean of 3 seeds is 0.727 before cost and 0.713 with it;
+  - best LR cascade router 0.702, nano-jev qp 0.701, entropy 0.697.
+  - Same order. The E4B wasn't retrained on F1 labels.
 
 ## Loss curves
 
 `results/common/loss-curves.png` and `training-history.csv` hold 30 histories (10 judges × 3 seeds), in the
 `stair_common.training` layout.
 
-- Best validation epoch: 1 for every judge except nano-jev qa (2). Training loss keeps falling and validation loss
-  rises after the best epoch, a clear case of overfitting.
-- The saved checkpoint is the best validation epoch, so the reported results come from epoch 1.
-- Lowest validation NLL: E4B qpa about 0.28–0.30, 2B qpa about 0.30, nano-jev qpa about 0.40. This matches the
+- **Best epoch:** the best validation epoch is 1 for every judge except nano-jev qa (2). After it, training loss
+  keeps falling while validation loss rises: overfitting.
+- **Saved checkpoint:** the best validation epoch, so the reported results come from epoch 1.
+- **Lowest validation NLL:** E4B qpa about 0.28–0.30, 2B qpa about 0.30, nano-jev qpa about 0.40. This matches the
   routing order.
-- The seeds agree closely, so the stopping epoch is stable.
+- **Seeds:** they agree closely, so the stopping epoch is stable.
 
 For the team: stop early on validation loss rather than fixing the epoch count. Here, one epoch would have saved most
 of the 4 hours the E4B job took.
 
-## Experiment 8
+## Experiment 8: choosing among five answer options
 
-*Pending: jobs 42843 (rescore), 42844 (judge), 42845 (graded judge) and 42846 (decider judges). The grader validation
-passed (42841).*
+- **Setup:**
+  - 1,000 router_train questions (a third of the original 3,000) and 500 val questions (calib).
+  - The test set is dev[500:1000], as in the original.
+  - Answers come from jobs 42818–42829.
+- **The judge:** a System One judge reads the question and nano-jev's top 5 passages (qp), plus the 3B's single answer
+  (qpa). It outputs a probability for each option.
+  - The router takes the cheapest option whose cumulative probability reaches a threshold. Sweeping the threshold
+    gives the curve.
+  - The training label is the cheapest option that answered correctly.
+- **The baselines** route between two options: the 3B's single answer, and the most accurate option on calib.
+  - On lenient that is 3B ×40 fused; on the LLM grade it is the 70B (`baseline_options` in each report).
+  - **Entropy** escalates on the 3B's answer entropy.
+  - **The LR routers** are logistic regressions on nano-jev's evidence features, trained on router_train. One uses
+    those features alone (before the 3B answers); the other adds the 3B's entropy (after).
 
-Setup: 1,000 router_train questions (a third of the original 3,000) and 500 val questions. The test set is dev[500:1000],
-as in the original. The answers are complete: 3B ×10/×20/×40 fused, 3B top-5 and 70B top-5 (jobs 42818–42829).
+**Cost rule corrected (2026-10-18).**
+- **The rule:** AgentTTS counts S samples from one prompt as prompt + S × decode (App. A.2, Eq. 8: the samples share
+  the prompt's prefill). Our answer files counted the prompt once per sample.
+- **The fix:** `pool-answer recost` (job 42842) rewrote them from their stored token counts. It made no new model
+  calls, and kept the old figures as `units_prompt_per_sample`.
 
-**Cost rule corrected (2026-10-18).** AgentTTS counts S samples from one prompt as prompt + S × decode (App. A.2,
-Eq. 8: the samples share the prompt's prefill). Our answer files counted the prompt once per sample. `pool-answer
-recost` (job 42842) rewrote them from their stored token counts, with no new model calls, and kept the old figures as
-`units_prompt_per_sample`. Mean AgentTTS units a question on test, each including nano-jev's ranking:
+Mean AgentTTS units a question on test, each including nano-jev's ranking:
 
 | Option | Prompt per sample (old) | Eq. 8 (now) |
 |---|---|---|
@@ -142,26 +208,126 @@ recost` (job 42842) rewrote them from their stored token counts, with no new mod
 | 3B, 40 samples fused | 219.8 | 71.1 |
 | 70B, one answer (top 5) | 93.6 | 93.6 |
 
-The fused cells now all cost less than the 70B, so the options are reordered (3B → ×10 → ×20 → ×40 → 70B). The judges,
-whose label is the cheapest option that answered correctly, are retrained (42844–42846). The judge trained on the old
-order (42833) is kept in `runs/exp8-common/judge-5opt-prompt-per-sample`. The original experiment 8 reports
-(2026-10-14 and 15) used the old rule, so their fused-cell costs are overstated by the same factors.
+- **Reordering:** the fused cells now all cost less than the 70B, so the options are reordered (3B → ×10 → ×20 →
+  ×40 → 70B).
+- **Retraining:** the judges' labels depend on that order, so they were retrained (42844–42846). The judge trained on
+  the old order (42833) is kept in `judge-5opt-prompt-per-sample`. It scored 0.715, against 0.713 for the fixed
+  options, so the correction changes the options' costs, not the conclusion.
+- **Original reports:** those of 2026-10-14 and 15 used the old rule, so their fused-cell costs are overstated by the
+  same factors.
+
+### The options on test (500 questions)
+
+| Option | Lenient | LLM grade | Units a question |
+|---|---|---|---|
+| 3B, one answer (top 5) | 0.598 | 0.524 | 7.3 |
+| 3B, 10 samples fused | 0.720 | 0.588 | 30.4 |
+| 3B, 20 samples fused | 0.726 | 0.618 | 43.9 |
+| 3B, 40 samples fused | **0.746** | 0.632 | 71.1 |
+| 70B, one answer (top 5) | 0.670 | **0.748** | 93.6 |
+| Oracle (cheapest correct option) | 0.844 | 0.816 | 16.3 (lenient), 21.4 (graded) |
+
+- **Lenient:** 3B ×40 fused equals AgentTTS's reported 0.746. The configs' AgentTTS cost (938 units, from the team
+  slide) was counted before Eq. 8 and needs re-deriving, so these numbers don't compare costs with AgentTTS.
+- **The two rulers disagree about the 70B.**
+  - Lenient matching scores it 0.670; the LLM grader, reading its committed short answer, gives 0.748.
+  - The grader marks the fused 3B answers 0.11 to 0.13 lower than lenient does.
+  - Graded costs add the commit step: 0.1 units for the 3B, 2.4 for the 70B.
+
+### Judges (AIQ with each judge's own cost, 95% CI)
+
+**Lenient** (the standard ruler; `judge-5opt`):
+
+| Router | AIQ [95% CI] | One judge, with its cost (seeds) |
+|---|---|---|
+| Oracle | 0.831 | |
+| Best mix of fixed options | 0.716 [0.682, 0.752] | |
+| nano-jev qpa | **0.714** [0.682, 0.755] | 0.707, 0.719, 0.709 |
+| nano-jev qp | 0.705 [0.672, 0.745] | 0.710, 0.694, 0.704 |
+| LR before the 3B answers | 0.696 [0.661, 0.737] | |
+| Entropy threshold | 0.691 [0.654, 0.730] | |
+| LR after the 3B answers | 0.691 [0.654, 0.732] | |
+
+- **nano-jev qpa vs the baselines:** − entropy is [+0.008, +0.044]; − LR after is [+0.006, +0.045]; − LR before is
+  [+0.002, +0.041]; − the fixed mix is [−0.012, +0.014], a tie.
+- **One seed of qpa − entropy:** [+0.000, +0.035], [+0.013, +0.048] and [+0.002, +0.039].
+- **nano-jev qp:** it ties entropy ([−0.001, +0.034]).
+- **Operating point** (chosen on calib: the cheapest point within 0.01 of the best):
+  - the qpa judge reaches 0.724 at 46 units;
+  - entropy reaches 0.730 at 72;
+  - always using ×40 gives 0.746 at 71.
+  - So the judge trades 0.02 accuracy for a third less cost. The oracle (0.844 at 16 units) shows how much room is
+    left.
+
+**LLM grade** (`judge-5opt-graded`, and the deciders in `judge-decider-*`; each decider report carries the same
+baselines and nano-jev judges):
+
+| Router | AIQ [95% CI] | One judge, with its cost (seeds) | Units a question, one pass |
+|---|---|---|---|
+| Oracle | 0.792 | | |
+| Entropy threshold | 0.665 [0.626, 0.708] | | |
+| nano-jev qpa | 0.664 [0.629, 0.702] | 0.668, 0.664, 0.666 | 0.14 |
+| LR after the 3B answers | 0.663 [0.626, 0.706] | | |
+| nano-jev qp | 0.656 [0.623, 0.695] | 0.654, 0.653, 0.659 | 0.14 |
+| Decider 2B fine-tuned, qpa | 0.647 [0.614, 0.687] | 0.664, 0.665, 0.662 | 2.59 |
+| LR before the 3B answers | 0.644 [0.607, 0.685] | | |
+| Best mix of fixed options | 0.639 [0.608, 0.678] | | |
+| Decider 2B zero-shot, qp | 0.637 [0.601, 0.676] | | 2.47 |
+| Decider 2B fine-tuned, qp | 0.636 [0.600, 0.675] | 0.645, 0.645, 0.648 | 2.47 |
+| Decider E4B fine-tuned, qpa | 0.634 [0.599, 0.675] | 0.662, 0.661, 0.653 | 5.12 |
+| Decider E4B zero-shot, qp | 0.634 [0.599, 0.672] | | 4.89 |
+| Decider 2B zero-shot, qpa | 0.632 [0.597, 0.670] | | 2.59 |
+| Decider E4B zero-shot, qpa | 0.630 [0.596, 0.669] | | 5.12 |
+| Decider E4B fine-tuned, qp | 0.618 [0.583, 0.659] | 0.639, 0.642, 0.634 | 4.89 |
+
+For fine-tuned judges, the AIQ column is the mean of 3 seeds with three passes' cost.
+
+- **nano-jev qpa:**
+  - − the fixed mix is [+0.012, +0.035];
+  - − entropy is [−0.015, +0.016], a tie;
+  - − LR after is [−0.013, +0.018], a tie.
+- **Deciders, one judge − entropy:**
+  - 2B qpa: [−0.013, +0.018], [−0.013, +0.018] and [−0.018, +0.014], all ties;
+  - E4B qpa: [−0.016, +0.013], [−0.019, +0.014] and [−0.025, +0.008], all ties.
+- **Deciders, mean of 3 seeds:**
+  - 2B qpa − entropy is [−0.029, +0.002]; − nano-jev qpa is [−0.025, −0.006], worse;
+  - E4B qpa − entropy is [−0.044, −0.011], worse.
+- **Zero-shot deciders:** worse than entropy (qpa: 2B [−0.044, −0.018], E4B [−0.046, −0.015]).
+- **Before their cost,** one fine-tuned qpa decider scores 0.668–0.672 (2B) and 0.666–0.675 (E4B), against 0.665–0.669
+  for nano-jev qpa. The decider routes no better here, and pays 18 to 37 times more per pass.
+- **Operating point:** every router's operating point is close to always using the 70B (0.748 at 96 units). The judge
+  qpa gives 0.744 at 96, and entropy 0.742 at 94.
+
+**Clean subset** (438 questions): the same order on both rulers.
+- Lenient: fixed mix 0.715, nano-jev qpa 0.713, qp 0.707, LR before 0.698, entropy 0.695, LR after 0.695.
+- Graded: entropy 0.669, LR after 0.668, nano-jev qpa 0.664.
+
+**Training** (router_train labels, cheapest correct option):
+- **Lenient:** 79% of questions are labelled "3B, one answer", which includes those no option answered.
+- **Graded:** 74% are labelled that way, and 6% "70B".
 
 ## Caveats
 
-- **500 test questions instead of 7,405.** The intervals are about four times wider than in the original experiment
-  7. That is why nano-jev's original +0.011 over entropy no longer shows. "Tie" here means "not detectable on 500
-  questions", not "equal".
-- **Test-set overlap with the judges' training.** The clean-subset check is for this: it drops 62 questions, and the
-  order holds.
+- **500 test questions instead of 7,405.**
+  - The intervals are about four times wider than in the original experiment 7. That is why nano-jev's original
+    +0.011 over entropy no longer shows.
+  - "Tie" here means "not detectable on 500 questions", not "equal".
+- **Test-set overlap with the judges' training.** The clean-subset check is for this: it drops the 62 test questions
+  nano-jev saw, and the order holds.
 - **Lenient labels make "the large model helps" rarer:** the oracle escalates 12.8% (lenient) against 15.8% (F1).
   The F1 check gives the same order.
-- **Seeds.** Fine-tuned AIQs pool 3 seeds. The single-seed spread is small next to the gaps: E4B qpa 0.734 ± 0.006, 2B qpa
-  0.729 ± 0.002, nano-jev qp 0.694 ± 0.002, nano-jev qpa 0.696 ± 0.004 (mean ± sd).
+- **Seeds.** One seed's AIQ varies little next to the gaps between routers (mean ± sd, before cost): E4B qpa
+  0.734 ± 0.006, 2B qpa 0.729 ± 0.002, nano-jev qp 0.694 ± 0.002, nano-jev qpa 0.696 ± 0.004.
+- **The cost unit counts parameter FLOPs only.** It leaves out attention, memory and latency, as AgentTTS's unit does.
+- **Experiment 8 trains on 1,000 questions,** and 74–79% of its labels are the cheapest option. More training data
+  could change the judges' order there.
+- **The AgentTTS reference cost still needs re-deriving under Eq. 8** (`agenttts_units = 938`, from the team slide).
+  The AIQs don't depend on it.
 
 ## Where the numbers come from
 
-All paths are on OMEGA under `~/Custom-LLM-Router`; the job IDs are logged in `runs/common-jobs.txt`.
+All paths are on OMEGA under `~/Custom-LLM-Router`; the job IDs are logged in `runs/common-jobs.txt`. Copies are in
+`results/common`, `common-judges`, `common-judges-f1` and `exp8-common` ([README](../../results/common/README.md)).
 
 | What | Job(s) | File |
 |---|---|---|
@@ -170,6 +336,8 @@ All paths are on OMEGA under `~/Custom-LLM-Router`; the job IDs are logged in `r
 | nano-jev judges (experiment 7) | 42813 | `runs/common-judges/judges/*nanojev*/seed{0,1,2}/` |
 | 2B / E4B decider judges (experiment 9) | 42814, 42815 | `runs/common-judges/judges/*strands-decider*/` |
 | F1-label judges | 42816 | `runs/common-judges-f1/` |
-| Evaluation, with-cost bootstrap | 42817, 42830 | `runs/common-judges/eval/A/report.json`, `report-clean.json` |
-| Team-layout export, loss curves | 42831 | `results/common/systemOne-hotpotqa-test.csv`, `training-history.csv`, `loss-curves.png` |
+| Evaluation (the seed mean pays every pass, plus each seed on its own), team-layout export, loss curves | 42847 (replaces 42817, 42830, 42831) | `runs/common-judges/eval/A/report.json`, `report-clean.json`; `results/common/` |
 | Experiment 8 answers | 42818–42823, 42828, 42829 | `runs/exp8-common/answers/` |
+| Experiment 8 grader check, Eq. 8 recost, re-scoring | 42841, 42842, 42843 | `runs/exp8-common/rescore/`, `answers/summary.csv` |
+| Experiment 8 judges: lenient, graded, deciders | 42844, 42845, 42846 | `runs/exp8-common/judge-*/` |
+| Experiment 8 evaluation (baselines to the most accurate option, per-seed cost) | 42848 | `runs/exp8-common/judge-*/eval/report{,-clean}.json` |
