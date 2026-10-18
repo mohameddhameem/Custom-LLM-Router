@@ -17,6 +17,7 @@
 #   bash scripts/run_cluster.sh exp8-rescore           # self-commit, then grade, every cached answer in SPLITS (GPU, hours)
 #   bash scripts/run_cluster.sh exp8-judge-graded      # the five-option judge on the grader's labels (GPU, ~20 min)
 #   bash scripts/run_cluster.sh exp8-rescore-summary   # the re-scoring summary table only (CPU job: scripts/omega-cpu.pbs)
+#   bash scripts/run_cluster.sh exp8-eval      # re-evaluate finished experiment 8 judges, PLANS=<configs> (CPU job)
 #   bash scripts/run_cluster.sh exp9-smoke     # experiment 9: the Strands Decider wrapper against its own engine (GPU, ~10 min)
 #   bash scripts/run_cluster.sh exp9-judge7    # experiment 9 on experiment 7's pair A: zero-shot + fine-tuned deciders (GPU, hours)
 #   bash scripts/run_cluster.sh exp9-judge8    # experiment 9 on experiment 8's five options, PLANS=<configs> (GPU, hours)
@@ -26,7 +27,8 @@
 # The common-setup steps are documented in docs/gpu-jobs-common.md.
 # Experiment 9's steps are documented in docs/gpu-jobs-exp9.md.
 # Where each step runs: login node = `prepare` (downloads + light parquet export) and `exp8-prepare` (downloads); CPU job
-# (scripts/omega-cpu.pbs, queue short) = `eval`, `exp8-pools`, `exp8-rescore-summary`; every other step is a GPU job
+# (scripts/omega-cpu.pbs, queue short) = `eval`, `exp8-pools`, `exp8-recost`, `exp8-eval`, `exp8-rescore-summary`,
+# `common-eval`; every other step is a GPU job
 # (scripts/omega.pbs). Do not run compute on the login node.
 # The re-scoring steps are documented step by step in docs/gpu-jobs-exp8-rescore.md.
 #
@@ -39,7 +41,7 @@
 # the large expert changed) instead of recomputing them: see run-experts --reuse-from.
 set -euo pipefail
 
-STEP=${1:?usage: run_cluster.sh prepare|pilot|full|eval|judge-pilot|judge|exp8-prepare|exp8-score|exp8-pilot|exp8-answer|exp8-judge|exp8-rescore-validate|exp8-rescore|exp8-judge-graded|exp8-pools|exp8-rescore-summary|exp9-smoke|exp9-judge7|exp9-judge8|save-judges|common-prepare|common-experts|common-judges|common-eval}
+STEP=${1:?usage: run_cluster.sh prepare|pilot|full|eval|judge-pilot|judge|exp8-prepare|exp8-score|exp8-pilot|exp8-answer|exp8-recost|exp8-judge|exp8-eval|exp8-rescore-validate|exp8-rescore|exp8-judge-graded|exp8-pools|exp8-rescore-summary|exp9-smoke|exp9-judge7|exp9-judge8|save-judges|common-prepare|common-experts|common-judges|common-eval}
 CONFIG=${CONFIG:-configs/gpu.toml}
 RUN=${RUN:-runs/gpu}
 DATA=${DATA:-data/hotpotqa}
@@ -154,6 +156,11 @@ EOF
   exp8-judge-graded)
     $BIN exp8-judge all --plan "${PLAN:-configs/exp8-judge-graded.toml}" --exclude runs/exp8/nanojev_validation_ids.txt
     ;;
+  exp8-eval)  # CPU job: the reports of judges already trained (loads no model), PLANS=<judge configs>
+    for plan in ${PLANS:?PLANS=<exp8 judge configs>}; do
+      $BIN exp8-judge eval --plan "$plan" --exclude runs/exp8/nanojev_validation_ids.txt
+    done
+    ;;
   exp9-smoke)  # must pass before the long experiment 9 jobs
     mkdir -p runs/exp9
     $BIN decider-smoke ${MODELS:-StrandsAgents/strands-decider-2B-hobson-v21 StrandsAgents/strands-decider-E4B-gemma4-v1-2610} \
@@ -206,7 +213,7 @@ EOF
     done
     ;;
   *)
-    echo "unknown step: $STEP (prepare|pilot|full|eval|judge-pilot|judge|exp8-prepare|exp8-score|exp8-pilot|exp8-answer|exp8-judge|exp8-rescore-validate|exp8-rescore|exp8-judge-graded|exp8-pools|exp8-rescore-summary|exp9-smoke|exp9-judge7|exp9-judge8|save-judges|common-prepare|common-experts|common-judges|common-eval)" >&2
+    echo "unknown step: $STEP (prepare|pilot|full|eval|judge-pilot|judge|exp8-prepare|exp8-score|exp8-pilot|exp8-answer|exp8-recost|exp8-judge|exp8-eval|exp8-rescore-validate|exp8-rescore|exp8-judge-graded|exp8-pools|exp8-rescore-summary|exp9-smoke|exp9-judge7|exp9-judge8|save-judges|common-prepare|common-experts|common-judges|common-eval)" >&2
     exit 2
     ;;
 esac

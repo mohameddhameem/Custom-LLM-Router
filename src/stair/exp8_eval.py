@@ -39,6 +39,14 @@ def cheapest_correct_label(ok: np.ndarray, cost: np.ndarray) -> np.ndarray:
     return np.where(ok.any(axis=1), np.where(ok, cost, np.inf).argmin(axis=1), cost.argmin(axis=1))
 
 
+def strongest_option(ok: np.ndarray) -> int:
+    """The most accurate option after the cheapest (the first): where the binary baselines escalate to.
+
+    Not simply the last: once samples share their prompt (AgentTTS Eq. 8), the most expensive option need not be the
+    most accurate (the 70B costs more than 3B x40 fused and is less accurate on lenient)."""
+    return 1 + int(np.argmax(ok[:, 1:].mean(axis=0)))
+
+
 def cumulative_choice(probs: np.ndarray, t: float) -> np.ndarray:
     """First option (in cost order) whose cumulative probability reaches t; t = 1 may pick the last."""
     cum = np.cumsum(probs, axis=1)

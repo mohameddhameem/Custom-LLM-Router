@@ -32,6 +32,11 @@ node. A bare `uv sync` removes torch, and the GPU jobs then fail at once. Each s
   - `report-clean.json` drops the 62 that nano-jev saw in its own calibration and test (the standard asks for both).
   - `"metric"` and `"cost_unit"` name the ruler and the unit.
 - **Cost:** the judge's own cost is included in `aiq_with_judge_cost`, in AgentTTS units.
+  - A fine-tuned judge's score is the mean over its 3 seeds, so it pays 3 passes (`judge_passes`).
+  - Each seed is also evaluated on its own (`router:judge/<name>#seed<k>`), paying one pass: that is one deployed
+    judge. Its paired differences with cost are in `bootstrap.aiq_diff_with_cost`.
+  - Reports written before 2026-10-18 evening charged the seed mean one pass; rerun step 6 to refresh them (CPU, no
+    model is loaded).
 
 ## Experiment 8 (runs/exp8-common)
 
@@ -54,6 +59,7 @@ node. A bare `uv sync` removes torch, and the GPU jobs then fail at once. Each s
 | 8.5 | `qsub -l walltime=03:00:00 -v STEP=exp8-judge,PLAN=configs/exp8-judge-common.toml scripts/omega.pbs` (the standard ruler; after 8.3b, not 8.4) | GPU | <1 h |
 | 8.6 | `qsub -l walltime=03:00:00 -v STEP=exp8-judge-graded,PLAN=configs/exp8-judge-graded-common.toml scripts/omega.pbs` (after 8.3b and 8.4) | GPU | <1 h |
 | 8.7 | `qsub -l walltime=10:00:00 -v "STEP=exp9-judge8,PLANS=configs/exp8-judge-decider-2b-ft-common.toml configs/exp8-judge-decider-e4b-ft-common.toml configs/exp8-judge-decider-2b-zs-common.toml configs/exp8-judge-decider-e4b-zs-common.toml" scripts/omega.pbs` (after 8.3b and 8.4) | GPU | hours |
+| 8.8 | `qsub -l walltime=01:00:00 -v "STEP=exp8-eval,PLANS=configs/exp8-judge-common.toml configs/exp8-judge-graded-common.toml configs/exp8-judge-decider-2b-ft-common.toml configs/exp8-judge-decider-e4b-ft-common.toml configs/exp8-judge-decider-2b-zs-common.toml configs/exp8-judge-decider-e4b-zs-common.toml" scripts/omega-cpu.pbs` (re-evaluates the trained judges: per-seed AIQ with one pass's cost, and baselines that escalate to the most accurate option on calib) | CPU | minutes |
 
 The judges' labels are "the cheapest option that answered correctly", so they depend on the cost order. Judges trained
 before the recost (`runs/exp8-common/judge-5opt`, job 42833) were moved to `judge-5opt-prompt-per-sample`; their

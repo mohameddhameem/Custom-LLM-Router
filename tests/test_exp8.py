@@ -35,6 +35,13 @@ def test_judge_curve_cost_never_falls_as_t_rises():
     assert ev.judge_points(ok, cost, p, extra=2.0)[0]["cost"] == pytest.approx(5.0)
 
 
+def test_strongest_option_is_the_most_accurate_not_the_last():
+    # the last option (70B under Eq. 8) costs most but is less accurate than option 2 (3B x40 fused)
+    ok = np.array([[0, 1, 1, 0], [0, 0, 1, 1], [1, 1, 1, 0], [0, 0, 1, 1]], dtype=bool)
+    assert ev.strongest_option(ok) == 2
+    assert ev.strongest_option(np.array([[1, 0, 1], [1, 0, 1]], dtype=bool)) == 2  # never the cheapest itself
+
+
 def test_score_points_between_two_options():
     ok = np.array([[0, 1], [1, 1], [0, 1], [1, 0]], dtype=bool)
     cost = np.tile([2.0, 10.0], (4, 1))

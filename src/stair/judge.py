@@ -47,7 +47,7 @@ import pandas as pd
 from stair import provenance
 from stair_common.cost import UNIT_GFLOPS
 
-from stair.evaluate_routing import aiq, curve, evaluate, expert_params, with_cost_unit
+from stair.evaluate_routing import aiq, evaluate, expert_params, with_cost_unit
 from stair.evidence import paragraph_text, passages_state, resolve_checkpoint
 from stair.decider import DeciderJudge, is_decider, params_b
 from stair.metrics import metric_view
@@ -438,13 +438,20 @@ def run_eval(pair: str, plan: dict, out: Path, unit: str, n_boot: int, seed: int
     lr_routers = routers or train_routers(metric_view(pd.read_parquet(run / "router_train.parquet"), metric),
                                           plan["tau"], seed)
     routers = dict(lr_routers)
+    # a trained judge's score is the mean over its seeds, so it runs every seed's model; each seed is also a router of
+    # its own (one model, one pass), which is what a single deployed judge costs
+    seed_cols = {col: sorted(c for c in test.columns if c.startswith(f"{col}#")) for col in specs}
     for col, spec in specs.items():
         routers[col] = {"score_column": col, "label": spec["label"], "post": spec["post"], "tuning": None}
+        for c in seed_cols[col]:
+            routers[c] = {**routers[col], "score_column": c}
     policy_costs = {}  # each judge's own per-question cost, in the curves' unit, for the with-cost bootstrap
     for col, spec in specs.items():
         if f"{col}_tokens" in test and "init" in spec:
             gflops = 2 * judge_params_b(spec["init"]) * test[f"{col}_tokens"].to_numpy(dtype=float)
-            policy_costs[f"router:{col}"] = gflops / UNIT_GFLOPS if unit == "agenttts" else gflops
+            one = gflops / UNIT_GFLOPS if unit == "agenttts" else gflops
+            policy_costs[f"router:{col}"] = one * max(len(seed_cols[col]), 1)
+            policy_costs |= {f"router:{c}": one for c in seed_cols[col]}
     report, curves = evaluate(test, calib, routers, plan["tau"], plan.get("max_drop", 0.01), n_boot, seed,
                               references=LR_REFERENCES + tuple(f"router:{c}" for c in plan.get("paired_references", [])),
                               policy_costs=policy_costs)
@@ -454,17 +461,21 @@ def run_eval(pair: str, plan: dict, out: Path, unit: str, n_boot: int, seed: int
     for col, spec in specs.items():
         tokens = test.get(f"{col}_tokens")
         params = judge_params_b(spec["init"]) if "init" in spec else 0.0
-        gflops = 2 * params * float(tokens.mean()) if tokens is not None else 0.0  # sufficiency: already paid
+        passes = max(len(seed_cols[col]), 1)
+        one = 2 * params * float(tokens.mean()) if tokens is not None else 0.0  # sufficiency: already paid
+        gflops = one * passes
         judge_cost = gflops / UNIT_GFLOPS if unit == "agenttts" else gflops  # in the curves' unit
         pts = [p for p in report_curve(curves, f"router:{col}")]
         entry = {**spec, "aiq": report["aiq"][f"router:{col}"], "judge_gflops": gflops, "judge_params_b": params,
-                 "judge_cost": judge_cost,
+                 "judge_passes": passes, "judge_cost": judge_cost,
                  "aiq_with_judge_cost": aiq([{**p, "cost": p["cost"] + judge_cost} for p in pts], cmin, cmax)}
-        seed_cols = [c for c in test.columns if c.startswith(f"{col}#")]
-        if seed_cols:
-            per_seed = [aiq(curve(test, test[c].to_numpy(), spec["post"]), cmin, cmax) for c in seed_cols]
+        if seed_cols[col]:
+            per_seed = [report["aiq"][f"router:{c}"] for c in seed_cols[col]]
+            with_cost = [aiq([{**p, "cost": p["cost"] + judge_cost / passes} for p in report_curve(curves, f"router:{c}")],
+                             cmin, cmax) for c in seed_cols[col]]
             entry |= {"aiq_per_seed": per_seed, "aiq_seed_mean": float(np.mean(per_seed)),
-                      "aiq_seed_sd": float(np.std(per_seed, ddof=1)) if len(per_seed) > 1 else 0.0}
+                      "aiq_seed_sd": float(np.std(per_seed, ddof=1)) if len(per_seed) > 1 else 0.0,
+                      "aiq_per_seed_with_cost": with_cost, "aiq_seed_mean_with_cost": float(np.mean(with_cost))}
         judges[col] = entry
     report = {"pair": pair, "run": str(run), "metric": metric, "cost_unit": unit, "excluded": len(exclude), **report,
               "judges": judges}

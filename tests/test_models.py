@@ -267,6 +267,11 @@ train_pair = "B"
     assert trained["post"] is True and len(trained["aiq_per_seed"]) == 2 and trained["judge_gflops"] > 0
     assert trained["aiq_with_judge_cost"] <= trained["aiq"] + 1e-12  # paying for the judge never helps
     assert "router:judge/qpa-small-fails-ce-A - router:question+evidence+small/large-helps" in report["bootstrap"]["aiq_diff"]
+    # the seed mean runs both seeds' models; each seed alone is its own router, paying one pass
+    assert trained["judge_passes"] == 2
+    assert all(c <= s + 1e-12 for c, s in zip(trained["aiq_per_seed_with_cost"], trained["aiq_per_seed"]))
+    assert "router:judge/qpa-small-fails-ce-A#seed1 - router:question+evidence+small/large-helps" in \
+        report["bootstrap"]["aiq_diff_with_cost"]
     scores = pd.read_parquet(out / "eval" / "A" / "scores-test.parquet")
     assert {"judge/qpa-small-fails-ce-A", "judge/qpa-small-fails-ce-A#seed0", "zs_grounded"} <= set(scores.columns)
     assert json.loads((out / "eval" / "B" / "report-clean.json").read_text())["n_test"] == 50
@@ -429,6 +434,11 @@ def test_exp8_judge_trains_and_evaluates(tiny_models, tmp_path):
     assert len(report["judges"]["judge qp"]["aiq_per_seed"]) == 2 and report["judges"]["judge qp"]["judge_units"] > 0
     assert report["operating"]["judge qp"]["budget"]["calib"]["cost"] <= report["budget_units"]  # all fit the budget here
     assert "judge qp - entropy threshold" in report["aiq_diff"]
+    qp = report["judges"]["judge qp"]  # the seed mean pays both passes; a seed alone pays one
+    assert qp["passes"] == 2 and all(c <= s + 1e-12 for c, s in zip(qp["aiq_per_seed_with_cost"], qp["aiq_per_seed"]))
+    assert "judge qp#seed1 - entropy threshold" in report["aiq_diff_per_seed"]
+    assert not any(k.startswith("judge qp - judge qp#") for k in report["aiq_diff"])
+    assert report["baseline_options"][0] == "small, one"
     clean = exp8_judge.run_eval(tables, plan, out, set(tables["test"][0]["id"][:5]), "-clean")
     assert clean["n_test"] == 10 and (out / "judge-4opt" / "eval" / "report-clean.json").exists()
     assert (out / "judge-4opt" / "eval" / "curves.csv").exists()
