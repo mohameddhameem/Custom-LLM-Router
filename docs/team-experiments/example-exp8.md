@@ -63,6 +63,10 @@ reproduce:
   source: docs/experiments/ (the experiment 8 report)
   differences: lenient labels, 1,000 router_train questions, AgentTTS units, the team val split
 
+adopt:
+  - path: src/stair/evaluate_routing.py
+    why: paired bootstrap of AIQ, including each router's own cost; could move into stair_common
+
 open_questions: none
 ```
 

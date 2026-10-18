@@ -31,13 +31,20 @@ Steps:
    - `compute.walltime_h` is filled in, and `gpus` is at most 2.
    - Training stops early on validation loss (keeps the best epoch) instead of running a fixed number of epochs.
    - Only `open_questions` may say TBD.
-5. Show me each file, with a one-line summary per experiment.
+5. Show me each file, with a one-line summary per experiment. Once I approve, commit them as `experiments/<id>.md` on my branch and push it.
 
 Hard rules:
 - No personal data in the files: no emails, phone numbers, student IDs, credentials, tokens or private datasets,
   and no real names other than my first name.
 - Do not copy any text from the cluster's user manual or from internal university documents.
-- Do not submit cluster jobs, push to other people's branches, or open PRs on the team's public STAIR repo for
-  this. I send the files to Dhameem directly.
+- Commit the entries **with my code, on my own branch** of the team STAIR repo, as `experiments/<id>.md`, and push
+  that branch. Do not merge into `main`, open a PR, or push to anyone else's branch. Dhameem picks it up from
+  there. STAIR is public, so check the files for personal data again before pushing.
+- Push with GitHub's noreply email as the commit identity, not my personal email.
+- Do not submit cluster jobs.
+
+Also fill in `adopt`: anything in my code that the team could reuse, for example a faster data loader, a better
+prompt, a tidier eval loop, or a utility that `stair_common` lacks. Give the file path and one line on why. Say
+`none` if nothing stands out; don't oversell.
 
 ---

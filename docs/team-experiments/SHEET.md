@@ -5,7 +5,9 @@ the common standard** (STAIR `common/`: team splits, lenient accuracy, AgentTTS 
 
 - Each entry is its own file, `<id>.md`, filled in by your Claude with [CLAUDE-INSTRUCTIONS.md](CLAUDE-INSTRUCTIONS.md).
 - [example-exp8.md](example-exp8.md) is a filled-in entry.
-- Send the files back to Dhameem. He checks them, runs them on OMEGA and sends you the results CSVs.
+- Commit them with your code on **your own branch** of STAIR, as `experiments/<id>.md`, and push the branch.
+  Dhameem fetches your branch, checks the entries, runs them on OMEGA and sends you the results CSVs. Nobody else
+  pushes to your branch.
 
 ## Template (copy it exactly: keep the keys, fill in the values)
 
@@ -61,6 +63,10 @@ reproduce:                # status: rerun only; otherwise none
   old_results: <the numbers being reproduced>
   source: <the file/commit/report they came from>
   differences: <what changes under the common standard>
+
+adopt:                    # code worth reusing team-wide, or none
+  - path: <file in your branch>
+    why: <one line>
 
 open_questions: <anything Claude could not find out; the ONLY field that may say TBD>
 ```
