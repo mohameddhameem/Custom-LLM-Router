@@ -41,6 +41,8 @@ Job sheet: [gpu-jobs-common.md](../gpu-jobs-common.md). Run on OMEGA on 2026-10-
 - **Experiment 8, with five answer options (lenient):**
   - **The answer options:** 3B ×40 fused is the most accurate single option: 0.746, equal to AgentTTS, at 71 units.
     It is cheaper and better than the 70B (0.670 at 94 units).
+  - **Against AgentTTS:** its recipe costs at least 302 units under Eq. 8 (97% of strong-everything), so ×40 fused
+    reaches its accuracy at under a quarter of its cost.
   - **nano-jev qpa:** it matches the best mix of fixed options (0.714 vs 0.716). It beats entropy by
     **[+0.008, +0.044]**, and both LR routers by about as much.
   - **On the LLM grade:** the 70B is the best option (0.748). There, the judge beats the fixed mix but only ties
@@ -216,6 +218,44 @@ Mean AgentTTS units a question on test, each including nano-jev's ranking:
 - **Original reports:** those of 2026-10-14 and 15 used the old rule, so their fused-cell costs are overstated by the
   same factors.
 
+**AgentTTS's own cost, re-derived under Eq. 8 (2026-10-18).**
+- **Two scales.** AgentTTS's Table 5 prices (72B retrieval 814, 70B answer 115, 3B answer 3) are its normalised
+  budget (Eq. 3–4): the number of 3B samples, sharing one 128-token prompt, that cost the same FLOPs.
+  - For a call of u `stair_common` units, that budget is 3u − 2.
+  - At the paper's Table 4 token lengths, 3u − 2 reproduces all twelve HotpotQA prices in Table 5, and its 10-sample
+    price (Table 7).
+  - The team slide's 929 (strong-everything) and 937 (the recipe) are on that scale. Our measured costs are in u.
+- **The recipe,** at AgentTTS's Table 4 lengths:
+
+| Call | Units (u) | Table 5 scale (3u − 2) | Team slide |
+|---|---|---|---|
+| Qwen2.5-72B retrieval (2,048 prompt + 128 generated tokens) | 272.0 | 814 | 814 |
+| 40 Llama-3.2-3B answers from one prompt (256 + 40 × 64) | 14.7 | 42 | 120 (40 × 3) |
+| One 3B fusion call reading the 40 answers (256 + 2,560 + 64) | 15.0 | 43 | 3 |
+| **AgentTTS recipe** | **301.7** | 899 | 937 |
+| Strong-everything: 72B retrieval + one 70B answer (256 + 64) | 310.9 | 929 | 929 |
+
+- **Result:** under Eq. 8 the recipe costs **302 units, 97% of strong-everything (311)**, not the slide's ~101%. The
+  slide's reading still holds: AgentTTS re-spends the strong budget rather than saving it.
+  - The configs now carry `strong_units = 311` and `agenttts_units = 302`.
+  - `tests/test_exp8.py` checks Table 5 and both constants against `stair_common.cost.units`.
+- **Lower bounds.** These use AgentTTS's own token lengths, which understate its calls. Its retriever reads the whole
+  100-passage pool (about 13k tokens on the team's estimate, not 2,048), and its fuser repeats that message. Our
+  options' costs are measured, so a comparison of ours with 302 favours AgentTTS.
+- **Against our options:**
+  - 3B ×40 fused (71.1 units, nano-jev's ranking included) costs 24% of the recipe, at the same lenient accuracy.
+  - The 70B option (93.6) is 30% of strong-everything.
+- **What it changes:**
+  - The experiment 8 reports' reference fields change, and so does their "on budget" operating point (25% of
+    strong-everything: 232 units before, 78 now). This write-up doesn't use that point.
+  - The AIQs and the near-best operating points depend on neither constant.
+  - The reports in `results/exp8-common` keep the old values until step 8.8 (CPU) is rerun.
+- **Original reports (2026-10-14 and 15):** their "% of 929" divides measured units by a Table 5 price. Their
+  shares are about three times too small: the 70B's ~10% is 30%.
+  - H3 (74.6 lenient at ≤ 25% of strong-everything) is still met: always-×40 is 0.746 at 22.9%.
+  - But that is only because Eq. 8 roughly cancels the scale error. On the old rule, always-×40 cost 71% of
+    strong-everything.
+
 ### The options on test (500 questions)
 
 | Option | Lenient | LLM grade | Units a question |
@@ -227,8 +267,8 @@ Mean AgentTTS units a question on test, each including nano-jev's ranking:
 | 70B, one answer (top 5) | 0.670 | **0.748** | 93.6 |
 | Oracle (cheapest correct option) | 0.844 | 0.816 | 16.3 (lenient), 21.4 (graded) |
 
-- **Lenient:** 3B ×40 fused equals AgentTTS's reported 0.746. The configs' AgentTTS cost (938 units, from the team
-  slide) was counted before Eq. 8 and needs re-deriving, so these numbers don't compare costs with AgentTTS.
+- **Lenient:** 3B ×40 fused equals AgentTTS's 0.746 (as re-scored by the team) at 71 units. AgentTTS's recipe costs at
+  least 302 (re-derived above), so this is its accuracy at under a quarter of its cost.
 - **The two rulers disagree about the 70B.**
   - Lenient matching scores it 0.670; the LLM grader, reading its committed short answer, gives 0.748.
   - The grader marks the fused 3B answers 0.11 to 0.13 lower than lenient does.
@@ -321,8 +361,10 @@ For fine-tuned judges, the AIQ column is the mean of 3 seeds with three passes' 
 - **The cost unit counts parameter FLOPs only.** It leaves out attention, memory and latency, as AgentTTS's unit does.
 - **Experiment 8 trains on 1,000 questions,** and 74–79% of its labels are the cheapest option. More training data
   could change the judges' order there.
-- **The AgentTTS reference cost still needs re-deriving under Eq. 8** (`agenttts_units = 938`, from the team slide).
-  The AIQs don't depend on it.
+- **"AgentTTS units" are not AgentTTS's budget numbers.** Ours (`stair_common`) are FLOPs over one 3B pass of 192
+  tokens. AgentTTS's Tables 5–9 count equivalent 3B samples, 3u − 2 a call, so a number taken from those tables is
+  about three times ours. Convert before comparing.
+- **The AgentTTS reference cost (302) is a lower bound.** It uses AgentTTS's own token lengths, not measured ones.
 
 ## Where the numbers come from
 

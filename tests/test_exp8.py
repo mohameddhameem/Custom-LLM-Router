@@ -1,10 +1,15 @@
 import json
+import tomllib
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import pytest
+from stair_common.cost import AGENTTTS_TABLE5_HOTPOTQA, units
 
 from stair import exp8_eval as ev
+
+CONFIGS = Path(__file__).parent.parent / "configs"
 
 
 def test_cheapest_correct_label():
@@ -40,6 +45,23 @@ def test_strongest_option_is_the_most_accurate_not_the_last():
     ok = np.array([[0, 1, 1, 0], [0, 0, 1, 1], [1, 1, 1, 0], [0, 0, 1, 1]], dtype=bool)
     assert ev.strongest_option(ok) == 2
     assert ev.strongest_option(np.array([[1, 0, 1], [1, 0, 1]], dtype=bool)) == 2  # never the cheapest itself
+
+
+def test_agenttts_reference_costs_are_in_stair_common_units():
+    # Table 5 is AgentTTS's normalised budget (Eq. 3-4): the 3B samples, sharing one 128-token prompt, of equal FLOPs,
+    # which is 3u - 2 for a call of u units. Its HotpotQA prices at its Table 4 lengths reproduce that exactly.
+    params = {"Qwen2.5-72B": 72, "Qwen2.5-32B": 32, "Qwen2.5-7B": 7, "Llama-3.1-70B": 70, "Llama-3.1-8B": 8,
+              "Llama-3.2-3B": 3}
+    lengths = {"retrieve": (2048, 128), "answer": (256, 64)}
+    for task, prices in AGENTTTS_TABLE5_HOTPOTQA.items():
+        for model, price in prices.items():
+            assert round(3 * units(params[model], *lengths[task]) - 2) == price
+    assert round(3 * units(3, 256, 10 * 64) - 2) == 12  # Table 7, 10 samples: the prompt counts once (Eq. 8)
+    retrieve = units(72, 2048, 128)
+    recipe = retrieve + units(3, 256, 40 * 64) + units(3, 256 + 40 * 64, 64)  # 40 samples, then a fusion reading them
+    for path in sorted(CONFIGS.glob("exp8-judge*-common.toml")):
+        plan = tomllib.loads(path.read_text(encoding="utf-8"))
+        assert (plan["strong_units"], plan["agenttts_units"]) == (round(retrieve + units(70, 256, 64)), round(recipe))
 
 
 def test_score_points_between_two_options():
