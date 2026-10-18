@@ -150,8 +150,10 @@ def load_tables(out, split: str, options: list[str], state_k: int, metric: str =
     elif metric == "lenient_std":
         from stair_common.score import lenient
 
+        from stair.metrics import text
+
         golds = df["answer"].astype(str).to_numpy()
-        ok = np.stack([[bool(lenient(str(p or ""), [g])) for p, g in zip(answers[o].loc[ids, "pred"], golds)]
+        ok = np.stack([[bool(lenient(text(p), [g])) for p, g in zip(answers[o].loc[ids, "pred"], golds)]
                        for o in options], axis=1)
     else:
         if rescore_dir is None:

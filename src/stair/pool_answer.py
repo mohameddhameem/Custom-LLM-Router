@@ -13,11 +13,15 @@ retriever). Two deliberate deviations:
 
     pool-answer run --plan configs/exp8.toml --split test [--only llama3b-top5] [--limit 20]
     pool-answer summary --plan configs/exp8.toml
+    pool-answer recost --plan configs/exp8.toml --split test   # rewrite a finished split's cost under Eq. 8
 
-Every call records its prompt and generated tokens. Cost is GFLOPs = 2 x params x tokens, counting
-each sample as its own call (as AgentTTS's API calls are), plus nano-jev's measured scoring cost.
-It is also given in AgentTTS units (one 3B pass of 128 + 64 tokens = 1,152 GFLOPs). Answers are
-scored three ways:
+Every call records its prompt and generated tokens. Cost is GFLOPs = 2 x params x tokens as AgentTTS
+counts them (App. A.2, Eq. 8): the samples of one prompt share its prefill, so the prompt counts once
+and every sample's generated tokens count; the fuser is a new call with its own prompt. Plus nano-jev's
+measured scoring cost. It is also given in AgentTTS units (one 3B pass of 128 + 64 tokens = 1,152
+GFLOPs). Until 2026-10-18 the prompt was counted once per sample; `recost` rewrites such files from
+their stored tokens and keeps the old cost as `gflops_prompt_per_sample` / `units_prompt_per_sample`.
+Answers are scored three ways:
 
 - lenient: the normalised gold answer occurs in the normalised response (a placeholder for the
   team's lenient scorer);
@@ -197,8 +201,8 @@ def answer_chunk(gen: Generator, cell: dict, rows: pd.DataFrame, seed: int) -> p
         seconds = (time.perf_counter() - start) / len(res)
         for (_, r), g, f in zip(part.iterrows(), res, fused):
             pred = f["texts"][0] if f else g["texts"][0]
-            tokens = n * g["prompt_tokens"] + sum(g["gen_tokens"]) + ((f["prompt_tokens"] + f["gen_tokens"][0]) if f else 0)
-            gflops = 2 * cell["params"] * tokens
+            gflops = cell_gflops(cell["params"], g["prompt_tokens"], sum(g["gen_tokens"]),
+                                 f["prompt_tokens"] if f else 0, f["gen_tokens"][0] if f else 0)
             out_rows.append({
                 "id": r["id"], "pred": pred, "samples": g["texts"] if n > 1 else None,
                 "lenient": lenient(pred, r["answer"]), "em": exact_match(pred, r["answer"]), "f1": f1_score(pred, r["answer"]),
@@ -258,9 +262,53 @@ def cmd_run(args, plan: dict) -> None:
         files = sorted(parts.glob("*.parquet"))
         if len(files) == len(chunks):
             merged = pd.concat([pd.read_parquet(f) for f in files], ignore_index=True)
-            merged["units"] += (df["nanojev_gflops"] / UNIT_GFLOPS).to_numpy()  # every cell pays nano-jev's scoring
-            merged["gflops"] += df["nanojev_gflops"].to_numpy()
+            # from the tokens, so chunks written before the Eq. 8 change merge right; every cell pays nano-jev's scoring
+            merged["gflops"] = token_gflops(merged, cell["params"]) + df["nanojev_gflops"].to_numpy()
+            merged["units"] = merged["gflops"] / UNIT_GFLOPS
             merged.to_parquet(parts.parent / f"{cell['name']}.parquet")
+
+
+def cell_gflops(params: float, prompt_tokens, gen_tokens, fuse_prompt_tokens, fuse_gen_tokens):
+    """AgentTTS's FLOPs of one question's answer (App. A.2, Eq. 8, parameter terms): the samples share the prompt's
+    prefill, so the prompt counts once and `gen_tokens` is the sum over the samples; the fuser is a call of its own."""
+    return 2 * params * (prompt_tokens + gen_tokens + fuse_prompt_tokens + fuse_gen_tokens)
+
+
+def token_gflops(answers: pd.DataFrame, params: float) -> np.ndarray:
+    """cell_gflops over an answer file's stored token columns (without nano-jev's scoring)."""
+    return cell_gflops(params, *(answers[c].to_numpy(dtype=float) for c in
+                                 ("prompt_tokens", "gen_tokens", "fuse_prompt_tokens", "fuse_gen_tokens")))
+
+
+def recost(answers: pd.DataFrame, cell: dict, nanojev_gflops: np.ndarray) -> pd.DataFrame:
+    """A merged answer file with its cost under Eq. 8. The first recost of a file written with the prompt counted per
+    sample keeps that cost as gflops/units_prompt_per_sample, after checking the file is what that rule produced."""
+    out = answers.copy()
+    new = token_gflops(out, cell["params"]) + nanojev_gflops
+    if "gflops_prompt_per_sample" not in out:
+        n = cell.get("samples", 1)
+        old = new + 2 * cell["params"] * (n - 1) * out["prompt_tokens"].to_numpy(dtype=float)
+        if not np.allclose(out["gflops"].to_numpy(dtype=float), old, rtol=1e-9, atol=1e-6):
+            raise ValueError(f"{cell['name']}: stored gflops do not match the per-sample-prompt rule; not recosting")
+        out["gflops_prompt_per_sample"], out["units_prompt_per_sample"] = out["gflops"], out["units"]
+    out["gflops"], out["units"] = new, new / UNIT_GFLOPS
+    return out
+
+
+def cmd_recost(args, plan: dict) -> None:
+    out = Path(plan.get("out", "runs/exp8"))
+    scores = pd.read_parquet(out / "scores" / f"{args.split}.parquet", columns=["id", "tokens"]).set_index("id")
+    for cell in plan["cells"]:
+        path = out / "answers" / args.split / f"{cell['name']}.parquet"
+        if (args.only and cell["name"] not in args.only) or not path.exists():
+            continue
+        answers = pd.read_parquet(path)
+        nanojev = 2 * NANOJEV_PARAMS_B * scores.loc[answers["id"], "tokens"].to_numpy(dtype=float)
+        done = recost(answers, cell, nanojev)
+        done.to_parquet(path)
+        log.info(f"{args.split}/{cell['name']}: {len(done)} answers, units {done['units_prompt_per_sample'].mean():.1f} "
+                 f"(prompt per sample) -> {done['units'].mean():.1f} (Eq. 8)")
+    provenance.record(out, "pool-answer recost", split=args.split, rule="AgentTTS App. A.2 Eq. 8: prompt once per call")
 
 
 def cmd_summary(args, plan: dict) -> None:
@@ -291,7 +339,7 @@ def cmd_summary(args, plan: dict) -> None:
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("step", choices=["run", "summary"])
+    parser.add_argument("step", choices=["run", "summary", "recost"])
     parser.add_argument("--plan", type=Path, default=Path("configs/exp8.toml"))
     parser.add_argument("--split", default="test", help="run: pools/<split>.parquet")
     parser.add_argument("--only", action="append", default=[], help="run: cell names (default all); repeatable")
@@ -305,7 +353,7 @@ def main(argv: list[str] | None = None) -> None:
     args = parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     plan = tomllib.loads(args.plan.read_text())
-    {"run": cmd_run, "summary": cmd_summary}[args.step](args, plan)
+    {"run": cmd_run, "summary": cmd_summary, "recost": cmd_recost}[args.step](args, plan)
 
 
 if __name__ == "__main__":

@@ -84,6 +84,14 @@ def test_exported_rows_pass_the_team_validator():
     assert df["units"].tolist() == pytest.approx([1.6, 4.6, 1.6, 4.6])
 
 
+def test_missing_answers_are_empty_not_none():
+    ids = load_split("hotpotqa", "test")[:3]
+    test = _cache(ids, ["New York City", None, np.nan], [None, "Boston", "x"])
+    rows = export_common.rows_for(test, np.array([True, False, False]), False, "p", 0, np.zeros(3), np.zeros(3), "m")
+    assert [r["answer"] for r in rows] == ["", "", ""]  # a missing large answer is not the string "None"
+    assert metric_view(test, "lenient")["small_lenient"].tolist() == [1.0, 0.0, 0.0]
+
+
 def test_export_histories(tmp_path):
     import json
 

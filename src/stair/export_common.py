@@ -31,7 +31,7 @@ from stair_common.training import HISTORY_COLUMNS, from_records, plot_history, v
 
 from stair.evaluate_routing import expert_params, pick_threshold, with_cost_unit
 from stair.judge import INPUTS, judge_columns, judge_params_b, load_plan
-from stair.metrics import metric_view
+from stair.metrics import metric_view, text
 
 log = logging.getLogger(__name__)
 TRACK = "systemOne"
@@ -49,7 +49,7 @@ def rows_for(test: pd.DataFrame, escalate: np.ndarray, post: bool, policy: str, 
     answer_units = np.where(esc, test["large_cost"], test["small_cost"]) + (np.where(esc, test["small_cost"], 0) if post else 0)
     out = []
     for i, (qid, gold) in enumerate(zip(test["id"], test["answer"])):
-        answer = str(test["large_pred"].iat[i] if esc[i] else test["small_pred"].iat[i] or "")
+        answer = text(test["large_pred"].iat[i] if esc[i] else test["small_pred"].iat[i])
         parts = {"units_retrieve": float(retrieve_units[i]), "units_answer": float(answer_units[i]), "units_fuse": 0.0,
                  "units_router": float(router_units[i])}
         out.append({"dataset": "hotpotqa", "split": "test", "id": qid, "track": TRACK, "policy": policy, "menu": "B",

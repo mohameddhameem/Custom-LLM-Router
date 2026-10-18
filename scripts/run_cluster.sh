@@ -129,6 +129,12 @@ EOF
     done
     $BIN pool-answer summary --plan "${PLAN:-configs/exp8.toml}"
     ;;
+  exp8-recost)  # CPU job: answer costs under AgentTTS Eq. 8 (prompt once per call) from the stored tokens, no model calls
+    for split in ${SPLITS:-test calib router_train}; do
+      $BIN pool-answer recost --plan "${PLAN:-configs/exp8.toml}" --split "$split"
+    done
+    $BIN pool-answer summary --plan "${PLAN:-configs/exp8.toml}"
+    ;;
   exp8-judge)
     $BIN exp8-judge all --plan "${PLAN:-configs/exp8-judge.toml}" --exclude runs/exp8/nanojev_validation_ids.txt
     ;;

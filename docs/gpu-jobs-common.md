@@ -48,8 +48,13 @@ node. A bare `uv sync` removes torch, and the GPU jobs then fail at once. Each s
 | 8.1 | `qsub -l walltime=01:00:00 -v STEP=exp8c-pools,EXP8_TRAIN=1000 scripts/omega-cpu.pbs` (after `common-experts`) | CPU | minutes |
 | 8.2 | `qsub -l walltime=01:00:00 -v "STEP=exp8-score,$E" scripts/omega.pbs` | GPU | minutes |
 | 8.3 | `qsub -v "STEP=exp8-answer,$E,CELLS=<cells>" scripts/omega.pbs`, one job per cell group: `llama3b-top5 llama70b-top5` (4 h); `llama3b-s10fuse-top5` (8 h); `llama3b-s20fuse-top5` (12 h); `llama3b-s40fuse-top5` (12 h) | GPU | ~45 GPU-s a question in all |
-| 8.4a | `qsub -l walltime=03:00:00 -v "STEP=exp8-rescore-validate,EXP8_OUT=runs/exp8-common" scripts/omega.pbs` (the rescore needs its passed validation) | GPU | <1 h |
-| 8.4 | `qsub -l walltime=12:00:00 -v "STEP=exp8-rescore,EXP8_OUT=runs/exp8-common,SPLITS=calib router_train" scripts/omega.pbs` | GPU | hours |
-| 8.5 | `qsub -l walltime=03:00:00 -v STEP=exp8-judge,PLAN=configs/exp8-judge-common.toml scripts/omega.pbs` (the standard ruler; doesn't need 8.4) | GPU | <1 h |
-| 8.6 | `qsub -l walltime=03:00:00 -v STEP=exp8-judge-graded,PLAN=configs/exp8-judge-graded-common.toml scripts/omega.pbs` (after 8.4) | GPU | <1 h |
-| 8.7 | `qsub -l walltime=10:00:00 -v "STEP=exp9-judge8,PLANS=configs/exp8-judge-decider-2b-ft-common.toml configs/exp8-judge-decider-e4b-ft-common.toml configs/exp8-judge-decider-2b-zs-common.toml configs/exp8-judge-decider-e4b-zs-common.toml" scripts/omega.pbs` (after 8.4) | GPU | hours |
+| 8.3b | `qsub -l walltime=00:30:00 -v "STEP=exp8-recost,PLAN=configs/exp8-common.toml,SPLITS=test calib router_train" scripts/omega-cpu.pbs` (once, on answers written before 2026-10-18: AgentTTS Eq. 8, the prompt counted once per call) | CPU | minutes |
+| 8.4a | `qsub -l select=1:ncpus=8:ngpus=2:mem=96gb -l walltime=03:00:00 -v "STEP=exp8-rescore-validate,EXP8_OUT=runs/exp8-common" scripts/omega.pbs` (the rescore needs its passed validation; the 70B commit check needs 2 GPUs) | 2 GPUs | <1 h |
+| 8.4 | `qsub -l select=1:ncpus=8:ngpus=2:mem=96gb -l walltime=12:00:00 -v "STEP=exp8-rescore,EXP8_OUT=runs/exp8-common,SPLITS=calib router_train" scripts/omega.pbs` (after 8.4a; the 70B commits need 2 GPUs) | 2 GPUs | hours |
+| 8.5 | `qsub -l walltime=03:00:00 -v STEP=exp8-judge,PLAN=configs/exp8-judge-common.toml scripts/omega.pbs` (the standard ruler; after 8.3b, not 8.4) | GPU | <1 h |
+| 8.6 | `qsub -l walltime=03:00:00 -v STEP=exp8-judge-graded,PLAN=configs/exp8-judge-graded-common.toml scripts/omega.pbs` (after 8.3b and 8.4) | GPU | <1 h |
+| 8.7 | `qsub -l walltime=10:00:00 -v "STEP=exp9-judge8,PLANS=configs/exp8-judge-decider-2b-ft-common.toml configs/exp8-judge-decider-e4b-ft-common.toml configs/exp8-judge-decider-2b-zs-common.toml configs/exp8-judge-decider-e4b-zs-common.toml" scripts/omega.pbs` (after 8.3b and 8.4) | GPU | hours |
+
+The judges' labels are "the cheapest option that answered correctly", so they depend on the cost order. Judges trained
+before the recost (`runs/exp8-common/judge-5opt`, job 42833) were moved to `judge-5opt-prompt-per-sample`; their
+`done.json` would otherwise make 8.5 skip training.

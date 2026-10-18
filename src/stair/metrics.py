@@ -34,6 +34,13 @@ def exact_match(prediction: str, gold: str) -> float:
 METRICS = ("f1", "lenient")
 
 
+def text(answer) -> str:
+    """A cached answer as a string: a missing one (None, NaN, pd.NA) is the empty answer, never "None" or "nan"."""
+    import pandas as pd
+
+    return "" if answer is None or (not isinstance(answer, str) and pd.isna(answer)) else str(answer)
+
+
 def metric_view(df, metric: str):
     """df with `small_f1` / `large_f1` holding the chosen per-question metric, so every label, curve, AIQ and
     threshold downstream uses it. "lenient" is the team's standard ruler (stair_common.score.lenient, 0/1), kept in
@@ -47,6 +54,6 @@ def metric_view(df, metric: str):
     df = df.copy()
     for name in ("small", "large"):
         if f"{name}_lenient" not in df:
-            df[f"{name}_lenient"] = [float(lenient(str(p or ""), [str(g)])) for p, g in zip(df[f"{name}_pred"], df["answer"])]
+            df[f"{name}_lenient"] = [float(lenient(text(p), [str(g)])) for p, g in zip(df[f"{name}_pred"], df["answer"])]
         df[f"{name}_f1"] = df[f"{name}_lenient"].astype(float)
     return df

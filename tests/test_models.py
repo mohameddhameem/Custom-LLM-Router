@@ -23,6 +23,7 @@ from stair import evaluate_routing, make_splits, router, run_experts  # noqa: E4
 from stair.evidence import CrossEncoderScorer, RerankerScorer  # noqa: E402
 from stair.experts import PROMPT, HFExpert  # noqa: E402
 from stair.rescore import GRADE_SYSTEM, GRADE_USER  # noqa: E402
+from stair_common.cost import UNIT_GFLOPS, units  # noqa: E402
 from synthetic import make_split  # noqa: E402
 
 CONFIGS = Path(__file__).parent.parent / "configs"
@@ -221,15 +222,15 @@ def test_system_one_judges_end_to_end(tiny_models, tmp_path):
                                    str(data / "splits.json"), "--split", split, "--name", split])
     run_experts.main(common + ["--data", str(data / "distractor_validation.parquet"), "--name", "test"])
 
-    ce = tiny_models / "ce"
+    ce = (tiny_models / "ce").as_posix()  # TOML basic strings: a Windows path's backslashes would be escapes
     plan = tmp_path / "plan.toml"
     plan.write_text(f"""
 tau = 0.8
 seeds = [0, 1]
 zero_shot_judge = "{ce}"
 [pairs]
-A = "{run}"
-B = "{run}"
+A = "{Path(run).as_posix()}"
+B = "{Path(run).as_posix()}"
 [train]
 epochs = 2
 lr = 1e-3
@@ -344,9 +345,9 @@ def test_pool_answer_end_to_end(tiny_models, tmp_path):
     pd.DataFrame(rows).to_parquet(out / "pools" / "test.parquet")
     pd.DataFrame({"id": [r["id"] for r in rows], "nanojev": [[0.9, 0.1, 0.8]] * 5, "tokens": [300] * 5}).to_parquet(
         out / "scores" / "test.parquet")
-    lm = tiny_models / "chat-lm"
+    lm = (tiny_models / "chat-lm").as_posix()
     plan = tmp_path / "plan.toml"
-    plan.write_text(f'out = "{out}"\nseed = 0\n'
+    plan.write_text(f'out = "{out.as_posix()}"\nseed = 0\n'
                     f'[[cells]]\nname = "one"\nmodel = "{lm}"\nparams = 1.0\ntop_k = 2\nsamples = 1\ntemperature = 0.3\n'
                     f'max_new_tokens = 4\nbatch_size = 2\n'
                     f'[[cells]]\nname = "fuse"\nmodel = "{lm}"\nparams = 1.0\ntop_k = 2\nsamples = 3\ntemperature = 0.9\n'
@@ -358,14 +359,31 @@ def test_pool_answer_end_to_end(tiny_models, tmp_path):
     assert one["samples"].isna().all() and fuse["samples"].map(len).eq(3).all()
     assert (fuse["fuse_prompt_tokens"] > fuse["prompt_tokens"]).all()  # the fuser reads the prompt twice + answers
     nanojev = 2 * pool_answer.NANOJEV_PARAMS_B * 300
-    tokens = 3 * fuse["prompt_tokens"] + fuse["gen_tokens"] + fuse["fuse_prompt_tokens"] + fuse["fuse_gen_tokens"]
-    assert np.allclose(fuse["gflops"], 2 * 1.0 * tokens + nanojev)
+    tokens = fuse["prompt_tokens"] + fuse["gen_tokens"] + fuse["fuse_prompt_tokens"] + fuse["fuse_gen_tokens"]
+    assert np.allclose(fuse["gflops"], 2 * 1.0 * tokens + nanojev)  # AgentTTS Eq. 8: the 3 samples share one prompt
     first = pd.read_parquet(out / "answers" / "test" / "one.parquet")
     pool_answer.main(["run", *args])  # resumes: nothing recomputed
     pd.testing.assert_frame_equal(first, pd.read_parquet(out / "answers" / "test" / "one.parquet"))
     pool_answer.main(["summary", "--plan", str(plan)])
     summary = pd.read_csv(out / "answers" / "summary.csv")
     assert set(summary["cell"]) == {"one", "fuse", "oracle"}
+
+    # recost: a file written with the prompt counted per sample (before 2026-10-18) gets Eq. 8, keeping the old cost
+    path = out / "answers" / "test" / "fuse.parquet"
+    recost = ["recost", "--plan", str(plan), "--split", "test"]
+    with pytest.raises(ValueError, match="per-sample-prompt"):
+        pool_answer.main(recost)  # already Eq. 8: refuses rather than shifting it again
+    old_gflops = 2 * 1.0 * (tokens + 2 * fuse["prompt_tokens"]) + nanojev
+    fuse.assign(gflops=old_gflops, units=old_gflops / pool_answer.UNIT_GFLOPS).to_parquet(path)
+    one.to_parquet(out / "answers" / "test" / "one.parquet")
+    pool_answer.main(recost)
+    done = pd.read_parquet(path)
+    expected = [units(1.0, p + fp, g + fg) + nanojev / UNIT_GFLOPS for p, g, fp, fg in
+                zip(fuse["prompt_tokens"], fuse["gen_tokens"], fuse["fuse_prompt_tokens"], fuse["fuse_gen_tokens"])]
+    assert np.allclose(done["units"], expected) and np.allclose(done["units_prompt_per_sample"], old_gflops / UNIT_GFLOPS)
+    pool_answer.main(recost)  # a second recost changes nothing
+    pd.testing.assert_frame_equal(done, pd.read_parquet(path))
+    assert np.allclose(pd.read_parquet(out / "answers" / "test" / "one.parquet")["units"], one["units"])  # 1 sample
 
 
 def test_exp8_judge_trains_and_evaluates(tiny_models, tmp_path):
