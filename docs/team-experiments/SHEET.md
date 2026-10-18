@@ -77,3 +77,12 @@ After the YAML block, add at most 10 lines of prose with anything a reviewer nee
 
 | id | owner | title | received | status | job IDs | results |
 |---|---|---|---|---|---|---|
+| AL-01 | Andy | AgentTTS baseline, its own search (menu A) | 2026-10-18 (selfLearnt `5080d0f`, entry pins `bd00667`) | received; checks pass; after experiment 8 and the smoke test | | |
+| AL-02 | Andy | Strongest retriever + answerer on every question (menu A) | 2026-10-18 | received; first after the smoke test | | |
+| AL-03 | Andy | Hidden-state probes + learnt rules, untrained models (menu A) | 2026-10-18 | received; seed 0 after AL-01 | | |
+| AL-04 | Andy | Fine-tuned models + self-learnt rulebook (menu A) | 2026-10-18 | received; epochs question open | | |
+| AL-05 | Andy | Full ladders from nano-jev 33M (menu B) | 2026-10-18 | received; epochs question open | | |
+| AL-06 | Andy | Control: AL-05 without nano-jev (menu B) | 2026-10-18 | received; reuses AL-05 (~6 h) | | |
+
+selfLearnt's job sheet and the questions for Andy: [gpu-jobs-selflearnt.md](gpu-jobs-selflearnt.md). Code worth
+adopting: [adopt-notes.md](adopt-notes.md).

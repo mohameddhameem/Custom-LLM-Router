@@ -39,7 +39,7 @@ answer. The 33M judge doesn't get there on this test set.
 | Calibration (picks the operating point) | Our own calib split | dev[0:500], the team's val split |
 | Judge training data | Our own split | The team's train draw from the HotpotQA train file |
 | Correctness labels and headline metric | F1 | Lenient accuracy (`stair_common.score`); F1 rerun as a check |
-| Cost unit | GFLOPs | AgentTTS units (`stair_common.cost`, 1 unit = 1,152 GFLOPs) |
+| Cost unit | GFLOPs | AgentTTS units (`stair_common.cost`, 1 unit = 1,152 GFLOPs); samples from one prompt pay it once (AgentTTS Eq. 8), which matters only for experiment 8's sampled cells |
 | Bootstrap | Paired, AIQ without the judge's cost | Paired, also **with each router's own cost** |
 | Models | Pair A: Qwen2.5-1.5B (small) / 7B (large), nano-jev v1.0 retriever | Unchanged |
 
@@ -123,10 +123,29 @@ of the 4 hours the E4B job took.
 
 ## Experiment 8
 
-*Pending: jobs 42832 (rescore), 42833 (judge), 42834 (graded judge) and 42835 (decider judges).*
+*Pending: jobs 42843 (rescore), 42844 (judge), 42845 (graded judge) and 42846 (decider judges). The grader validation
+passed (42841).*
 
 Setup: 1,000 router_train questions (a third of the original 3,000) and 500 val questions. The test set is dev[500:1000],
 as in the original. The answers are complete: 3B ×10/×20/×40 fused, 3B top-5 and 70B top-5 (jobs 42818–42829).
+
+**Cost rule corrected (2026-10-18).** AgentTTS counts S samples from one prompt as prompt + S × decode (App. A.2,
+Eq. 8: the samples share the prompt's prefill). Our answer files counted the prompt once per sample. `pool-answer
+recost` (job 42842) rewrote them from their stored token counts, with no new model calls, and kept the old figures as
+`units_prompt_per_sample`. Mean AgentTTS units a question on test, each including nano-jev's ranking:
+
+| Option | Prompt per sample (old) | Eq. 8 (now) |
+|---|---|---|
+| 3B, one answer (top 5) | 7.3 | 7.3 |
+| 3B, 10 samples fused | 64.7 | 30.4 |
+| 3B, 20 samples fused | 116.3 | 43.9 |
+| 3B, 40 samples fused | 219.8 | 71.1 |
+| 70B, one answer (top 5) | 93.6 | 93.6 |
+
+The fused cells now all cost less than the 70B, so the options are reordered (3B → ×10 → ×20 → ×40 → 70B). The judges,
+whose label is the cheapest option that answered correctly, are retrained (42844–42846). The judge trained on the old
+order (42833) is kept in `runs/exp8-common/judge-5opt-prompt-per-sample`. The original experiment 8 reports
+(2026-10-14 and 15) used the old rule, so their fused-cell costs are overstated by the same factors.
 
 ## Caveats
 

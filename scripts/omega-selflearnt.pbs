@@ -1,0 +1,36 @@
+#!/bin/bash
+# PBS job for one stage of selfLearnt's pipeline (team entries AL-01..06; docs/team-experiments/gpu-jobs-selflearnt.md).
+# Runs `python run.py` in their checkout under ~/team/AL with their venv. Downloads happen beforehand on the login node
+# (stage setup), so the job runs offline. The log goes to runs/logs/<jobid>.log of this repo.
+#
+#   qsub -l walltime=04:00:00 -v "CONFIG=configs/omega-smoke.yaml,STAGE=all" scripts/omega-selflearnt.pbs
+#   qsub -l select=1:ncpus=8:ngpus=2:mem=120gb -l walltime=06:00:00 \
+#        -v "CONFIG=configs/omega.yaml,EXP=AL-02,SEED=0,STAGE=ws1_test" scripts/omega-selflearnt.pbs
+#
+# Never push from here: STAIR_STATUS_PUSH=0 keeps their status page local (it would push to their branch).
+#PBS -N selflearnt
+#PBS -q GPU
+#PBS -l select=1:ncpus=8:ngpus=1:mem=64gb
+#PBS -l walltime=04:00:00
+#PBS -j oe
+#PBS -r y
+set -euo pipefail
+
+cd "$PBS_O_WORKDIR"
+mkdir -p runs/logs
+exec >> "runs/logs/${PBS_JOBID%%.*}.log" 2>&1
+TEAM=${TEAM:-$HOME/team/AL}
+
+echo "job $PBS_JOBID on $(hostname), selfLearnt ${EXP:-} seed ${SEED:-} stage ${STAGE:?pass -v STAGE=...} config ${CONFIG:?pass -v CONFIG=...}"
+nvidia-smi --query-gpu=name,memory.used,memory.total,driver_version --format=csv || true
+cd "$TEAM/STAIR/selfLearnt/pipeline"
+echo "code $(git rev-parse HEAD)"
+source "$TEAM/venv/bin/activate"
+export STAIR_PROJECT_DIR="$TEAM/data" STAIR_STATUS_PUSH=0 HF_HUB_OFFLINE=1 VLLM_USE_FLASHINFER_SAMPLER=0 \
+  TOKENIZERS_PARALLELISM=false VLLM_WORKER_MULTIPROC_METHOD=spawn PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+args=(--config "$CONFIG" --stage "$STAGE")
+[ -n "${EXP:-}" ] && args+=(--exp "$EXP")
+[ -n "${SEED:-}" ] && args+=(--seed "$SEED")
+[ -n "${PART:-}" ] && args+=(--part "$PART")
+[ -n "${MODEL:-}" ] && args+=(--model "$MODEL")
+python run.py "${args[@]}"   # every stage resumes: resubmit the same job after a failure
