@@ -21,7 +21,7 @@ Outputs of the redo described in [the write-up](../../docs/experiments/2026-10-1
 | `common` (this one) | Experiment 7/9 expert caches for pair A (Qwen2.5-1.5B / 7B, nano-jev v1.0 retriever): `router_train`, `calib` and `test.parquet`, plus `config.toml`. Also the team-layout files below. | 42803, 42811, 42847 |
 | `common-judges` | Experiments 7 and 9, lenient labels. `eval/A/report{,-clean}.json` and `curves{,-clean}.csv`; `scores-{calib,test}.parquet` (every judge's per-question score, seeds included); `judges/<judge>/seed<k>/` (scores and `done.json`: training curve, timing); `zeroshot/`; `plan.toml` | 42812–42815, 42847 |
 | `common-judges-f1` | The same judges trained and evaluated on F1 labels, as a check | 42816, 42847 |
-| `exp8-common` | Experiment 8, the five-option System One judge (details below) | 42818–42846, 42848 |
+| `exp8-common` | Experiment 8, the five-option System One judge (details below) | 42818–42846, 42848, 42849 |
 
 The team-layout files in this folder (`stair_common.schema` and `stair_common.training`, checked by `validate`):
 

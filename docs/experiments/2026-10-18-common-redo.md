@@ -5,7 +5,7 @@
 These are the original experiments, rerun with the STAIR `common/` package so that our numbers can be compared
 directly with the rest of the team's.
 - The runs used `stair_common` at STAIR `main` `052ebe4`.
-- The final re-evaluations (jobs 42847 and 42848) used 0.2.0 (`c906e3d`). Its scoring and cost functions are the same;
+- The final re-evaluations (jobs 42847, 42848 and 42849) used 0.2.0 (`c906e3d`). Its scoring and cost functions are the same;
   only docstrings and the schema check changed.
 
 Original reports:
@@ -249,7 +249,8 @@ Mean AgentTTS units a question on test, each including nano-jev's ranking:
   - The experiment 8 reports' reference fields change, and so does their "on budget" operating point (25% of
     strong-everything: 232 units before, 78 now). This write-up doesn't use that point.
   - The AIQs and the near-best operating points depend on neither constant.
-  - The reports in `results/exp8-common` keep the old values until step 8.8 (CPU) is rerun.
+  - The reports in `results/exp8-common` were re-evaluated with the new constants (step 8.8, job 42849). Only those
+    fields changed: every AIQ, interval, curve and near-best point is identical.
 - **Original reports (2026-10-14 and 15):** their "% of 929" divides measured units by a Table 5 price. Their
   shares are about three times too small: the 70B's ~10% is 30%.
   - H3 (74.6 lenient at ≤ 25% of strong-everything) is still met: always-×40 is 0.746 at 22.9%.
@@ -382,4 +383,4 @@ All paths are on OMEGA under `~/Custom-LLM-Router`; the job IDs are logged in `r
 | Experiment 8 answers | 42818–42823, 42828, 42829 | `runs/exp8-common/answers/` |
 | Experiment 8 grader check, Eq. 8 recost, re-scoring | 42841, 42842, 42843 | `runs/exp8-common/rescore/`, `answers/summary.csv` |
 | Experiment 8 judges: lenient, graded, deciders | 42844, 42845, 42846 | `runs/exp8-common/judge-*/` |
-| Experiment 8 evaluation (baselines to the most accurate option, per-seed cost) | 42848 | `runs/exp8-common/judge-*/eval/report{,-clean}.json` |
+| Experiment 8 evaluation (baselines to the most accurate option, per-seed cost; then AgentTTS's reference costs) | 42848, 42849 | `runs/exp8-common/judge-*/eval/report{,-clean}.json` |
