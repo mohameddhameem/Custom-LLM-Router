@@ -133,7 +133,7 @@ EOF
     $BIN exp8-judge all --plan "${PLAN:-configs/exp8-judge.toml}" --exclude runs/exp8/nanojev_validation_ids.txt
     ;;
   exp8-rescore-validate)
-    $BIN rescore validate --grader "${GRADER:-Qwen/Qwen2.5-14B-Instruct}"
+    $BIN rescore validate --out "$EXP8_OUT" --grader "${GRADER:-Qwen/Qwen2.5-14B-Instruct}"
     ;;
   exp8-rescore)
     for split in ${SPLITS:-test calib router_train}; do
