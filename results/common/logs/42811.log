@@ -1,0 +1,124 @@
+job 42811.pbs-omega on a-11, step common-experts
+name, memory.used [MiB], memory.total [MiB], driver_version
+NVIDIA L40S, 14 MiB, 46068 MiB, 555.58.02
+   Building stair @ file:///storage/home/dhameem.m.2025/Custom-LLM-Router
+      Built stair @ file:///storage/home/dhameem.m.2025/Custom-LLM-Router
+Uninstalled 1 package in 10ms
+Installed 1 package in 60ms
+torch 2.14.1+cu126 NVIDIA L40S
+router_train: 11231 questions in 23 chunks | stages ['evidence']
+HTTP Request: GET https://huggingface.co/api/agent-harnesses "HTTP/1.1 200 OK"
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1705.52it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 10145.92it/s]
+  evidence chunk 1/23
+  evidence chunk 2/23
+  evidence chunk 3/23
+  evidence chunk 4/23
+  evidence chunk 5/23
+  evidence chunk 6/23
+  evidence chunk 7/23
+  evidence chunk 8/23
+  evidence chunk 9/23
+  evidence chunk 10/23
+  evidence chunk 11/23
+  evidence chunk 12/23
+  evidence chunk 13/23
+  evidence chunk 14/23
+  evidence chunk 15/23
+  evidence chunk 16/23
+  evidence chunk 17/23
+  evidence chunk 18/23
+  evidence chunk 19/23
+  evidence chunk 20/23
+  evidence chunk 21/23
+  evidence chunk 22/23
+  evidence chunk 23/23
+  cross-encoder pairs truncated: 3324/379778
+router_train: 11231 questions in 23 chunks | stages ['small']
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-1.5B-Instruct/989aa7980e4cf806f80c7fef2b1adb7bc71aa306/config.json?%2FQwen%2FQwen2.5-1.5B-Instruct%2Fresolve%2Fmain%2Fconfig.json=&etag=%22f81ead14ab072d65a07817f83a3ee0e5a1890d10%22 "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-1.5B-Instruct/989aa7980e4cf806f80c7fef2b1adb7bc71aa306/tokenizer_config.json?%2FQwen%2FQwen2.5-1.5B-Instruct%2Fresolve%2Fmain%2Ftokenizer_config.json=&etag=%2207bfe0640cb5a0037f9322287fbfc682806cf672%22 "HTTP/1.1 200 OK"
+HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen2.5-1.5B-Instruct/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen2.5-1.5B-Instruct/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen2.5-1.5B-Instruct "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-1.5B-Instruct/989aa7980e4cf806f80c7fef2b1adb7bc71aa306/config.json?%2FQwen%2FQwen2.5-1.5B-Instruct%2Fresolve%2Fmain%2Fconfig.json=&etag=%22f81ead14ab072d65a07817f83a3ee0e5a1890d10%22 "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-1.5B-Instruct/989aa7980e4cf806f80c7fef2b1adb7bc71aa306/config.json?%2FQwen%2FQwen2.5-1.5B-Instruct%2Fresolve%2Fmain%2Fconfig.json=&etag=%22f81ead14ab072d65a07817f83a3ee0e5a1890d10%22 "HTTP/1.1 200 OK"
+Loading weights:   0%|          | 0/338 [00:00<?, ?it/s]Loading weights:   6%|▌         | 20/338 [00:00<00:01, 190.35it/s]Loading weights:  16%|█▋        | 55/338 [00:00<00:01, 265.39it/s]Loading weights:  24%|██▍       | 82/338 [00:00<00:01, 201.89it/s]Loading weights:  33%|███▎      | 113/338 [00:00<00:01, 223.09it/s]Loading weights:  41%|████      | 137/338 [00:00<00:01, 171.14it/s]Loading weights:  46%|████▌     | 156/338 [00:00<00:01, 169.09it/s]Loading weights:  52%|█████▏    | 175/338 [00:01<00:01, 94.17it/s] Loading weights:  65%|██████▌   | 220/338 [00:01<00:00, 144.76it/s]Loading weights:  71%|███████▏  | 241/338 [00:01<00:00, 145.77it/s]Loading weights:  77%|███████▋  | 260/338 [00:01<00:00, 131.22it/s]Loading weights:  83%|████████▎ | 282/338 [00:01<00:00, 120.84it/s]Loading weights:  88%|████████▊ | 297/338 [00:02<00:00, 99.70it/s] Loading weights: 100%|██████████| 338/338 [00:02<00:00, 153.46it/s]
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct/resolve/main/generation_config.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-1.5B-Instruct/989aa7980e4cf806f80c7fef2b1adb7bc71aa306/generation_config.json?%2FQwen%2FQwen2.5-1.5B-Instruct%2Fresolve%2Fmain%2Fgeneration_config.json=&etag=%22dfc11073787daf1b0f9c0f1499487ab5f4c93738%22 "HTTP/1.1 200 OK"
+  small chunk 1/23: 0.023 s/question
+  small chunk 2/23: 0.019 s/question
+  small chunk 3/23: 0.021 s/question
+  small chunk 4/23: 0.019 s/question
+  small chunk 5/23: 0.019 s/question
+  small chunk 6/23: 0.020 s/question
+  small chunk 7/23: 0.020 s/question
+  small chunk 8/23: 0.019 s/question
+  small chunk 9/23: 0.020 s/question
+  small chunk 10/23: 0.019 s/question
+  small chunk 11/23: 0.020 s/question
+  small chunk 12/23: 0.020 s/question
+  small chunk 13/23: 0.019 s/question
+  small chunk 14/23: 0.018 s/question
+  small chunk 15/23: 0.019 s/question
+  small chunk 16/23: 0.020 s/question
+  small chunk 17/23: 0.019 s/question
+  small chunk 18/23: 0.020 s/question
+  small chunk 19/23: 0.021 s/question
+  small chunk 20/23: 0.020 s/question
+  small chunk 21/23: 0.021 s/question
+  small chunk 22/23: 0.021 s/question
+  small chunk 23/23: 0.020 s/question
+router_train: 11231 questions in 23 chunks | stages ['large']
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-7B-Instruct/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-7B-Instruct/a09a35458c702b33eeacc393d103063234e8bc28/config.json?%2FQwen%2FQwen2.5-7B-Instruct%2Fresolve%2Fmain%2Fconfig.json=&etag=%220178295f88afc3c7f279ed284f961f8c1be00654%22 "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-7B-Instruct/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-7B-Instruct/a09a35458c702b33eeacc393d103063234e8bc28/tokenizer_config.json?%2FQwen%2FQwen2.5-7B-Instruct%2Fresolve%2Fmain%2Ftokenizer_config.json=&etag=%2207bfe0640cb5a0037f9322287fbfc682806cf672%22 "HTTP/1.1 200 OK"
+HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen2.5-7B-Instruct/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen2.5-7B-Instruct/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen2.5-7B-Instruct "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-7B-Instruct/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-7B-Instruct/a09a35458c702b33eeacc393d103063234e8bc28/config.json?%2FQwen%2FQwen2.5-7B-Instruct%2Fresolve%2Fmain%2Fconfig.json=&etag=%220178295f88afc3c7f279ed284f961f8c1be00654%22 "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-7B-Instruct/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-7B-Instruct/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-7B-Instruct/a09a35458c702b33eeacc393d103063234e8bc28/config.json?%2FQwen%2FQwen2.5-7B-Instruct%2Fresolve%2Fmain%2Fconfig.json=&etag=%220178295f88afc3c7f279ed284f961f8c1be00654%22 "HTTP/1.1 200 OK"
+Loading weights:   0%|          | 0/339 [00:00<?, ?it/s]Loading weights:   1%|          | 4/339 [00:00<00:09, 36.96it/s]Loading weights:  12%|█▏        | 41/339 [00:00<00:01, 173.18it/s]Loading weights:  19%|█▉        | 64/339 [00:00<00:01, 144.00it/s]Loading weights:  24%|██▎       | 80/339 [00:00<00:01, 145.76it/s]Loading weights:  33%|███▎      | 113/339 [00:00<00:01, 180.33it/s]Loading weights:  42%|████▏     | 141/339 [00:00<00:01, 141.44it/s]Loading weights:  49%|████▉     | 167/339 [00:01<00:01, 161.62it/s]Loading weights:  55%|█████▍    | 185/339 [00:01<00:01, 125.61it/s]Loading weights:  69%|██████▉   | 234/339 [00:01<00:00, 185.95it/s]Loading weights:  76%|███████▌  | 256/339 [00:01<00:00, 142.97it/s]Loading weights:  82%|████████▏ | 279/339 [00:01<00:00, 140.25it/s]Loading weights:  91%|█████████ | 307/339 [00:02<00:00, 121.87it/s]Loading weights: 100%|██████████| 339/339 [00:02<00:00, 154.68it/s]
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-7B-Instruct/resolve/main/generation_config.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-7B-Instruct/a09a35458c702b33eeacc393d103063234e8bc28/generation_config.json?%2FQwen%2FQwen2.5-7B-Instruct%2Fresolve%2Fmain%2Fgeneration_config.json=&etag=%220eb3c536657dcd12626e09eca4b6198c0cbcde1e%22 "HTTP/1.1 200 OK"
+  large chunk 1/23: 0.242 s/question
+  large chunk 2/23: 0.238 s/question
+  large chunk 3/23: 0.233 s/question
+  large chunk 4/23: 0.230 s/question
+  large chunk 5/23: 0.238 s/question
+  large chunk 6/23: 0.230 s/question
+  large chunk 7/23: 0.248 s/question
+  large chunk 8/23: 0.239 s/question
+  large chunk 9/23: 0.248 s/question
+  large chunk 10/23: 0.239 s/question
+  large chunk 11/23: 0.235 s/question
+  large chunk 12/23: 0.234 s/question
+  large chunk 13/23: 0.241 s/question
+  large chunk 14/23: 0.240 s/question
+  large chunk 15/23: 0.242 s/question
+  large chunk 16/23: 0.231 s/question
+  large chunk 17/23: 0.241 s/question
+  large chunk 18/23: 0.239 s/question
+  large chunk 19/23: 0.245 s/question
+  large chunk 20/23: 0.237 s/question
+  large chunk 21/23: 0.245 s/question
+  large chunk 22/23: 0.250 s/question
+  large chunk 23/23: 0.248 s/question
+router_train: 11231 questions in 23 chunks | stages ['merge']
+  small: EM 0.626 F1 0.707 cost 342 sec/q 0.020
+  large: EM 0.696 F1 0.779 cost 1480 sec/q 0.240
+  gold pair in top-2: 0.768 | questions with a truncated scorer input: 0.118
+Saved runs/common/router_train.parquet

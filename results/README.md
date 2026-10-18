@@ -20,6 +20,10 @@ headline numbers are in [docs/experiments.md](../docs/experiments.md).
 | `exp8-phase2c` | 8, re-scoring: the five-option judge on graded labels (GPU, 17 min) | `configs/exp8-judge-graded.toml` |
 | `exp8-phase2b` | 8, part 2: the same judge with five options (adds 3B x20 and x40 fused) and its evaluation (GPU, 17 min) | `configs/exp8-judge.toml` |
 | `exp8-phase1` | 8, phase 1: seven answering cells (Llama-3.2-3B incl. 10/20/40 samples fused, Llama-3.1-70B 4-bit) on nano-jev top-k passages; per-question answers, scores and job logs (GPU) | `configs/exp8.toml` |
+| `common` | 7–9 on the team's common standard: pair A's expert caches on the common splits, the team-layout results file and loss curves; [its README](common/README.md) covers the next three folders too | `configs/system-one-common.toml` |
+| `common-judges` | 7 and 9 on the common standard: nano-jev and Strands Decider judges, lenient labels | `configs/system-one-common.toml` |
+| `common-judges-f1` | The same on F1 labels (check) | `configs/system-one-common-f1.toml` |
+| `exp8-common` | 8 on the common standard: answers recosted under AgentTTS Eq. 8, grades, and the option judges (nano-jev, deciders) | `configs/exp8-common.toml`, `configs/exp8-judge*-common.toml` |
 
 Each folder has:
 

@@ -1,0 +1,60 @@
+job 42823.pbs-omega on a-11, step exp8-answer
+name, memory.used [MiB], memory.total [MiB], driver_version
+NVIDIA L40S, 14 MiB, 46068 MiB, 555.58.02
+torch 2.14.1+cu126 NVIDIA L40S
+calib/llama3b-s40fuse-top5: 500 questions, 10 of 10 chunks to run
+Loading weights:   0%|          | 0/254 [00:00<?, ?it/s]Loading weights: 100%|██████████| 254/254 [00:00<00:00, 10977.36it/s]
+[transformers] Ignoring clean_up_tokenization_spaces=True for BPE tokenizer TokenizersBackend. The clean_up_tokenization post-processing step is designed for WordPiece tokenizers and is destructive for BPE (it strips spaces before punctuation). Set clean_up_tokenization_spaces=False to suppress this warning, or set clean_up_tokenization_spaces_for_bpe_even_though_it_will_corrupt_output=True to force cleanup anyway.
+  chunk 1/10: 14.69 s/question
+  chunk 2/10: 13.15 s/question
+  chunk 3/10: 14.14 s/question
+  chunk 4/10: 15.34 s/question
+  chunk 5/10: 14.98 s/question
+  chunk 6/10: 14.80 s/question
+  chunk 7/10: 12.68 s/question
+  chunk 8/10: 13.93 s/question
+  chunk 9/10: 14.52 s/question
+  chunk 10/10: 15.56 s/question
+router_train/llama3b-s40fuse-top5: 1000 questions, 20 of 20 chunks to run
+Loading weights:   0%|          | 0/254 [00:00<?, ?it/s]Loading weights: 100%|██████████| 254/254 [00:00<00:00, 12358.23it/s]
+[transformers] Ignoring clean_up_tokenization_spaces=True for BPE tokenizer TokenizersBackend. The clean_up_tokenization post-processing step is designed for WordPiece tokenizers and is destructive for BPE (it strips spaces before punctuation). Set clean_up_tokenization_spaces=False to suppress this warning, or set clean_up_tokenization_spaces_for_bpe_even_though_it_will_corrupt_output=True to force cleanup anyway.
+  chunk 1/20: 14.33 s/question
+  chunk 2/20: 14.98 s/question
+  chunk 3/20: 12.99 s/question
+  chunk 4/20: 13.94 s/question
+  chunk 5/20: 13.36 s/question
+  chunk 6/20: 14.54 s/question
+  chunk 7/20: 13.46 s/question
+  chunk 8/20: 13.57 s/question
+  chunk 9/20: 13.11 s/question
+  chunk 10/20: 14.44 s/question
+  chunk 11/20: 14.73 s/question
+  chunk 12/20: 13.63 s/question
+  chunk 13/20: 13.00 s/question
+  chunk 14/20: 13.22 s/question
+  chunk 15/20: 12.82 s/question
+  chunk 16/20: 14.20 s/question
+  chunk 17/20: 14.30 s/question
+  chunk 18/20: 14.44 s/question
+  chunk 19/20: 14.12 s/question
+  chunk 20/20: 13.78 s/question
+
+       split                 cell    n  lenient    em    f1  short_em  short_f1   units     gflops  s_per_q  pct_of_agenttts_ss
+       calib llama3b-s10fuse-top5  500    0.764 0.000 0.018     0.000     0.064  65.030  74914.007   10.859               7.000
+       calib llama3b-s20fuse-top5  500    0.762 0.000 0.020     0.000     0.070 117.382 135223.782   17.557              12.635
+       calib llama3b-s40fuse-top5  500    0.772 0.000 0.024     0.000     0.080 221.656 255347.247   14.261              23.860
+       calib         llama3b-top5  500    0.620 0.000 0.056     0.000     0.043   7.333   8447.837    0.761               0.789
+       calib               oracle  500    0.848   NaN   NaN       NaN       NaN  25.525        NaN      NaN               2.748
+router_train llama3b-s10fuse-top5 1000    0.790 0.000 0.017     0.000     0.059  60.786  70025.447   10.107               6.543
+router_train llama3b-s20fuse-top5 1000    0.806 0.000 0.018     0.000     0.066 109.494 126136.536   16.194              11.786
+router_train llama3b-s40fuse-top5 1000    0.800 0.000 0.021     0.000     0.076 206.679 238094.056   13.731              22.247
+router_train         llama3b-top5 1000    0.676 0.000 0.059     0.000     0.040   6.754   7780.851    0.718               0.727
+router_train               oracle 1000    0.862   NaN   NaN       NaN       NaN  20.586        NaN      NaN               2.216
+        test llama3b-s10fuse-top5  500    0.726 0.000 0.019     0.000     0.070  64.689  74521.475   10.561               6.963
+        test llama3b-s20fuse-top5  500    0.736 0.000 0.021     0.000     0.072 116.324 134005.151   17.072              12.521
+        test llama3b-s40fuse-top5  500    0.756 0.000 0.024     0.000     0.081 219.826 253239.124   14.389              23.663
+        test         llama3b-top3  500    0.584 0.000 0.064     0.000     0.038   5.912   6810.596    0.527               0.636
+        test         llama3b-top5  500    0.608 0.000 0.056     0.000     0.044   7.342   8458.379    0.806               0.790
+        test        llama70b-top3  500    0.628 0.002 0.126     0.002     0.124  63.661  73337.924    3.160               6.853
+        test        llama70b-top5  500    0.680 0.000 0.128     0.000     0.127  93.636 107868.384    3.729              10.079
+        test               oracle  500    0.862   NaN   NaN       NaN       NaN  21.957        NaN      NaN               2.364

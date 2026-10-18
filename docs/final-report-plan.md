@@ -22,6 +22,7 @@ Experiment 7 answers it.
 | 4.3 The experts matter | Distractors hurt the 7B: top 3 and top 5 are better and cheaper. A 14B widens the gap. A 3B small model is hardly better | [Experiments 3–5](experiments/2026-10-06-experiments-3-5.md) |
 | 4.4 Multi-stage cascade | 1.5B → 7B (top 3) → 14B beats always-14B at 32% of its cost | [Experiment 6](experiments/2026-10-06-multi-stage-cascade.md) |
 | **4.5 System One router (main result)** | RQ1 zero-shot judges; RQ2 input ablation; RQ3 label; RQ4 pretraining; RQ5 transfer; RQ6 judge cost | Experiment 7: design in [system-one-router.md](system-one-router.md), results in [experiments/2026-10-07-system-one-router.md](experiments/2026-10-07-system-one-router.md) and `results/system-one/` |
+| 4.6 On the team's common standard; larger judges; more options | Experiments 7 and 9 on the shared splits, lenient labels and AgentTTS units, with each judge's own cost. Experiment 8: choosing among five answer options (3B with 1 to 40 samples fused, 70B) | [experiments/2026-10-18-common-redo.md](experiments/2026-10-18-common-redo.md), `results/common*/`, `results/exp8-common/` |
 | 5. Comparison with published results | Answer EM/F1 against the HotpotQA baseline, LLM few-shot CoT and fine-tuned readers, with the comparability caveats | [experiments.md](experiments.md) |
 | 6. Discussion and limitations | Oracle headroom; HotpotQA shortcuts; label proxy (τ); contamination handling; cost accounting (scorer, separate calls); the Jev guide is not peer-reviewed | All write-ups' caveat sections |
 | 7. Future work | Fine-tuned readers or chain-of-thought to pass GPT-3.5; MuSiQue / 2Wiki transfer; conformal risk control | [research-report.md](research-report.md) |
@@ -36,3 +37,13 @@ Experiment 7 answers it.
 | **System One router (main result, pair A)** | Judge qp, deciding before the small model: AIQ 0.673. It beats entropy (0.662, CI [+0.006, +0.016]) and the matched "before" LR router (0.665, CI [+0.004, +0.011]), and ties the best cascade LR router (0.672) at 3% of the small model's cost. 18% cheaper than that LR router at the same F1. Lowest CPT 80% (5,380 GFLOPs) | [Experiment 7](experiments/2026-10-07-system-one-router.md) |
 | RQ answers | RQ1: zero-shot ties entropy. RQ2: the passages carry the signal (qp ≈ qpa ≫ q, qa). RQ3: large-helps > small-fails. RQ4: nano-jev pretraining > MS MARCO (+0.013). RQ5: qp transfers across pairs within 0.004. RQ6: 3% cost, AIQ −0.0001 | [Experiment 7](experiments/2026-10-07-system-one-router.md) |
 | Against published results | Beats the HotpotQA baseline (58.3 F1), Llama-2-70B and Mixtral few-shot CoT (67.7 / 68.1). Below GPT-3.5 CoT (77.2) | [experiments.md](experiments.md) |
+
+## Headline numbers on the common standard (test = dev[500:1000], 500 questions, lenient, AgentTTS units)
+
+| Claim | Number | Source |
+|---|---|---|
+| Decider qpa judge (2B or E4B, one seed), with its own cost | AIQ 0.724. Beats entropy (0.697; all six seeds' intervals above 0, e.g. [+0.009, +0.051]) and the nano-jev judges (about +0.03). Ties the best LR cascade router (0.706; 5 of 6 intervals touch 0) | [Common redo](experiments/2026-10-18-common-redo.md) |
+| nano-jev judges (experiment 7) | qp 0.696, qpa 0.698: tie entropy and the LR routers on 500 questions | [Common redo](experiments/2026-10-18-common-redo.md) |
+| Mean of 3 seeds vs one judge | The E4B mean scores 0.740 before cost, but 0.708 with its three passes (ties entropy). One judge is the better deployment | [Common redo](experiments/2026-10-18-common-redo.md) |
+| Experiment 8, cheapest strong option | 3B ×40 fused: lenient 0.746 (equal to AgentTTS) at 71 units under AgentTTS Eq. 8, below the 70B (0.670, 94 units) | [Common redo](experiments/2026-10-18-common-redo.md) |
+| Experiment 8, option judge | nano-jev qpa 0.714: ties the best fixed mix (0.716), beats entropy [+0.008, +0.044]. On the LLM grade it beats the fixed mix but ties entropy. Deciders don't help with five options | [Common redo](experiments/2026-10-18-common-redo.md) |

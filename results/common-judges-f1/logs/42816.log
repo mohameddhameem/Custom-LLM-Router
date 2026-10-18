@@ -1,0 +1,91 @@
+job 42816.pbs-omega on a-11, step common-judges
+name, memory.used [MiB], memory.total [MiB], driver_version
+NVIDIA L40S, 14 MiB, 46068 MiB, 555.58.02
+torch 2.14.1+cu126 NVIDIA L40S
+train qp-large-helps-nanojev-A seed 0
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1665.48it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11807.16it/s]
+    epoch 1: train loss 0.4367 dev NLL 0.4160
+    epoch 2: train loss 0.3783 dev NLL 0.4320
+    epoch 3: train loss 0.3107 dev NLL 0.5180
+Writing model shards:   0%|          | 0/1 [00:00<?, ?it/s]Writing model shards: 100%|██████████| 1/1 [00:00<00:00,  3.54it/s]Writing model shards: 100%|██████████| 1/1 [00:00<00:00,  3.54it/s]
+train qp-large-helps-nanojev-A seed 1
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1703.96it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 10499.86it/s]
+    epoch 1: train loss 0.4387 dev NLL 0.4027
+    epoch 2: train loss 0.3745 dev NLL 0.4271
+    epoch 3: train loss 0.2990 dev NLL 0.4890
+Writing model shards:   0%|          | 0/1 [00:00<?, ?it/s]Writing model shards: 100%|██████████| 1/1 [00:00<00:00,  3.93it/s]Writing model shards: 100%|██████████| 1/1 [00:00<00:00,  3.92it/s]
+train qp-large-helps-nanojev-A seed 2
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1913.90it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 10893.45it/s]
+    epoch 1: train loss 0.4370 dev NLL 0.4280
+    epoch 2: train loss 0.3758 dev NLL 0.4350
+    epoch 3: train loss 0.3041 dev NLL 0.5087
+Writing model shards:   0%|          | 0/1 [00:00<?, ?it/s]Writing model shards: 100%|██████████| 1/1 [00:00<00:00,  3.65it/s]Writing model shards: 100%|██████████| 1/1 [00:00<00:00,  3.65it/s]
+train qpa-large-helps-nanojev-A seed 0
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1729.25it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 10962.29it/s]
+    epoch 1: train loss 0.4482 dev NLL 0.4086
+    epoch 2: train loss 0.3746 dev NLL 0.4407
+    epoch 3: train loss 0.3057 dev NLL 0.4983
+Writing model shards:   0%|          | 0/1 [00:00<?, ?it/s]Writing model shards: 100%|██████████| 1/1 [00:00<00:00,  3.83it/s]Writing model shards: 100%|██████████| 1/1 [00:00<00:00,  3.83it/s]
+train qpa-large-helps-nanojev-A seed 1
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1621.07it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 10936.98it/s]
+    epoch 1: train loss 0.4442 dev NLL 0.4092
+    epoch 2: train loss 0.3720 dev NLL 0.4096
+    epoch 3: train loss 0.2917 dev NLL 0.4745
+Writing model shards:   0%|          | 0/1 [00:00<?, ?it/s]Writing model shards: 100%|██████████| 1/1 [00:00<00:00,  3.98it/s]Writing model shards: 100%|██████████| 1/1 [00:00<00:00,  3.97it/s]
+train qpa-large-helps-nanojev-A seed 2
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1778.28it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11624.98it/s]
+    epoch 1: train loss 0.4451 dev NLL 0.4358
+    epoch 2: train loss 0.3674 dev NLL 0.4264
+    epoch 3: train loss 0.2817 dev NLL 0.5044
+Writing model shards:   0%|          | 0/1 [00:00<?, ?it/s]Writing model shards: 100%|██████████| 1/1 [00:00<00:00,  3.82it/s]Writing model shards: 100%|██████████| 1/1 [00:00<00:00,  3.82it/s]
+train qpa-large-helps-strands-decider-2b-hobson-v21-A seed 0
+HTTP Request: GET https://huggingface.co/api/models/StrandsAgents/strands-decider-2B-hobson-v21/revision/main "HTTP/1.1 200 OK"
+Fetching 27 files:   0%|          | 0/27 [00:00<?, ?it/s]Fetching 27 files: 100%|██████████| 27/27 [00:00<00:00, 2796.00it/s]
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen3.5-2B-Base/resolve/b1485b2fa6dfa1287294f269f5fb618e03d52d7c/model.safetensors "HTTP/1.1 404 Not Found"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 10658.88it/s]
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen3.5-2B-Base/resolve/b1485b2fa6dfa1287294f269f5fb618e03d52d7c/generation_config.json "HTTP/1.1 404 Not Found"
+[transformers] `causal_conv1d_fn` is falling back to its reference PyTorch implementation because `causal_conv1d` is not installed. This is correct but much slower; install `causal_conv1d` for the optimized kernel.
+    epoch 1: train loss 0.3747 dev NLL 0.3231
+    epoch 2: train loss 0.2143 dev NLL 0.3885
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen3.5-2B-Base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen3.5-2B-Base/b1485b2fa6dfa1287294f269f5fb618e03d52d7c/config.json?%2FQwen%2FQwen3.5-2B-Base%2Fresolve%2Fmain%2Fconfig.json=&etag=%22d30a15be1bbfd610f58ad80f1fbeb6778f58a80f%22 "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen3.5-2B-Base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen3.5-2B-Base/b1485b2fa6dfa1287294f269f5fb618e03d52d7c/config.json?%2FQwen%2FQwen3.5-2B-Base%2Fresolve%2Fmain%2Fconfig.json=&etag=%22d30a15be1bbfd610f58ad80f1fbeb6778f58a80f%22 "HTTP/1.1 200 OK"
+train qpa-large-helps-strands-decider-2b-hobson-v21-A seed 1
+HTTP Request: GET https://huggingface.co/api/models/StrandsAgents/strands-decider-2B-hobson-v21/revision/main "HTTP/1.1 200 OK"
+Fetching 27 files:   0%|          | 0/27 [00:00<?, ?it/s]Fetching 27 files: 100%|██████████| 27/27 [00:00<00:00, 2708.79it/s]
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen3.5-2B-Base/resolve/b1485b2fa6dfa1287294f269f5fb618e03d52d7c/model.safetensors "HTTP/1.1 404 Not Found"
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 11462.39it/s]
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen3.5-2B-Base/resolve/b1485b2fa6dfa1287294f269f5fb618e03d52d7c/generation_config.json "HTTP/1.1 404 Not Found"
+    epoch 1: train loss 0.3734 dev NLL 0.3210
+    epoch 2: train loss 0.2139 dev NLL 0.3781
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen3.5-2B-Base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen3.5-2B-Base/b1485b2fa6dfa1287294f269f5fb618e03d52d7c/config.json?%2FQwen%2FQwen3.5-2B-Base%2Fresolve%2Fmain%2Fconfig.json=&etag=%22d30a15be1bbfd610f58ad80f1fbeb6778f58a80f%22 "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen3.5-2B-Base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen3.5-2B-Base/b1485b2fa6dfa1287294f269f5fb618e03d52d7c/config.json?%2FQwen%2FQwen3.5-2B-Base%2Fresolve%2Fmain%2Fconfig.json=&etag=%22d30a15be1bbfd610f58ad80f1fbeb6778f58a80f%22 "HTTP/1.1 200 OK"
+train qpa-large-helps-strands-decider-2b-hobson-v21-A seed 2
+HTTP Request: GET https://huggingface.co/api/models/StrandsAgents/strands-decider-2B-hobson-v21/revision/main "HTTP/1.1 200 OK"
+Fetching 27 files:   0%|          | 0/27 [00:00<?, ?it/s]Fetching 27 files: 100%|██████████| 27/27 [00:00<00:00, 2603.00it/s]
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen3.5-2B-Base/resolve/b1485b2fa6dfa1287294f269f5fb618e03d52d7c/model.safetensors "HTTP/1.1 404 Not Found"
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 11601.20it/s]
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen3.5-2B-Base/resolve/b1485b2fa6dfa1287294f269f5fb618e03d52d7c/generation_config.json "HTTP/1.1 404 Not Found"
+    epoch 1: train loss 0.3738 dev NLL 0.3216
+    epoch 2: train loss 0.2094 dev NLL 0.4070
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen3.5-2B-Base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen3.5-2B-Base/b1485b2fa6dfa1287294f269f5fb618e03d52d7c/config.json?%2FQwen%2FQwen3.5-2B-Base%2Fresolve%2Fmain%2Fconfig.json=&etag=%22d30a15be1bbfd610f58ad80f1fbeb6778f58a80f%22 "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen3.5-2B-Base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen3.5-2B-Base/b1485b2fa6dfa1287294f269f5fb618e03d52d7c/config.json?%2FQwen%2FQwen3.5-2B-Base%2Fresolve%2Fmain%2Fconfig.json=&etag=%22d30a15be1bbfd610f58ad80f1fbeb6778f58a80f%22 "HTTP/1.1 200 OK"

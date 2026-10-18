@@ -1,0 +1,12 @@
+prepare 42803.pbs-omega experts 42804.pbs-omega
+zeroshot 42805.pbs-omega nanojev 42806.pbs-omega dec2b 42807.pbs-omega decE4B 42808.pbs-omega f1 42809.pbs-omega eval 42810.pbs-omega
+experts 42811.pbs-omega zeroshot 42812.pbs-omega nanojev 42813.pbs-omega dec2b 42814.pbs-omega decE4B 42815.pbs-omega f1 42816.pbs-omega eval 42817.pbs-omega
+exp8c pools 42818.pbs-omega score 42819.pbs-omega answers 42820.pbs-omega 42821.pbs-omega 42822.pbs-omega 42823.pbs-omega
+exp8c retry 3b-top5 42828.pbs-omega 70b-top5(2 GPU) 42829.pbs-omega
+common-eval with-cost bootstrap 42830.pbs-omega
+common-eval loss curves 42831.pbs-omega
+exp8 8.4 rescore 42832.pbs-omega 8.5 judge 42833.pbs-omega 8.6 graded 42834.pbs-omega 8.7 decider 42835.pbs-omega
+exp8 retry (42832 lacked validation): 8.4a validate 42836.pbs-omega 8.4 rescore 42837.pbs-omega 8.6 graded 42838.pbs-omega 8.7 decider 42839.pbs-omega
+exp8 retry 2 (42836 needed 2 GPUs for the 70B): 8.4a validate 42841.pbs-omega
+exp8 Eq. 8 chain: 8.3b recost 42842.pbs-omega (after 42841.pbs-omega) 8.4 rescore 42843.pbs-omega (2 GPU) 8.5 judge 42844.pbs-omega 8.6 graded 42845.pbs-omega 8.7 decider 42846.pbs-omega; old 8.5 judges -> judge-5opt-prompt-per-sample
+re-eval (seed mean pays every pass, per-seed with cost, exp8 baselines to the most accurate option): 6 common-eval 42847.pbs-omega 8.8 exp8-eval 42848.pbs-omega

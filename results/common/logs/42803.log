@@ -1,0 +1,9 @@
+job 42803.pbs-omega on a-4 (CPU, queue short), step common-prepare
+   Building stair @ file:///storage/home/dhameem.m.2025/Custom-LLM-Router
+      Built stair @ file:///storage/home/dhameem.m.2025/Custom-LLM-Router
+Uninstalled 1 package in 10ms
+Installed 1 package in 49ms
+standard splits: router_train 11231 (dropped 769 excluded), calib 500 (dev[0:500]), test 500 (dev[500:1000])
+Saved data/hotpotqa/splits-common.json
+runs/common/calib.parquet: 500 rows from runs/gpu/test.parquet
+runs/common/test.parquet: 500 rows from runs/gpu/test.parquet
