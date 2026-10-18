@@ -9,7 +9,7 @@
 # The Llama models are gated: accept the licences on huggingface.co and `huggingface-cli login` first.
 out = "runs/exp8-common"
 seed = 0
-agenttts_strong_units = 929   # 72B retrieval (814) + 70B answering (115), AgentTTS Table 5 prices
+agenttts_strong_units = 311   # 72B retrieval (272) + 70B answering (39), at AgentTTS's Table 4 lengths (not Table 5's 929)
 
 [[cells]]
 name = "llama3b-top3"

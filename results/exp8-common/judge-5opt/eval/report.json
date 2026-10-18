@@ -8,15 +8,15 @@
   "small model, forty samples fused",
   "large model, one answer"
  ],
- "budget_units": 232.25,
- "strong_units": 929,
+ "budget_units": 77.75,
+ "strong_units": 311,
  "baseline_options": [
   "small model, one answer",
   "small model, forty samples fused"
  ],
  "agenttts": {
   "lenient": 0.746,
-  "units": 938
+  "units": 302
  },
  "always": [
   {
@@ -66,14 +66,14 @@
   "entropy threshold": {
    "budget": {
     "calib": {
-     "rate": 1.0,
-     "f1": 0.76,
-     "cost": 79.098974426389
+     "rate": 0.95,
+     "f1": 0.754,
+     "cost": 76.61503542430563
     },
     "test": {
-     "rate": 1.0,
-     "f1": 0.746,
-     "cost": 78.44138173194447
+     "rate": 0.95,
+     "f1": 0.74,
+     "cost": 75.46632709791669
     }
    },
    "near_best": {
@@ -118,14 +118,14 @@
   "LR evidence+answer (after)": {
    "budget": {
     "calib": {
-     "rate": 1.0,
-     "f1": 0.76,
-     "cost": 79.09897442638889
+     "rate": 0.95,
+     "f1": 0.758,
+     "cost": 75.06254767638889
     },
     "test": {
-     "rate": 1.0,
-     "f1": 0.746,
-     "cost": 78.44138173194447
+     "rate": 0.95,
+     "f1": 0.732,
+     "cost": 75.03872481736111
     }
    },
    "near_best": {

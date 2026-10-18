@@ -8,15 +8,15 @@
   "small model, forty samples fused",
   "large model, one answer"
  ],
- "budget_units": 232.25,
- "strong_units": 929,
+ "budget_units": 77.75,
+ "strong_units": 311,
  "baseline_options": [
   "small model, one answer",
   "large model, one answer"
  ],
  "agenttts": {
   "lenient": 0.746,
-  "units": 938
+  "units": 302
  },
  "always": [
   {
@@ -66,14 +66,14 @@
   "entropy threshold": {
    "budget": {
     "calib": {
-     "rate": 1.0,
-     "f1": 0.74,
-     "cost": 104.14420425277774
+     "rate": 0.7,
+     "f1": 0.708,
+     "cost": 74.84441848124997
     },
     "test": {
-     "rate": 1.0,
-     "f1": 0.748,
-     "cost": 103.494269475
+     "rate": 0.7,
+     "f1": 0.72,
+     "cost": 74.88906578125001
     }
    },
    "near_best": {
@@ -92,14 +92,14 @@
   "LR evidence (before)": {
    "budget": {
     "calib": {
-     "rate": 1.0,
-     "f1": 0.74,
-     "cost": 96.68012714374997
+     "rate": 0.75,
+     "f1": 0.696,
+     "cost": 73.62213992152776
     },
     "test": {
-     "rate": 1.0,
-     "f1": 0.748,
-     "cost": 96.01899064027768
+     "rate": 0.75,
+     "f1": 0.688,
+     "cost": 73.3997780013889
     }
    },
    "near_best": {
@@ -118,14 +118,14 @@
   "LR evidence+answer (after)": {
    "budget": {
     "calib": {
-     "rate": 1.0,
-     "f1": 0.74,
-     "cost": 104.14420425277771
+     "rate": 0.7,
+     "f1": 0.714,
+     "cost": 74.74294224236105
     },
     "test": {
-     "rate": 1.0,
-     "f1": 0.748,
-     "cost": 103.494269475
+     "rate": 0.7,
+     "f1": 0.722,
+     "cost": 75.07436231527775
     }
    },
    "near_best": {
@@ -144,14 +144,14 @@
   "judge qp": {
    "budget": {
     "calib": {
-     "t": 0.98,
-     "f1": 0.74,
-     "cost": 97.09591435
+     "t": 0.9400000000000001,
+     "f1": 0.652,
+     "cost": 75.98306021805556
     },
     "test": {
-     "t": 0.98,
-     "f1": 0.748,
-     "cost": 96.4344695923611
+     "t": 0.9400000000000001,
+     "f1": 0.668,
+     "cost": 76.12089903680555
     }
    },
    "near_best": {
@@ -170,14 +170,14 @@
   "judge qpa": {
    "budget": {
     "calib": {
-     "t": 1.0,
-     "f1": 0.74,
-     "cost": 97.10459278333333
+     "t": 0.97,
+     "f1": 0.686,
+     "cost": 77.38368333888889
     },
     "test": {
-     "t": 1.0,
-     "f1": 0.748,
-     "cost": 96.44325100902776
+     "t": 0.97,
+     "f1": 0.682,
+     "cost": 74.8637212173611
     }
    },
    "near_best": {

@@ -13,15 +13,18 @@ init = "StrandsAgents/strands-decider-2B-hobson-v21"
 metric = "correct"                # LLM grader on the self-committed answer; "commit_em" for its official EM; "lenient" for the old scorer
 rescore_dir = "runs/exp8-common/rescore"
 state_k = 5                       # nano-jev passages in the judge's state (the cells read the top 5)
-strong_units = 929                # AgentTTS's strong-everything cost: 72B retrieval (814) + 70B answering (115)
+strong_units = 311                # AgentTTS's strong-everything cost: 72B retrieval (272) + 70B answering (39)
 budget_fraction = 0.25            # RQ8: at most 25% of strong-everything
 max_drop = 0.01                   # the "near best" operating point: cheapest within this much of the best calib accuracy
 bootstrap = 1000
 # AgentTTS's recipe on its 500 test questions: LENIENT accuracy as re-scored by the team (not comparable with the
-# graded metric above; kept for reference only), and its cost
-# (about 101% of strong-everything on the team's slide; a lower bound, since its fusion reads ~26k tokens).
+# graded metric above; kept for reference only), and its cost under Eq. 8: 72B retrieval (272) + 40 sampled 3B
+# answers from one prompt (15) + a 3B fusion call reading them (15) = 302, 97% of strong-everything. Both costs are at
+# AgentTTS's own token lengths (Table 4), so they are lower bounds: its retriever reads the whole 100-passage pool and
+# its fuser repeats it. Table 5's prices (814, 115, 3) are AgentTTS's normalised budget, 3u - 2 for a call of u units,
+# so the team slide's 929 and 937 are on that scale, not this one.
 agenttts_lenient = 0.746
-agenttts_units = 938
+agenttts_units = 302
 
 # Options, ordered from cheap to expensive (checked against the mean cost on calib). Costs follow AgentTTS Eq. 8, the
 # prompt counted once per call (`pool-answer recost`), so the 70B is the most expensive option. Until 2026-10-18 the
