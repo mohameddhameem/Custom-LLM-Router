@@ -165,15 +165,18 @@ def run_eval(tables: dict, plan: dict, out: Path, exclude: set[str] | None = Non
         if exclude:
             pt, ut, per_seed = pt[keep], ut[keep], [p[keep] for p in per_seed]
         one = ut / len(jseeds)
-        curves[name] = lambda ix, p=pt, u=ut: ev.judge_points(ok_t[ix], cost_t[ix], p[ix], u[ix])
-        scored[name] = (ev.judge_points(ok_c, cost_c, pc, uc), ev.judge_points(ok_t, cost_t, pt, ut))
+        post = inputs == "qpa"  # it read the cheapest option's answer: that option ran on every question
+        curves[name] = lambda ix, p=pt, u=ut, q=post: ev.judge_points(ok_t[ix], cost_t[ix], p[ix], u[ix], q)
+        scored[name] = (ev.judge_points(ok_c, cost_c, pc, uc, post), ev.judge_points(ok_t, cost_t, pt, ut, post))
         if len(jseeds) > 1:
             for s, p in zip(jseeds, per_seed):
-                seed_curves[f"{name}#seed{s}"] = lambda ix, p=p, u=one: ev.judge_points(ok_t[ix], cost_t[ix], p[ix], u[ix])
-        judges[name] = {"aiq_per_seed": [aiq(ev.judge_points(ok_t, cost_t, p), cmin, cmax) for p in per_seed],
-                        "aiq_per_seed_with_cost": [aiq(ev.judge_points(ok_t, cost_t, p, one), cmin, cmax)
+                seed_curves[f"{name}#seed{s}"] = (lambda ix, p=p, u=one, q=post:
+                                                  ev.judge_points(ok_t[ix], cost_t[ix], p[ix], u[ix], q))
+        judges[name] = {"aiq_per_seed": [aiq(ev.judge_points(ok_t, cost_t, p, 0.0, post), cmin, cmax) for p in per_seed],
+                        "aiq_per_seed_with_cost": [aiq(ev.judge_points(ok_t, cost_t, p, one, post), cmin, cmax)
                                                    for p in per_seed],
-                        "judge_units": float(ut.mean()), "passes": len(jseeds), "init": init}
+                        "judge_units": float(ut.mean()), "passes": len(jseeds), "init": init,
+                        "pays_cheapest_option": post}
 
     boot = ev.bootstrap(curves | seed_curves, n, plan.get("bootstrap", 1000), 0, (cmin, cmax))
     report["aiq"] = {"hull of fixed policies": aiq(ev.always_points(ok_t, cost_t), cmin, cmax),

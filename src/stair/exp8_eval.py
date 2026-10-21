@@ -53,13 +53,17 @@ def cumulative_choice(probs: np.ndarray, t: float) -> np.ndarray:
     return np.minimum((cum < t - 1e-9).sum(axis=1), probs.shape[1] - 1)
 
 
-def point(ok: np.ndarray, cost: np.ndarray, choice: np.ndarray, extra: np.ndarray | float = 0.0) -> dict:
+def point(ok: np.ndarray, cost: np.ndarray, choice: np.ndarray, extra: np.ndarray | float = 0.0,
+          post: bool = False) -> dict:
+    """`post`: the policy read the cheapest option's answer, so that option ran too whatever it chose."""
     rows = np.arange(len(choice))
-    return {"f1": float(ok[rows, choice].mean()), "cost": float((cost[rows, choice] + extra).mean())}
+    paid = cost[rows, choice] + extra + (np.where(choice != 0, cost[:, 0], 0.0) if post else 0.0)
+    return {"f1": float(ok[rows, choice].mean()), "cost": float(paid.mean())}
 
 
-def judge_points(ok: np.ndarray, cost: np.ndarray, probs: np.ndarray, extra: np.ndarray | float = 0.0) -> list[dict]:
-    return [{"t": float(t), **point(ok, cost, cumulative_choice(probs, t), extra)} for t in THRESHOLDS]
+def judge_points(ok: np.ndarray, cost: np.ndarray, probs: np.ndarray, extra: np.ndarray | float = 0.0,
+                 post: bool = False) -> list[dict]:
+    return [{"t": float(t), **point(ok, cost, cumulative_choice(probs, t), extra, post)} for t in THRESHOLDS]
 
 
 def always_points(ok: np.ndarray, cost: np.ndarray) -> list[dict]:
