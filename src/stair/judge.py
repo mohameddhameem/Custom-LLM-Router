@@ -45,9 +45,8 @@ import numpy as np
 import pandas as pd
 
 from stair import provenance
-from stair_common.cost import UNIT_GFLOPS
 
-from stair.evaluate_routing import aiq, evaluate, expert_params, with_cost_unit
+from stair.evaluate_routing import aiq, evaluate, expert_params, judge_cost_in, with_cost_unit
 from stair.evidence import paragraph_text, passages_state, resolve_checkpoint
 from stair.decider import DeciderJudge, is_decider, params_b
 from stair.metrics import metric_view
@@ -64,7 +63,7 @@ ZERO_SHOT = ("grounded", "correct")  # zero-shot questions; columns <prefix>_gro
 JUDGE_PARAMS_B = 0.0334  # nano-jev / MiniLM-L12-H384, billions
 SPLIT_DATA = {"router_train": "distractor_train.parquet", "calib": "distractor_train.parquet",
               "test": "distractor_validation.parquet"}  # a plan's [split_data] overrides (common: calib is dev)
-JUDGE_COST_UNITS = ("flops", "tokens", "agenttts")
+JUDGE_COST_UNITS = ("flops", "tokens", "agenttts", "table5")
 LR_REFERENCES = ("router:question+evidence/large-helps", "router:question+evidence+small/large-helps")
 
 
@@ -415,7 +414,8 @@ def run_eval(pair: str, plan: dict, out: Path, unit: str, n_boot: int, seed: int
              routers: dict | None = None) -> tuple[dict, dict]:
     """Evaluate one pair; `routers` are its logistic regression routers (trained here if not given)."""
     run = Path(plan["pairs"][pair])
-    params = expert_params(tomllib.loads((run / "config.toml").read_text()))
+    cfg = tomllib.loads((run / "config.toml").read_text())
+    params, models = expert_params(cfg), {e["name"]: e.get("model", "") for e in cfg["experts"]}
     data, specs = {}, {}
     metric = plan.get("metric", "f1")
     for split in ("calib", "test"):
@@ -423,7 +423,7 @@ def run_eval(pair: str, plan: dict, out: Path, unit: str, n_boot: int, seed: int
         cols, specs = judge_columns(out, pair, split, plan)
         if len(cols):
             df = df.merge(cols, on="id", how="left", validate="1:1")
-        data[split] = with_cost_unit(df, unit, params)
+        data[split] = with_cost_unit(df, unit, params, models)
     if exclude:
         data["test"] = data["test"][~data["test"]["id"].isin(exclude)].reset_index(drop=True)
     test, calib = data["test"], data["calib"]
@@ -449,7 +449,7 @@ def run_eval(pair: str, plan: dict, out: Path, unit: str, n_boot: int, seed: int
     for col, spec in specs.items():
         if f"{col}_tokens" in test and "init" in spec:
             gflops = 2 * judge_params_b(spec["init"]) * test[f"{col}_tokens"].to_numpy(dtype=float)
-            one = gflops / UNIT_GFLOPS if unit == "agenttts" else gflops
+            one = judge_cost_in(unit, gflops)
             policy_costs[f"router:{col}"] = one * max(len(seed_cols[col]), 1)
             policy_costs |= {f"router:{c}": one for c in seed_cols[col]}
     report, curves = evaluate(test, calib, routers, plan["tau"], plan.get("max_drop", 0.01), n_boot, seed,
@@ -462,9 +462,9 @@ def run_eval(pair: str, plan: dict, out: Path, unit: str, n_boot: int, seed: int
         tokens = test.get(f"{col}_tokens")
         params = judge_params_b(spec["init"]) if "init" in spec else 0.0
         passes = max(len(seed_cols[col]), 1)
-        one = 2 * params * float(tokens.mean()) if tokens is not None else 0.0  # sufficiency: already paid
-        gflops = one * passes
-        judge_cost = gflops / UNIT_GFLOPS if unit == "agenttts" else gflops  # in the curves' unit
+        per_call = 2 * params * tokens.to_numpy(dtype=float) if tokens is not None else np.zeros(1)  # sufficiency: paid
+        gflops = float(per_call.mean()) * passes
+        judge_cost = float(np.mean(judge_cost_in(unit, per_call))) * passes  # in the curves' unit
         pts = [p for p in report_curve(curves, f"router:{col}")]
         entry = {**spec, "aiq": report["aiq"][f"router:{col}"], "judge_gflops": gflops, "judge_params_b": params,
                  "judge_passes": passes, "judge_cost": judge_cost,
@@ -549,6 +549,9 @@ def main(argv: list[str] | None = None) -> None:
         for path, prefix, folder in zero_shot_judges(plan):
             run_zeroshot(splits, list(plan["pairs"]), path, args.out, args.device, args.score_batch, prefix, folder)
     if args.step in ("train", "all"):
+        if unknown := set(args.only) - {judge_name(spec) for spec in plan["judges"]}:
+            raise SystemExit(f"--only names no judge of the plan: {sorted(unknown)}; "
+                             f"its judges are {sorted(judge_name(s) for s in plan['judges'])}")
         for spec in plan["judges"]:
             if args.only and judge_name(spec) not in args.only:
                 continue

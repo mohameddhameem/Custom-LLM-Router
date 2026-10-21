@@ -47,6 +47,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                         help="the team's common splits (stair_common): router_train = common train minus --exclude, "
                              "calib = common val (dev[0:500]), test = common test (dev[500:1000]); ignores the size, "
                              "level and seed options")
+    parser.add_argument("--slr", action="store_true",
+                        help="the HotpotQA golden set (stair_common 0.3.0, Jonathan's split): router_train = slr-train, "
+                             "calib = slr-val, test = slr-test, all from the dev file; ignores the other options")
     return parser.parse_args(argv)
 
 
@@ -64,9 +67,27 @@ def standard_splits(exclude: set[str]) -> dict[str, list[str]]:
             "test": load_split("hotpotqa", "test")}
 
 
+def slr_splits() -> dict[str, list[str]]:
+    """The HotpotQA golden set's split, all dev questions: a run's caches cut from a full-dev run need no model calls."""
+    from stair_common.splits import load_split
+
+    return {"router_train": load_split("hotpotqa", "slr-train"), "calib": load_split("hotpotqa", "slr-val"),
+            "test": load_split("hotpotqa", "slr-test")}
+
+
 def main(argv: list[str] | None = None) -> None:
     args = parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+    if args.slr:
+        splits = slr_splits()
+        log.info(f"golden-set splits: router_train {len(splits['router_train'])} (slr-train), "
+                 f"calib {len(splits['calib'])} (slr-val), test {len(splits['test'])} (slr-test)")
+        args.out.parent.mkdir(parents=True, exist_ok=True)
+        args.out.write_text(json.dumps({"source": "stair_common.splits (hotpotqa: slr-train, slr-val, slr-test)",
+                                        **splits}, indent=1))
+        log.info(f"Saved {args.out}")
+        return
 
     if args.standard:
         exclude = set()

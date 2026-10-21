@@ -11,7 +11,7 @@ from stair_common.schema import COLUMNS, validate
 from stair_common.splits import load_split
 
 from stair import export_common, make_splits, subset_cache
-from stair.evaluate_routing import with_cost_unit
+from stair.evaluate_routing import judge_cost_in, table5_price, with_cost_unit
 from stair.metrics import metric_view
 from stair.router import escalation_label
 
@@ -36,6 +36,35 @@ def test_metric_view_uses_the_standard_ruler():
 def test_agenttts_unit_is_one_3b_pass():
     df = with_cost_unit(_cache(["a"], ["x"], ["y"]), "agenttts", {"small": 3.0, "large": 7.0})
     assert df["small_cost"].iat[0] == pytest.approx(1.0) and df["large_cost"].iat[0] == pytest.approx(7 / 3)
+
+
+def test_table5_prices_each_answering_call():
+    models = {"small": "Qwen/Qwen2.5-1.5B-Instruct", "large": "Qwen/Qwen2.5-7B-Instruct"}
+    df = with_cost_unit(_cache(["a"], ["x"], ["y"]), "table5", {"small": 1.5, "large": 7.0}, models)
+    assert df["small_cost"].iat[0] == pytest.approx(0.5)  # not in Table 5: budget(1.5, 256, 64)
+    assert df["large_cost"].iat[0] == 10                  # Table 5's price
+    assert table5_price("Qwen/Qwen2.5-72B-Instruct-AWQ", 72) == 118  # "Qwen2.5-7B" must not match the 72B
+    with pytest.raises(ValueError, match="model name"):
+        with_cost_unit(_cache(["a"], ["x"], ["y"]), "table5", {"small": 1.5, "large": 7.0})
+
+
+def test_judge_calls_priced_with_budget_under_table5():
+    assert judge_cost_in("table5", np.array([2 * 1152.0, 10.0])).tolist() == [4.0, 0.0]  # 3u - 2, floored at 0
+    assert judge_cost_in("agenttts", 1152.0) == pytest.approx(1.0)
+
+
+def test_judge_only_refuses_a_name_no_judge_has(tmp_path):
+    from stair import judge
+
+    plan = Path(__file__).parent.parent / "configs" / "system-one-slr.toml"
+    with pytest.raises(SystemExit, match="ms-marco-minilm-l12-v2"):  # judge names are lower case
+        judge.main(["train", "--plan", str(plan), "--out", str(tmp_path), "--only", "qp-large-helps-ms-marco-MiniLM-L12-v2-A"])
+
+
+def test_slr_splits_are_the_golden_set():
+    splits = make_splits.slr_splits()
+    assert [len(splits[k]) for k in ("router_train", "calib", "test")] == [4814, 1110, 1481]
+    assert splits["test"] == load_split("hotpotqa", "slr-test")
 
 
 def test_standard_splits_follow_the_team_files():
