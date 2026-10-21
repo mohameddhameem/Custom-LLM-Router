@@ -38,7 +38,19 @@ Experiment 7 answers it.
 | RQ answers | RQ1: zero-shot ties entropy. RQ2: the passages carry the signal (qp ≈ qpa ≫ q, qa). RQ3: large-helps > small-fails. RQ4: nano-jev pretraining > MS MARCO (+0.013). RQ5: qp transfers across pairs within 0.004. RQ6: 3% cost, AIQ −0.0001 | [Experiment 7](experiments/2026-10-07-system-one-router.md) |
 | Against published results | Beats the HotpotQA baseline (58.3 F1), Llama-2-70B and Mixtral few-shot CoT (67.7 / 68.1). Below GPT-3.5 CoT (77.2) | [experiments.md](experiments.md) |
 
-## Headline numbers on the common standard (test = dev[500:1000], 500 questions, lenient, AgentTTS units)
+## Headline numbers on the golden set (`slr-test`, 1,481 questions, lenient, Table 5 prices)
+
+Since 2026-10-21 the HotpotQA headline follows Jonathan's Stage-Level Routing setup
+([write-up](experiments/2026-10-21-slr-standard.md)). Our rows land here as experiments 10, 7/9 and 8 move.
+
+| Claim | Number | Source |
+|---|---|---|
+| Menu A ladder | WW 0.503 at 80, WS 0.640 at 192, SW 0.618 at 817, always-strong 0.768 at 929; oracle 0.815 at 205.5 | [Golden set](experiments/2026-10-21-slr-standard.md) |
+| Jonathan's SLR routers (reference) | SFT (label) 76.70 at 834.8; SFT (label) + reward 75.96 at 664.7. Both reproduced exactly, with thresholds re-selected on val | [Golden set](experiments/2026-10-21-slr-standard.md) |
+
+## Headline numbers on the common standard (AgentTTS slice: test = dev[500:1000], 500 questions, lenient, AgentTTS units)
+
+Kept for the comparison with the AgentTTS paper on its own 500 questions.
 
 | Claim | Number | Source |
 |---|---|---|

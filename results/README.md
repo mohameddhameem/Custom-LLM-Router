@@ -24,6 +24,7 @@ headline numbers are in [docs/experiments.md](../docs/experiments.md).
 | `common-judges` | 7 and 9 on the common standard: nano-jev and Strands Decider judges, lenient labels | `configs/system-one-common.toml` |
 | `common-judges-f1` | The same on F1 labels (check) | `configs/system-one-common-f1.toml` |
 | `exp8-common` | 8 on the common standard: answers recosted under AgentTTS Eq. 8, grades, and the option judges (nano-jev, deciders) | `configs/exp8-common.toml`, `configs/exp8-judge*-common.toml` |
+| `slr` | The HotpotQA golden set (Jonathan's Stage-Level Routing, Config B): verification and the menu A ladder on `slr-val` / `slr-test` at Table 5 prices (`report.json`, `paths-*.parquet`). His files themselves are fetched by `slr fetch`, not copied | `configs/slr.toml` |
 
 Each folder has:
 

@@ -2,6 +2,10 @@
 
 **Complete.** Experiments 7, 8 and 9 have all been run and evaluated.
 
+> **Superseded as the HotpotQA headline (2026-10-21).** The team now follows Jonathan's Stage-Level Routing setup:
+> the `slr-*` split and Table 5 prices ([golden-set write-up](2026-10-21-slr-standard.md)). This page stays as the
+> AgentTTS-slice history, the comparison with the paper on its own 500 questions.
+
 These are the original experiments, rerun with the STAIR `common/` package so that our numbers can be compared
 directly with the rest of the team's.
 - The runs used `stair_common` at STAIR `main` `052ebe4`.
