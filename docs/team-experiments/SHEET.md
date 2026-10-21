@@ -83,6 +83,7 @@ After the YAML block, add at most 10 lines of prose with anything a reviewer nee
 | AL-04 | Andy | Fine-tuned models + self-learnt rulebook (menu A) | 2026-10-18 | received; epochs question open | | |
 | AL-05 | Andy | Full ladders from nano-jev 33M (menu B) | 2026-10-18 | received; epochs question open | | |
 | AL-06 | Andy | Control: AL-05 without nano-jev (menu B) | 2026-10-18 | received; reuses AL-05 (~6 h) | | |
+| — | Jonathan | Stage-Level Routing lab code and results, Config A and B (no `experiments/<id>.md` entries) | 2026-10-21 (jonathan `5b69cce`, pushed 2026-10-19) | adopted as the HotpotQA golden set (STAIR PR #8); his Config B grid reused for experiment 10 | | |
 
 selfLearnt's job sheet and the questions for Andy: [gpu-jobs-selflearnt.md](gpu-jobs-selflearnt.md). Code worth
 adopting: [adopt-notes.md](adopt-notes.md).

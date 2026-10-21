@@ -2,6 +2,22 @@
 
 Proposals only. Dhameem decides; anything adopted is a separate PR, credited to its owner.
 
+## jonathan (Jonathan), branch `jonathan`, reviewed at `5b69cce` (2026-10-21)
+
+Decision (2026-10-21): the team follows his Stage-Level Routing setup as the HotpotQA golden set.
+
+| What | Where | Better than ours because | Proposal |
+|---|---|---|---|
+| The split | `lab_package/splits.json` | Frozen before any training, and stratified on type, level and label. Every one of its 7,405 dev questions has all four menu A paths | **Adopted:** `slr-train` / `slr-val` / `slr-test` in `stair_common` (STAIR PR #8) |
+| Table 5 prices, weak-first | `lab_package/configb_test_readout.py` | Counts every call that ran, at the paper's own prices | **Adopted:** `SLR_PATH_PRICES`, `STRONG_EVERYTHING` and `budget()` in `stair_common` |
+| Config B grid | `runs/config_b/` (`qa_*`, `retr_*`, `meta_*`, `router_data_standard.jsonl`) | All four menu A paths on all 7,405 questions, with measured tokens. Scored with the standard ruler: `stair_common.score.lenient` gives identical verdicts | **Reused**, read at the pinned commit: experiment 10 and the always-* ladder |
+| Labels | `runs/config_b/ret_labels/`, `qa_labels/` | His rule, so that our judge against his router is like for like | **Reused** for experiment 10 |
+| Sealed-test readout | `configb_test_readout.py`, `runs/config_b/test_scores/` | Thresholds frozen on val. Reproduces his three certified rows exactly from the committed files | **Reused** as the head-to-head baseline |
+| Reward-shaped router training | `configb_reward_train_qa.py`, `configb_reward_train_ret.py` | A cost-aware reward on top of the labels: 75.96 at 665 against 76.70 at 835 for labels alone | A candidate for our judges after experiment 10 |
+
+Not adopted: Config A's cost family. It is normalised to its own cheapest call, so it is neither AgentTTS units nor
+Table 5 prices.
+
 ## selfLearnt (Andy), branch `selfLearnt`, reviewed at `5080d0f` (2026-10-18)
 
 | What | Where | Better than ours because | Proposal |
