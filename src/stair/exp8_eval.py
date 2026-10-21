@@ -139,8 +139,20 @@ def diff(boot: dict, a: str, b: str) -> dict:
     return {"ci95": [float(np.percentile(d, 2.5)), float(np.percentile(d, 97.5))], "p_le_0": float((d <= 0).mean())}
 
 
-def load_tables(out, split: str, options: list[str], state_k: int, metric: str = "lenient", rescore_dir=None):
+def golden_set_cost(prices: list[float], nanojev_gflops: np.ndarray) -> np.ndarray:
+    """[questions, options] at the golden set's prices: each option's Table 5 price, plus nano-jev's ranking call
+    priced with stair_common.cost.budget (3 x units - 2, floored at 0)."""
+    from stair_common.cost import UNIT_GFLOPS
+
+    nanojev = np.maximum(0.0, 3 * np.asarray(nanojev_gflops, dtype=float) / UNIT_GFLOPS - 2)
+    return np.asarray(prices, dtype=float)[None, :] + nanojev[:, None]
+
+
+def load_tables(out, split: str, options: list[str], state_k: int, metric: str = "lenient", rescore_dir=None,
+                prices: list[float] | None = None):
     """Question table (pool_answer.load_split) plus ok/cost/entropy/pred matrices over the common ids.
+
+    `prices`: the options' golden-set prices (Table 5 scale); the cost is then golden_set_cost, not measured units.
 
     `metric` is the correctness column: "lenient" from the answer files (the old placeholder scorer),
     "lenient_std" (the team's standard ruler, stair_common.score.lenient, on the same response: AgentTTS-comparable),
@@ -176,7 +188,9 @@ def load_tables(out, split: str, options: list[str], state_k: int, metric: str =
             raise ValueError(f"re-scored answers missing for {missing} on {split}: run `rescore run --split {split}`")
         ok = np.stack([graded[o].loc[ids, metric].to_numpy() >= 0.5 for o in options], axis=1)
     cost = np.stack([answers[o].loc[ids, "units"].to_numpy() for o in options], axis=1)
-    if metric not in ("lenient", "lenient_std"):  # the self-commit step (stair.rescore, version 4) is part of each option's cost
+    if prices is not None:
+        cost = golden_set_cost(prices, df["nanojev_gflops"].to_numpy())
+    elif metric not in ("lenient", "lenient_std"):  # the self-commit step (stair.rescore, version 4) is part of each option's cost
         cost = cost + np.stack([graded[o].loc[ids, "commit_units"].to_numpy() if "commit_units" in graded[o]
                                 else np.zeros(len(ids)) for o in options], axis=1)
     df["entropy0"] = answers[options[0]].loc[ids, "entropy"].to_numpy()

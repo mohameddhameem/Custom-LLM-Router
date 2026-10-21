@@ -178,3 +178,25 @@ def test_load_tables_adds_commit_cost(tmp_path):
     assert cost[0].tolist() == [1.5, 9.5]
     _, _, lenient_cost = ev.load_tables(out, "test", ["cheap", "strong"], 2)
     assert lenient_cost[0].tolist() == [1.0, 9.0]  # the lenient metric has no commit step
+
+
+def test_golden_set_cost_prices_options_and_nanojev():
+    from stair_common.cost import UNIT_GFLOPS
+
+    cost = ev.golden_set_cost([3, 15, 115], np.array([0.0, 2 * UNIT_GFLOPS]))  # nano-jev: free, then 3 x 2 - 2 = 4
+    assert cost.tolist() == [[3.0, 15.0, 115.0], [7.0, 19.0, 119.0]]
+
+
+def test_slr_splits_cap_with_preferred_ids_first():
+    from stair_common.splits import load_split
+
+    from stair import make_splits
+
+    train, val = load_split("hotpotqa", "slr-train"), load_split("hotpotqa", "slr-val")
+    prefer = set(train[:7]) | set(val[-3:])
+    parts = make_splits.slr_splits({"router_train": 10, "calib": 5}, prefer)
+    assert len(parts["router_train"]) == 10 and set(train[:7]) <= set(parts["router_train"])
+    assert len(parts["calib"]) == 5 and set(val[-3:]) <= set(parts["calib"])
+    assert parts["router_train"] == [i for i in train if i in set(parts["router_train"])]  # the part's order
+    assert len(parts["test"]) == 1481
+    assert make_splits.slr_splits({"router_train": 10, "calib": 5}, prefer) == parts  # deterministic
