@@ -391,6 +391,38 @@ def test_pool_answer_end_to_end(tiny_models, tmp_path):
     assert np.allclose(pd.read_parquet(out / "answers" / "test" / "one.parquet")["units"], one["units"])  # 1 sample
 
 
+def test_exp10_judge_trains_and_routes_menu_a(tiny_models, tmp_path):
+    from stair import exp10_slr, slr
+
+    rng = np.random.default_rng(0)
+    base = make_split(60, seed=5)
+    df = pd.DataFrame({"idx": range(60), "id": base["id"], "question": base["question"],
+                       "split": ["train"] * 30 + ["val"] * 15 + ["test"] * 15,
+                       "sel_W": base["full_context"].str[:200], "sel_S": base["full_context"].str[:300],
+                       **{f"answer_{p}": "alpha beta" for p in slr.PATHS},
+                       **{f"ok_{p}": rng.random(60) < q for p, q in zip(slr.PATHS, [0.5, 0.6, 0.6, 0.8])},
+                       **{y: rng.choice(["W", "S"], 60) for y in ("y_ret", "y_qa_W", "y_qa_S")}})
+    spec = {"name": "tiny", "judge_dir": "judge-tiny", "init": str(tiny_models / "ce"), "inputs": ["qp", "qpa"],
+            "seeds": [0, 1], "train": {"epochs": 1, "lr": 1e-3, "weight_decay": 0.0, "warmup": 0.0, "batch_size": 8,
+                                       "max_length": 64, "dev_fraction": 0.2}}
+    plan = {"out": str(tmp_path / "exp10"), "judges": [spec], "bootstrap": 20}
+    for inputs in spec["inputs"]:
+        for seed in spec["seeds"]:
+            exp10_slr.run_train(df, plan, spec, inputs, seed, "cpu")
+    seed_dir = tmp_path / "exp10" / "judge-tiny" / "qpa" / "seed1"
+    done = json.loads((seed_dir / "done.json").read_text())
+    assert done["n_train_items"] + done["n_dev_items"] == 90  # three typed items per training question
+    val = pd.read_parquet(seed_dir / "val.parquet")
+    assert len(val) == 15 and val[["ret", "qa_W", "qa_S"]].apply(lambda c: c.between(0, 1).all()).all()
+
+    ids = {s: df.loc[df["split"] == s, "idx"].reset_index(drop=True) for s in ("val", "test")}
+    routers = exp10_slr.judge_routers(plan, ids["test"], ids["val"])
+    assert [r.name for r in routers] == ["tiny qp#seed0", "tiny qp#seed1", "tiny qp", "tiny qpa#seed0",
+                                         "tiny qpa#seed1", "tiny qpa"]
+    report = exp10_slr.evaluate(df, routers, plan)
+    assert 0 <= report["routers"]["tiny qpa"]["aiq"] <= 1 and "tiny qpa - fixed paths" in report["aiq_diff"]
+
+
 def test_exp8_judge_trains_and_evaluates(tiny_models, tmp_path):
     from stair import exp8_judge
 

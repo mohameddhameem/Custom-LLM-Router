@@ -24,11 +24,15 @@
 #   bash scripts/run_cluster.sh common-prepare # experiments 7+9 under the team's common setup: splits + dev subsets (CPU job)
 #   bash scripts/run_cluster.sh common-experts # ... experts on the common train draw (GPU, ~1 h)
 #   bash scripts/run_cluster.sh common-judges  # ... judges, J=zeroshot|train (GPU, hours); common-eval: reports (CPU job)
-# The common-setup steps are documented in docs/gpu-jobs-common.md.
+#   bash scripts/run_cluster.sh slr-fetch      # HotpotQA golden set: Jonathan's pinned SLR files (login node: download only)
+#   bash scripts/run_cluster.sh slr-ladder     # ... verify them, menu A's ladder at Table 5 prices (CPU job)
+#   bash scripts/run_cluster.sh exp10-train    # experiment 10: train one judge set, JUDGE=nano-jev|decider-2b|decider-e4b (GPU)
+#   bash scripts/run_cluster.sh exp10-eval     # experiment 10: reports for every judge set trained so far (CPU job)
+# The common-setup steps are documented in docs/gpu-jobs-common.md; the golden-set steps in docs/gpu-jobs-slr.md.
 # Experiment 9's steps are documented in docs/gpu-jobs-exp9.md.
-# Where each step runs: login node = `prepare` (downloads + light parquet export) and `exp8-prepare` (downloads); CPU job
-# (scripts/omega-cpu.pbs, queue short) = `eval`, `exp8-pools`, `exp8-recost`, `exp8-eval`, `exp8-rescore-summary`,
-# `common-eval`; every other step is a GPU job
+# Where each step runs: login node = `prepare` (downloads + light parquet export), `exp8-prepare` and `slr-fetch`
+# (downloads); CPU job (scripts/omega-cpu.pbs, queue short) = `eval`, `exp8-pools`, `exp8-recost`, `exp8-eval`,
+# `exp8-rescore-summary`, `common-eval`, `slr-ladder`, `exp10-eval`; every other step is a GPU job
 # (scripts/omega.pbs). Do not run compute on the login node.
 # The re-scoring steps are documented step by step in docs/gpu-jobs-exp8-rescore.md.
 #
@@ -41,7 +45,7 @@
 # the large expert changed) instead of recomputing them: see run-experts --reuse-from.
 set -euo pipefail
 
-STEP=${1:?usage: run_cluster.sh prepare|pilot|full|eval|judge-pilot|judge|exp8-prepare|exp8-score|exp8-pilot|exp8-answer|exp8-recost|exp8-judge|exp8-eval|exp8-rescore-validate|exp8-rescore|exp8-judge-graded|exp8-pools|exp8-rescore-summary|exp9-smoke|exp9-judge7|exp9-judge8|save-judges|common-prepare|common-experts|common-judges|common-eval}
+STEP=${1:?usage: run_cluster.sh prepare|pilot|full|eval|judge-pilot|judge|exp8-prepare|exp8-score|exp8-pilot|exp8-answer|exp8-recost|exp8-judge|exp8-eval|exp8-rescore-validate|exp8-rescore|exp8-judge-graded|exp8-pools|exp8-rescore-summary|exp9-smoke|exp9-judge7|exp9-judge8|save-judges|common-prepare|common-experts|common-judges|common-eval|slr-fetch|slr-ladder|exp10-train|exp10-eval}
 CONFIG=${CONFIG:-configs/gpu.toml}
 RUN=${RUN:-runs/gpu}
 DATA=${DATA:-data/hotpotqa}
@@ -212,8 +216,20 @@ EOF
       $BIN exp8-judge all --plan "$plan" --exclude runs/exp8/nanojev_validation_ids.txt
     done
     ;;
+  slr-fetch)  # login node: downloads Jonathan's pinned files (sha256-checked), no compute
+    $BIN slr fetch --plan "${SLR_PLAN:-configs/slr.toml}"
+    ;;
+  slr-ladder)  # CPU job: verify the golden set and write results/slr (seconds)
+    $BIN slr all --plan "${SLR_PLAN:-configs/slr.toml}"
+    ;;
+  exp10-train)  # GPU: one judge set of configs/exp10-slr.toml, every (inputs, seed); resumes
+    $BIN exp10-slr train --judge "${JUDGE:?JUDGE=nano-jev|decider-2b|decider-e4b}" --plan "${PLAN:-configs/exp10-slr.toml}"
+    ;;
+  exp10-eval)  # CPU job: reports for every judge set trained so far, against Jonathan's routers (loads no model)
+    $BIN exp10-slr eval --plan "${PLAN:-configs/exp10-slr.toml}"
+    ;;
   *)
-    echo "unknown step: $STEP (prepare|pilot|full|eval|judge-pilot|judge|exp8-prepare|exp8-score|exp8-pilot|exp8-answer|exp8-recost|exp8-judge|exp8-eval|exp8-rescore-validate|exp8-rescore|exp8-judge-graded|exp8-pools|exp8-rescore-summary|exp9-smoke|exp9-judge7|exp9-judge8|save-judges|common-prepare|common-experts|common-judges|common-eval)" >&2
+    echo "unknown step: $STEP (prepare|pilot|full|eval|judge-pilot|judge|exp8-prepare|exp8-score|exp8-pilot|exp8-answer|exp8-recost|exp8-judge|exp8-eval|exp8-rescore-validate|exp8-rescore|exp8-judge-graded|exp8-pools|exp8-rescore-summary|exp9-smoke|exp9-judge7|exp9-judge8|save-judges|common-prepare|common-experts|common-judges|common-eval|slr-fetch|slr-ladder|exp10-train|exp10-eval)" >&2
     exit 2
     ;;
 esac

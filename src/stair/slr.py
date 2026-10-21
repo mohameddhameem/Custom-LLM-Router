@@ -78,13 +78,13 @@ def check_files(plan: dict) -> None:
             raise ValueError(f"{name}: sha256 {got[:12]}, expected {sha[:12]} (commit {plan['commit'][:7]})")
 
 
-def _jsonl(path: Path) -> list[dict]:
+def read_jsonl(path: Path) -> list[dict]:
     with open(path, encoding="utf-8") as f:
         return [json.loads(line) for line in f if line.strip()]
 
 
 def _store(path: Path) -> dict:
-    return {r["k"]: r for r in _jsonl(path)}
+    return {r["k"]: r for r in read_jsonl(path)}
 
 
 def load_grid(plan: dict) -> pd.DataFrame:
@@ -93,7 +93,7 @@ def load_grid(plan: dict) -> pd.DataFrame:
     check_files(plan)
     root = Path(plan["out"]) / GRID
     dev = pd.read_parquet(plan["dev"], columns=["id", "answer"])
-    grid = pd.DataFrame(_jsonl(root / "router_data_standard.jsonl")).sort_values("idx").reset_index(drop=True)
+    grid = pd.DataFrame(read_jsonl(root / "router_data_standard.jsonl")).sort_values("idx").reset_index(drop=True)
     if grid["idx"].tolist() != list(range(len(dev))):
         raise ValueError(f"the grid has {len(grid)} rows, not one per dev question ({len(dev)})")
     df = pd.DataFrame({"idx": grid["idx"], "id": dev["id"], "gold": dev["answer"].astype(str), "split": grid["split"]})
@@ -178,8 +178,8 @@ def his_scores(plan: dict, ret: str, qa: str, idx: pd.Series, split: str = "test
     root = Path(plan["out"]) / GRID
     path = (lambda name: root / "test_scores" / f"{name}.jsonl") if split == "test" else \
            (lambda name: root / name / "val_scores.jsonl")
-    r = {row["idx"]: row["pW"] for row in _jsonl(path(ret))}
-    q = {(row["idx"], row["ret_choice"]): row["pW"] for row in _jsonl(path(qa))}
+    r = {row["idx"]: row["pW"] for row in read_jsonl(path(ret))}
+    q = {(row["idx"], row["ret_choice"]): row["pW"] for row in read_jsonl(path(qa))}
     return np.array([r[i] for i in idx]), {x: np.array([q[(i, x)] for i in idx]) for x in "WS"}
 
 
