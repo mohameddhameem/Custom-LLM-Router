@@ -71,11 +71,13 @@ def expert_params(cfg: dict) -> dict[str, float | None]:
 
 def table5_price(model: str, params_b: float) -> float:
     """The golden set's price of one HotpotQA answering call: AgentTTS Table 5 for a model it lists, else the same
-    formula at Table 4's answering lengths (stair_common.cost.budget, 256 + 64 tokens)."""
+    formula at Table 4's answering lengths (stair_common.cost.budget, 256 + 64 tokens), with the nominal size in the
+    model's name, as Table 5 counts (Qwen2.5-1.5B is 1.5, though a config may give its exact 1.54)."""
     for name, price in TABLE5_HOTPOTQA["answer"].items():
         if re.search(rf"{re.escape(name)}(?![\d.])", model):
             return float(price)
-    return budget(params_b, 256, 64)
+    nominal = re.search(r"(\d+(?:\.\d+)?)[Bb]\b", model)
+    return budget(float(nominal.group(1)) if nominal else params_b, 256, 64)
 
 
 def judge_cost_in(unit: str, gflops):

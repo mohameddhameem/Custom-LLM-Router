@@ -44,6 +44,7 @@ def test_table5_prices_each_answering_call():
     assert df["small_cost"].iat[0] == pytest.approx(0.5)  # not in Table 5: budget(1.5, 256, 64)
     assert df["large_cost"].iat[0] == 10                  # Table 5's price
     assert table5_price("Qwen/Qwen2.5-72B-Instruct-AWQ", 72) == 118  # "Qwen2.5-7B" must not match the 72B
+    assert table5_price("Qwen/Qwen2.5-1.5B-Instruct", 1.54) == pytest.approx(0.5)  # nominal size, as Table 5 counts
     with pytest.raises(ValueError, match="model name"):
         with_cost_unit(_cache(["a"], ["x"], ["y"]), "table5", {"small": 1.5, "large": 7.0})
 
