@@ -1,0 +1,172 @@
+job 43084.pbs-omega on a-11, step slr7-judges
+name, memory.used [MiB], memory.total [MiB], driver_version
+NVIDIA L40S, 1872 MiB, 46068 MiB, 555.58.02
+torch 2.14.1+cu126 NVIDIA L40S
+train q-large-helps-nanojev-A seed 0
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 2509.68it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 13639.68it/s]
+    epoch 1: train loss 0.4894 dev NLL 0.4620
+    epoch 2: train loss 0.4533 dev NLL 0.4639
+    epoch 3: train loss 0.4024 dev NLL 0.4992
+train q-large-helps-nanojev-A seed 1
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1889.01it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11722.78it/s]
+    epoch 1: train loss 0.4950 dev NLL 0.4549
+    epoch 2: train loss 0.4552 dev NLL 0.4493
+    epoch 3: train loss 0.4411 dev NLL 0.4505
+train q-large-helps-nanojev-A seed 2
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1891.67it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11084.37it/s]
+    epoch 1: train loss 0.4921 dev NLL 0.4715
+    epoch 2: train loss 0.4555 dev NLL 0.4599
+    epoch 3: train loss 0.4373 dev NLL 0.4624
+train qp-large-helps-nanojev-A seed 0
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 2349.91it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 10376.96it/s]
+    epoch 1: train loss 0.4763 dev NLL 0.4630
+    epoch 2: train loss 0.4106 dev NLL 0.4491
+    epoch 3: train loss 0.3248 dev NLL 0.5578
+train qp-large-helps-nanojev-A seed 1
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1718.45it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 10999.19it/s]
+    epoch 1: train loss 0.4880 dev NLL 0.4249
+    epoch 2: train loss 0.4168 dev NLL 0.4240
+    epoch 3: train loss 0.3247 dev NLL 0.4808
+train qp-large-helps-nanojev-A seed 2
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 2211.46it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 10786.83it/s]
+    epoch 1: train loss 0.4792 dev NLL 0.4446
+    epoch 2: train loss 0.4003 dev NLL 0.5039
+    epoch 3: train loss 0.2924 dev NLL 0.5958
+train qpa-large-helps-nanojev-A seed 0
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1635.13it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 10343.98it/s]
+    epoch 1: train loss 0.4789 dev NLL 0.4542
+    epoch 2: train loss 0.3979 dev NLL 0.4628
+    epoch 3: train loss 0.3020 dev NLL 0.5384
+train qpa-large-helps-nanojev-A seed 1
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1884.13it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11598.27it/s]
+    epoch 1: train loss 0.4924 dev NLL 0.4455
+    epoch 2: train loss 0.4110 dev NLL 0.4323
+    epoch 3: train loss 0.3236 dev NLL 0.5068
+train qpa-large-helps-nanojev-A seed 2
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1722.68it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 10781.17it/s]
+    epoch 1: train loss 0.4961 dev NLL 0.4554
+    epoch 2: train loss 0.4173 dev NLL 0.4551
+    epoch 3: train loss 0.3501 dev NLL 0.4650
+train qa-large-helps-nanojev-A seed 0
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1977.51it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11509.60it/s]
+    epoch 1: train loss 0.4808 dev NLL 0.4954
+    epoch 2: train loss 0.4500 dev NLL 0.4742
+    epoch 3: train loss 0.4000 dev NLL 0.5350
+train qa-large-helps-nanojev-A seed 1
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1828.58it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11501.28it/s]
+    epoch 1: train loss 0.4857 dev NLL 0.4513
+    epoch 2: train loss 0.4535 dev NLL 0.4510
+    epoch 3: train loss 0.4246 dev NLL 0.4544
+train qa-large-helps-nanojev-A seed 2
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 2069.73it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 10992.17it/s]
+    epoch 1: train loss 0.4918 dev NLL 0.4663
+    epoch 2: train loss 0.4526 dev NLL 0.4528
+    epoch 3: train loss 0.4230 dev NLL 0.4664
+train qp-small-fails-nanojev-A seed 0
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 2193.10it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 10274.02it/s]
+    epoch 1: train loss 0.6535 dev NLL 0.5962
+    epoch 2: train loss 0.5713 dev NLL 0.6617
+    epoch 3: train loss 0.4616 dev NLL 0.7192
+train qp-small-fails-nanojev-A seed 1
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1797.53it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11640.87it/s]
+    epoch 1: train loss 0.6580 dev NLL 0.6540
+    epoch 2: train loss 0.5839 dev NLL 0.6428
+    epoch 3: train loss 0.4768 dev NLL 0.7853
+train qp-small-fails-nanojev-A seed 2
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 2033.97it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 12226.34it/s]
+    epoch 1: train loss 0.6546 dev NLL 0.6157
+    epoch 2: train loss 0.5811 dev NLL 0.5956
+    epoch 3: train loss 0.4777 dev NLL 0.6921
+train qpa-small-fails-nanojev-A seed 0
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1955.61it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11611.21it/s]
+    epoch 1: train loss 0.6594 dev NLL 0.5897
+    epoch 2: train loss 0.5684 dev NLL 0.6277
+    epoch 3: train loss 0.4281 dev NLL 0.7207
+train qpa-small-fails-nanojev-A seed 1
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1877.28it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11384.94it/s]
+    epoch 1: train loss 0.6609 dev NLL 0.6616
+    epoch 2: train loss 0.5724 dev NLL 0.6369
+    epoch 3: train loss 0.4465 dev NLL 0.8298
+train qpa-small-fails-nanojev-A seed 2
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 2214.08it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 10803.14it/s]
+    epoch 1: train loss 0.6570 dev NLL 0.6395
+    epoch 2: train loss 0.5671 dev NLL 0.5983
+    epoch 3: train loss 0.4398 dev NLL 0.7297
+train qp-large-helps-ms-marco-minilm-l12-v2-A seed 0
+HTTP Request: GET https://huggingface.co/api/models/cross-encoder/ms-marco-MiniLM-L12-v2/revision/main "HTTP/1.1 200 OK"
+Fetching 23 files:   0%|          | 0/23 [00:00<?, ?it/s]Fetching 23 files: 100%|██████████| 23/23 [00:00<00:00, 2396.57it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights:  14%|█▍        | 29/201 [00:00<00:00, 277.27it/s]Loading weights:  28%|██▊       | 57/201 [00:00<00:01, 130.22it/s]Loading weights:  37%|███▋      | 74/201 [00:00<00:01, 125.53it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 365.59it/s]
+    epoch 1: train loss 0.5087 dev NLL 0.4847
+    epoch 2: train loss 0.4442 dev NLL 0.4570
+    epoch 3: train loss 0.4075 dev NLL 0.4696
+train qp-large-helps-ms-marco-minilm-l12-v2-A seed 1
+HTTP Request: GET https://huggingface.co/api/models/cross-encoder/ms-marco-MiniLM-L12-v2/revision/main "HTTP/1.1 200 OK"
+Fetching 23 files:   0%|          | 0/23 [00:00<?, ?it/s]Fetching 23 files: 100%|██████████| 23/23 [00:00<00:00, 2777.36it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 12291.94it/s]
+    epoch 1: train loss 0.5104 dev NLL 0.4544
+    epoch 2: train loss 0.4462 dev NLL 0.4545
+    epoch 3: train loss 0.4103 dev NLL 0.4662
+train qp-large-helps-ms-marco-minilm-l12-v2-A seed 2
+HTTP Request: GET https://huggingface.co/api/models/cross-encoder/ms-marco-MiniLM-L12-v2/revision/main "HTTP/1.1 200 OK"
+Fetching 23 files:   0%|          | 0/23 [00:00<?, ?it/s]Fetching 23 files: 100%|██████████| 23/23 [00:00<00:00, 2659.38it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11244.78it/s]
+    epoch 1: train loss 0.5163 dev NLL 0.4579
+    epoch 2: train loss 0.4415 dev NLL 0.4431
+    epoch 3: train loss 0.3936 dev NLL 0.4552
+train qpa-large-helps-ms-marco-minilm-l12-v2-A seed 0
+HTTP Request: GET https://huggingface.co/api/models/cross-encoder/ms-marco-MiniLM-L12-v2/revision/main "HTTP/1.1 200 OK"
+Fetching 23 files:   0%|          | 0/23 [00:00<?, ?it/s]Fetching 23 files: 100%|██████████| 23/23 [00:00<00:00, 2708.89it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11521.40it/s]
+    epoch 1: train loss 0.5076 dev NLL 0.4772
+    epoch 2: train loss 0.4549 dev NLL 0.4508
+    epoch 3: train loss 0.4158 dev NLL 0.4608
+train qpa-large-helps-ms-marco-minilm-l12-v2-A seed 1
+HTTP Request: GET https://huggingface.co/api/models/cross-encoder/ms-marco-MiniLM-L12-v2/revision/main "HTTP/1.1 200 OK"
+Fetching 23 files:   0%|          | 0/23 [00:00<?, ?it/s]Fetching 23 files: 100%|██████████| 23/23 [00:00<00:00, 2860.71it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 10956.02it/s]
+    epoch 1: train loss 0.5116 dev NLL 0.4547
+    epoch 2: train loss 0.4489 dev NLL 0.4531
+    epoch 3: train loss 0.4175 dev NLL 0.4649
+train qpa-large-helps-ms-marco-minilm-l12-v2-A seed 2
+HTTP Request: GET https://huggingface.co/api/models/cross-encoder/ms-marco-MiniLM-L12-v2/revision/main "HTTP/1.1 200 OK"
+Fetching 23 files:   0%|          | 0/23 [00:00<?, ?it/s]Fetching 23 files: 100%|██████████| 23/23 [00:00<00:00, 2702.82it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 12458.33it/s]
+    epoch 1: train loss 0.5130 dev NLL 0.4672
+    epoch 2: train loss 0.4459 dev NLL 0.4501
+    epoch 3: train loss 0.4070 dev NLL 0.4577

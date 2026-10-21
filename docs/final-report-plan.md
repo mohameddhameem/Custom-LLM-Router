@@ -47,6 +47,8 @@ Since 2026-10-21 the HotpotQA headline follows Jonathan's Stage-Level Routing se
 |---|---|---|
 | Menu A ladder | WW 0.503 at 80, WS 0.640 at 192, SW 0.618 at 817, always-strong 0.768 at 929; oracle 0.815 at 205.5 | [Golden set](experiments/2026-10-21-slr-standard.md) |
 | Jonathan's SLR routers (reference) | SFT (label) 76.70 at 834.8; SFT (label) + reward 75.96 at 664.7. Both reproduced exactly, with thresholds re-selected on val | [Golden set](experiments/2026-10-21-slr-standard.md) |
+| Experiment 10, nano-jev judge on menu A | AIQ 0.719 (qpa) against his routers' 0.724 / 0.726: worse, [−0.011, −0.0004] and [−0.013, −0.002]; better than fixed paths by +0.026. At his operating rules it escalates everything (76.77 at 1,009). The 2B decider (size-matched to his 1.5B router) is queued | [Golden set](experiments/2026-10-21-slr-standard.md) |
+| Experiments 7/9 on the golden set (pair A, Table 5 prices) | nano-jev qpa 0.677 ties entropy (0.665) and the LR cascade (0.676) at no price. Zero-shot E4B decider 0.696 beats both before cost, but its 4.5 a call (nearly half a 7B answer) drops it to 0.650, below both. RQ2/RQ4 hold (passages carry the signal; nano-jev pretraining beats MS MARCO by +0.007 to +0.031) | [Golden set](experiments/2026-10-21-slr-standard.md) |
 
 ## Headline numbers on the common standard (AgentTTS slice: test = dev[500:1000], 500 questions, lenient, AgentTTS units)
 
@@ -58,4 +60,4 @@ Kept for the comparison with the AgentTTS paper on its own 500 questions.
 | nano-jev judges (experiment 7) | qp 0.696, qpa 0.698: tie entropy and the LR routers on 500 questions | [Common redo](experiments/2026-10-18-common-redo.md) |
 | Mean of 3 seeds vs one judge | The E4B mean scores 0.740 before cost, but 0.708 with its three passes (ties entropy). One judge is the better deployment | [Common redo](experiments/2026-10-18-common-redo.md) |
 | Experiment 8, cheapest strong option | 3B ×40 fused: lenient 0.746 (equal to AgentTTS) at 71 units under AgentTTS Eq. 8, below the 70B (0.670, 94 units). AgentTTS's recipe costs at least 302 units (97% of strong-everything, 311), so this is its accuracy at under a quarter of its cost | [Common redo](experiments/2026-10-18-common-redo.md) |
-| Experiment 8, option judge | nano-jev qpa 0.714: ties the best fixed mix (0.716), beats entropy [+0.008, +0.044]. On the LLM grade it beats the fixed mix but ties entropy. Deciders don't help with five options | [Common redo](experiments/2026-10-18-common-redo.md) |
+| Experiment 8, option judge | nano-jev qpa 0.709 (corrected 2026-10-21: it now pays the 3B answer it reads): ties the best fixed mix (0.716), beats entropy [+0.004, +0.038]. On the LLM grade it beats the fixed mix but ties entropy. Deciders don't help with five options | [Common redo](experiments/2026-10-18-common-redo.md) |

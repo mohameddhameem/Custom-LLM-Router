@@ -24,7 +24,10 @@ headline numbers are in [docs/experiments.md](../docs/experiments.md).
 | `common-judges` | 7 and 9 on the common standard: nano-jev and Strands Decider judges, lenient labels | `configs/system-one-common.toml` |
 | `common-judges-f1` | The same on F1 labels (check) | `configs/system-one-common-f1.toml` |
 | `exp8-common` | 8 on the common standard: answers recosted under AgentTTS Eq. 8, grades, and the option judges (nano-jev, deciders) | `configs/exp8-common.toml`, `configs/exp8-judge*-common.toml` |
-| `slr` | The HotpotQA golden set (Jonathan's Stage-Level Routing, Config B): verification and the menu A ladder on `slr-val` / `slr-test` at Table 5 prices (`report.json`, `paths-*.parquet`). His files themselves are fetched by `slr fetch`, not copied | `configs/slr.toml` |
+| `slr` | The HotpotQA golden set (Jonathan's Stage-Level Routing, Config B): verification and the menu A ladder on `slr-val` / `slr-test` at Table 5 prices (`report.json`, `paths-*.parquet`), job IDs (`slr-jobs.txt`). His files themselves are fetched by `slr fetch`, not copied | `configs/slr.toml` |
+| `exp10-slr` | 10: the System One judge routing menu A against Jonathan's SLR routers (judges' val/test scores, `done.json`, `eval/report{,-clean}.json`) | `configs/exp10-slr.toml` |
+| `slr-pairA` | 7/9 on the golden set: pair A's caches cut from `gpu`'s dev cache to `slr-train` / `slr-val` / `slr-test` | `configs/system-one-slr.toml` |
+| `slr-judges` | 7/9 on the golden set: the judges (nano-jev, MS MARCO, zero-shot) and `eval/A/report{,-clean}.json` at Table 5 prices | `configs/system-one-slr.toml` |
 
 Each folder has:
 

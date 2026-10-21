@@ -1,0 +1,6 @@
+job 43083.pbs-omega on a-4 (CPU, queue short), step slr7-prepare
+golden-set splits: router_train 4814 (slr-train), calib 1110 (slr-val), test 1481 (slr-test)
+Saved data/hotpotqa/splits-slr.json
+runs/slr-pairA/router_train.parquet: 4814 rows from runs/gpu/test.parquet
+runs/slr-pairA/calib.parquet: 1110 rows from runs/gpu/test.parquet
+runs/slr-pairA/test.parquet: 1481 rows from runs/gpu/test.parquet
