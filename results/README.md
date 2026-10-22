@@ -28,6 +28,7 @@ headline numbers are in [docs/experiments.md](../docs/experiments.md).
 | `exp10-slr` | 10: the System One judge routing menu A against Jonathan's SLR routers (judges' val/test scores, `done.json`, `eval/report{,-clean}.json`) | `configs/exp10-slr.toml` |
 | `slr-pairA` | 7/9 on the golden set: pair A's caches cut from `gpu`'s dev cache to `slr-train` / `slr-val` / `slr-test` | `configs/system-one-slr.toml` |
 | `slr-judges` | 7/9 on the golden set: the judges (nano-jev, MS MARCO, zero-shot) and `eval/A/report{,-clean}.json` at Table 5 prices | `configs/system-one-slr.toml` |
+| `exp8-slr` | 8 and the H2 diagnosis on the golden set: the five options' answers (`answers/<split>/`), the 70B with Jonathan's prompt on nano-jev's top 5 and on his 72B selections (`answers/test/llama70b-slrprompt-*`), the option judge (`judge-5opt/`) at Table 5 prices, nano-jev's recall, job logs | `configs/exp8-slr.toml`, `configs/exp8-judge-slr.toml` |
 
 Each folder has:
 

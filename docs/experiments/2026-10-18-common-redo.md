@@ -47,13 +47,13 @@ Job sheet: [gpu-jobs-common.md](../gpu-jobs-common.md). Run on OMEGA on 2026-10-
     It is cheaper and better than the 70B (0.670 at 94 units).
   - **Against AgentTTS:** its recipe costs at least 302 units under Eq. 8 (97% of strong-everything), so ×40 fused
     reaches its accuracy at under a quarter of its cost.
-  - **nano-jev qpa:** it matches the best mix of fixed options (0.709 vs 0.716). It beats entropy by
-    **[+0.004, +0.038]** and the LR router after the 3B answers by [+0.001, +0.038]. It ties the LR router before
-    them ([−0.004, +0.035]).
+  - **nano-jev qpa:** it matches the best mix of fixed options (0.711 vs 0.716). It beats entropy by
+    **[+0.003, +0.039]** and the LR router after the 3B answers by [+0.001, +0.038]. It ties the LR router before
+    them ([−0.002, +0.037]).
   - **On the LLM grade:** the 70B is the best option (0.748). There, the judge beats the fixed mix but only ties
     entropy.
 - **The deciders don't help with five options.**
-  - Before cost, a fine-tuned qpa decider is level with nano-jev qpa (2B 0.657–0.662, nano-jev 0.654–0.659, graded).
+  - Before cost, a fine-tuned qpa decider is level with nano-jev qpa (2B 0.661–0.666, nano-jev 0.658–0.662, graded).
   - Its 2.6–5.1 units a question then leave one judge tied with entropy, and the mean of three seeds below it.
 - **One epoch is enough** for experiments 7 and 9. Every judge's best validation loss is at epoch 1, except
   nano-jev qa at epoch 2 (see [Loss curves](#loss-curves)).
@@ -84,6 +84,21 @@ Job sheet: [gpu-jobs-common.md](../gpu-jobs-common.md). Run on OMEGA on 2026-10-
   - Its operating point costs 54 units, not 46.
   - qp judges read no answer, so they are unchanged. Experiments 7 and 9 already charged both calls.
 - **The earlier reports:** kept on OMEGA in `runs/exp8-common-before-qpa-fix`.
+
+**Correction (2026-10-22): experiment 8's ranking is paid once.**
+- **The error:**
+  - Every option's cost includes nano-jev's ranking of the 100-passage pool (about 2.9 units), which runs once per
+    question.
+  - A router that reads the 3B answer and then escalates (entropy, LR after the answers, the qpa judges) was charged
+    for that ranking twice.
+  - This was in the entropy and LR baselines from the start, and in the qpa judges since the 2026-10-21 fix.
+- **The fix:** `dd5b76f`, re-evaluated by job 43116, with no retraining.
+- **What moved:** the "after" routers are a little cheaper, so their AIQs rise by about 0.002–0.004.
+  - Lenient nano-jev qpa: 0.709 → 0.711. Entropy: 0.691 → 0.694.
+  - Graded nano-jev qpa: 0.653 → 0.657.
+  - The qpa operating point: 54 → 51 units.
+  - The conclusions stand. The figures below are the corrected ones.
+- **The earlier reports:** kept on OMEGA in `runs/before-ranking-fix/exp8-common`.
 
 ## What changed from the original runs
 
@@ -301,25 +316,25 @@ Mean AgentTTS units a question on test, each including nano-jev's ranking:
 |---|---|---|
 | Oracle | 0.831 | |
 | Best mix of fixed options | 0.716 [0.682, 0.752] | |
-| nano-jev qpa | **0.709** [0.676, 0.750] | 0.702, 0.712, 0.704 |
+| nano-jev qpa | **0.711** [0.679, 0.752] | 0.704, 0.715, 0.706 |
 | nano-jev qp | 0.705 [0.672, 0.745] | 0.710, 0.694, 0.704 |
 | LR before the 3B answers | 0.696 [0.661, 0.737] | |
-| Entropy threshold | 0.691 [0.654, 0.730] | |
-| LR after the 3B answers | 0.691 [0.654, 0.732] | |
+| Entropy threshold | 0.694 [0.656, 0.732] | |
+| LR after the 3B answers | 0.693 [0.657, 0.735] | |
 
 - **nano-jev qpa vs the baselines:**
-  - − entropy is [+0.004, +0.038];
+  - − entropy is [+0.003, +0.039];
   - − LR after is [+0.001, +0.038];
-  - − LR before is [−0.004, +0.035], a tie;
-  - − the fixed mix is [−0.018, +0.008], a tie.
-- **One seed of qpa − entropy:** [−0.004, +0.030], [+0.007, +0.041] and [−0.003, +0.034].
-- **nano-jev qp:** it ties entropy ([−0.001, +0.034]).
+  - − LR before is [−0.002, +0.037], a tie;
+  - − the fixed mix is [−0.015, +0.010], a tie.
+- **One seed of qpa − entropy:** [−0.004, +0.030], [+0.007, +0.042] and [−0.004, +0.034].
+- **nano-jev qp:** it ties entropy ([−0.004, +0.032]).
 - **Operating point** (chosen on calib: the cheapest point within 0.01 of the best):
-  - the qpa judge reaches 0.724 at 54 units;
-  - entropy reaches 0.730 at 72;
+  - the qpa judge reaches 0.724 at 51 units;
+  - entropy reaches 0.730 at 70;
   - always using ×40 gives 0.746 at 71.
-  - So the judge trades 0.02 accuracy for a quarter less cost. The oracle (0.844 at 16 units) shows how much room is
-    left.
+  - So the judge trades 0.02 accuracy for over a quarter less cost. The oracle (0.844 at 16 units) shows how much
+    room is left.
 
 **LLM grade** (`judge-5opt-graded`, and the deciders in `judge-decider-*`; each decider report carries the same
 baselines and nano-jev judges):
@@ -327,42 +342,42 @@ baselines and nano-jev judges):
 | Router | AIQ [95% CI] | One judge, with its cost (seeds) | Units a question, one pass |
 |---|---|---|---|
 | Oracle | 0.792 | | |
-| Entropy threshold | 0.665 [0.626, 0.708] | | |
-| LR after the 3B answers | 0.663 [0.626, 0.706] | | |
+| Entropy threshold | 0.667 [0.629, 0.710] | | |
+| LR after the 3B answers | 0.666 [0.628, 0.708] | | |
+| nano-jev qpa | 0.657 [0.622, 0.696] | 0.662, 0.658, 0.659 | 0.14 |
 | nano-jev qp | 0.656 [0.623, 0.695] | 0.654, 0.653, 0.659 | 0.14 |
-| nano-jev qpa | 0.653 [0.619, 0.692] | 0.658, 0.654, 0.656 | 0.14 |
 | LR before the 3B answers | 0.644 [0.607, 0.685] | | |
+| Decider 2B fine-tuned, qpa | 0.641 [0.608, 0.682] | 0.659, 0.659, 0.655 | 2.59 |
 | Best mix of fixed options | 0.639 [0.608, 0.678] | | |
-| Decider 2B fine-tuned, qpa | 0.637 [0.605, 0.679] | 0.655, 0.656, 0.651 | 2.59 |
 | Decider 2B zero-shot, qp | 0.637 [0.601, 0.676] | | 2.47 |
 | Decider 2B fine-tuned, qp | 0.636 [0.600, 0.675] | 0.645, 0.645, 0.648 | 2.47 |
 | Decider E4B zero-shot, qp | 0.634 [0.599, 0.672] | | 4.89 |
-| Decider E4B fine-tuned, qpa | 0.626 [0.590, 0.667] | 0.653, 0.652, 0.643 | 5.12 |
-| Decider 2B zero-shot, qpa | 0.624 [0.587, 0.661] | | 2.59 |
-| Decider E4B zero-shot, qpa | 0.620 [0.586, 0.661] | | 5.12 |
+| Decider E4B fine-tuned, qpa | 0.629 [0.593, 0.670] | 0.657, 0.655, 0.647 | 5.12 |
+| Decider 2B zero-shot, qpa | 0.627 [0.590, 0.665] | | 2.59 |
+| Decider E4B zero-shot, qpa | 0.624 [0.590, 0.664] | | 5.12 |
 | Decider E4B fine-tuned, qp | 0.618 [0.583, 0.659] | 0.639, 0.642, 0.634 | 4.89 |
 
 For fine-tuned judges, the AIQ column is the mean of 3 seeds with three passes' cost.
 
 - **nano-jev qpa:**
-  - − the fixed mix is [+0.002, +0.026];
-  - − entropy is [−0.026, +0.007], a tie;
-  - − LR after is [−0.024, +0.008], a tie.
+  - − the fixed mix is [+0.006, +0.029];
+  - − entropy is [−0.024, +0.008], a tie;
+  - − LR after is [−0.022, +0.008], a tie.
 - **Deciders, one judge − entropy:**
-  - 2B qpa: [−0.022, +0.010], [−0.022, +0.008] and [−0.028, +0.004], all ties;
-  - E4B qpa: [−0.025, +0.004], [−0.028, +0.006] and [−0.035, −0.001]: two ties and one worse.
+  - 2B qpa: [−0.021, +0.011], [−0.021, +0.009] and [−0.026, +0.005], all ties;
+  - E4B qpa: [−0.024, +0.005], [−0.027, +0.007] and [−0.033, −0.001]: two ties and one worse.
 - **Deciders, mean of 3 seeds:**
-  - 2B qpa − entropy is [−0.039, −0.007], worse; − nano-jev qpa is [−0.025, −0.005], worse;
-  - E4B qpa − entropy is [−0.053, −0.019], worse.
-- **Zero-shot deciders:** worse than entropy (qpa: 2B [−0.053, −0.026], E4B [−0.057, −0.025]).
-- **Before their cost,** one fine-tuned qpa decider scores 0.657–0.662 (2B) and 0.655–0.666 (E4B), against 0.654–0.659
+  - 2B qpa − entropy is [−0.038, −0.006], worse; − nano-jev qpa is [−0.025, −0.005], worse;
+  - E4B qpa − entropy is [−0.052, −0.019], worse.
+- **Zero-shot deciders:** worse than entropy (qpa: 2B [−0.051, −0.026], E4B [−0.056, −0.024]).
+- **Before their cost,** one fine-tuned qpa decider scores 0.661–0.666 (2B) and 0.659–0.669 (E4B), against 0.658–0.662
   for nano-jev qpa. The decider routes no better here, and pays 18 to 37 times more per pass.
 - **Operating point:** every router's operating point is close to always using the 70B (0.748 at 96 units). The judge
-  qpa gives 0.744 at 103, and entropy 0.742 at 94.
+  qpa gives 0.744 at 100, and entropy 0.742 at 91.
 
 **Clean subset** (438 questions): the same order on both rulers.
-- Lenient: fixed mix 0.715, nano-jev qpa 0.708, qp 0.707, LR before 0.698, entropy 0.695, LR after 0.695.
-- Graded: entropy 0.669, LR after 0.668, nano-jev qp 0.661, qpa 0.654.
+- Lenient: fixed mix 0.715, nano-jev qpa 0.710, qp 0.707, LR before 0.698, LR after 0.697, entropy 0.697.
+- Graded: entropy 0.672, LR after 0.671, nano-jev qp 0.661, qpa 0.658.
 
 **Training** (router_train labels, cheapest correct option):
 - **Lenient:** 79% of questions are labelled "3B, one answer", which includes those no option answered.

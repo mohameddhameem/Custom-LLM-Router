@@ -1,10 +1,13 @@
 # HotpotQA on the golden set: Jonathan's Stage-Level Routing setup
 
 **In progress.**
-- **Done:** the golden set is imported and verified. Experiment 10 with nano-jev judges is done. Experiments 7 and 9
-  are done with nano-jev, MS MARCO and zero-shot judges.
-- **Running:** experiment 8's answers on the golden set, and the H2 diagnosis.
-- **Queued:** the fine-tuned deciders.
+- **Done:**
+  - the golden set is imported and verified;
+  - experiment 10 with nano-jev judges;
+  - experiments 7 and 9 with nano-jev, MS MARCO and zero-shot judges;
+  - experiment 8 and the H2 diagnosis.
+- **Running:** the fine-tuned deciders (experiment 10's 2B and E4B; experiment 9's E4B). Experiment 9's 2B is
+  trained, and its evaluation waits for the E4B.
 
 See [the job sheet](../gpu-jobs-slr.md).
 
@@ -170,3 +173,115 @@ Output: [results/slr-judges](../../results/slr-judges/eval/A/report.json).
   the 7B here reads all 10 passages. A judge has no Table 5 entry, so it is priced at its measured tokens. Relative to
   the experts, judges are therefore dearer here than in measured AgentTTS units. There, the E4B zero-shot with its cost
   tied the LR cascade router ([2026-10-18](2026-10-18-common-redo.md)).
+
+## Experiment 8 on the golden set: cheap retrieval, sampled answers
+
+**Setup** ([configs/exp8-slr.toml](../../configs/exp8-slr.toml), job sheet rows 8.1–8.8):
+- nano-jev ranks each question's 100-passage pool, and the answerer reads its top 5.
+- The five answer options are experiment 8's: Llama-3.2-3B with one answer, or 10 / 20 / 40 samples fused, and
+  Llama-3.1-70B (4-bit) with one answer. All use AgentTTS's answer prompt.
+- **Split:**
+  - test is all 1,481 `slr-test` questions;
+  - the option judge trains on 1,000 `slr-train` questions and is calibrated on 500 `slr-val` ones.
+  - Questions already answered on the common standard are drawn first, and their answers are reused (199 test,
+    149 calib, 652 train; all byte-identical).
+- **Prices** (Table 5, Eq. 8):
+  - 3B 3; ×10 / ×20 / ×40 fused 12 / 22 / 42, plus a fusion call at 3; 70B 115.
+  - nano-jev's ranking of the pool is priced with `budget()` at its measured tokens: 49k tokens, 6.6 a question.
+- **Jobs:**
+  - answers 43091–43095, plus 43104;
+  - the option judge 43096, re-evaluated by 43116;
+  - output in [results/exp8-slr](../../results/exp8-slr/answers/summary.csv).
+- **Checks:** recomputing the standard ruler from the raw answers matches the summary exactly.
+
+**The options against Jonathan's rows** (`slr-test`; the paired bootstrap is over questions, 1,000 resamples):
+
+| Policy | Lenient | Price | % of 929 | − his always-strong, points [95% CI] |
+|---|---|---|---|---|
+| His always-strong (SS: 72B retrieval → 70B) | 76.77 | 929 | 100% | |
+| His SLR SFT (label) | 76.70 | 834.8 | 90% | |
+| His SLR SFT (label) + reward | 75.96 | 664.7 | 72% | |
+| His WS (7B retrieval → 70B) | 64.01 | 192 | 21% | |
+| nano-jev top 5 → 3B, 20 samples fused | **75.08** | **31.6** | **3.4%** | −1.69 [−4.19, +0.68] |
+| nano-jev top 5 → 3B, 40 samples fused | 74.88 | 51.6 | 5.6% | −1.89 [−4.46, +0.74] |
+| nano-jev top 5 → 3B, 10 samples fused | 74.34 | 21.6 | 2.3% | −2.43 [−4.93, −0.14] |
+| nano-jev top 5 → 70B, one answer | 68.33 | 121.6 | 13% | −8.44 [−10.60, −6.01] |
+| nano-jev top 5 → 3B, one answer | 61.44 | 9.6 | 1.0% | |
+| Oracle over the five options | 85.42 | 16.0 | 1.7% | |
+
+- **The ×20 fused answer ties always-strong and both of his routers, at 3–5% of their price.**
+  - Against his label router: −1.62 [−4.05, +1.08]. Against his reward router: −0.88 [−3.45, +1.69].
+  - It beats his WS path, the cheapest way to his 70B (192), by +11.07 [+8.44, +13.64].
+  - ×20 and ×10 tie each other: +0.74 [−0.88, +2.30].
+- **Clean test** (1,303): the same picture. ×20 scores 75.44 against always-strong's 77.05, a difference of −1.61
+  [−4.22, +1.07].
+- **Two caveats:**
+  - A tie is not equality: the intervals allow always-strong to be up to 4 points better.
+  - Table 5 prices each call at the paper's nominal lengths, while the 20 samples are priced under Eq. 8 (one prompt).
+    The measured units tell the same story: 44.7 for ×20 fused against 1,821 for SS.
+
+**The option judge** (nano-jev, 3 seeds; [report](../../results/exp8-slr/judge-5opt/eval/report.json)):
+- It chooses one of the five options per question.
+- It trains on the cheapest correct option (75% of training questions are labelled "3B, one answer").
+- Its own calls price at 0 under `budget()`.
+- The baselines escalate from the 3B answer to the most accurate option on calib, ×20 fused.
+- AIQ covers 9.6 (always 3B) to 121.6 (always 70B).
+
+| Router (`slr-test`) | AIQ [95% CI] | One seed |
+|---|---|---|
+| Oracle | 0.847 | |
+| nano-jev qp | **0.746** [0.726, 0.768] | 0.741, 0.746, 0.746 |
+| Best mix of fixed options | 0.743 [0.725, 0.765] | |
+| nano-jev qpa | 0.742 [0.724, 0.764] | 0.744, 0.740, 0.745 |
+| LR before the 3B answer | 0.738 [0.716, 0.759] | |
+| Entropy threshold | 0.737 [0.716, 0.758] | |
+| LR after the 3B answer | 0.737 [0.715, 0.758] | |
+
+- **No router beats the fixed options here.** Every paired difference straddles 0:
+  - qp − the fixed mix is [−0.007, +0.012];
+  - qp − entropy is [−0.001, +0.020];
+  - qp − LR before is [−0.002, +0.020];
+  - qpa − entropy is [−0.004, +0.017].
+- **Clean test (1,303):** the same order and the same ties. qp scores 0.750, the fixed mix 0.746, qpa 0.743, and entropy
+  0.741.
+- **Operating points (calib → test):**
+  - the qpa judge at the 25% budget gives 74.27 at 25.8;
+  - qp gives 73.67 at 26.9;
+  - always ×20 gives 75.08 at 31.6, which the LR-before router picks.
+- **Why routing adds little here:**
+  - ×20 fused is already within 1.7 points of always-strong, at 3.4% of its price.
+  - The oracle (85.4 at 16.0) shows that per-question choices could still gain about 10 points. Neither the judge nor
+    the baselines find them from the question, the passages and the 3B answer.
+- **Correction before publication:** the first evaluation (job 43096) charged nano-jev's ranking twice to every router
+  that reads the 3B answer and escalates. That made qp look better than entropy ([+0.002, +0.023]) and LR after
+  ([+0.002, +0.023]). Fixed in `dd5b76f` and re-evaluated by 43116; the common-standard reports moved by about 0.002
+  ([correction](2026-10-18-common-redo.md)).
+
+## H2 on the golden set: the gap is retrieval, not the answer prompt
+
+H2 ([experiment 8 plan](../experiment-8-plan.md)) asked whether the 70B reading nano-jev's top passages comes within
+2 points of 72B retrieval + 70B answering. On the golden set it misses by 8.4 points (68.33 against 76.77).
+
+Two things differ between our 70B cell and his SS path:
+- the evidence: nano-jev's top 5 raw passages, against his 72B's selection;
+- the prompt: AgentTTS's long-form answer, against his "ONLY the exact answer phrase", greedy, at most 128 tokens.
+
+The H2 job (43090) separates them: our 70B with his prompt, reading either nano-jev's top 5 or his 72B's selections.
+
+| 70B cell (`slr-test`) | Lenient | Paired difference [95% CI] |
+|---|---|---|
+| His prompt, his 72B selections | 76.23 | − his SS: −0.54 [−1.82, +0.74]. They agree on 93.7% of questions, with identical answer strings on 84.8% |
+| His prompt, nano-jev's top 5 | 69.82 | − the row above: **−6.41 [−8.24, −4.66]** (retrieval) |
+| AgentTTS's prompt, nano-jev's top 5 | 68.33 | − the row above: −1.49 [−3.78, +0.81] (prompt) |
+
+- **We reproduce his SS:** with his evidence and prompt, our 4-bit 70B scores 0.5 points below his AWQ 70B, within noise.
+- **Retrieval is the gap.** Swapping his 72B's selections for nano-jev's top 5 costs 6.4 points. Swapping the prompt
+  costs 1.5, which is not significant. So the earlier guess that the answer format explained H2 is wrong.
+- **Why the 72B's evidence is better:**
+  - It isn't a ranking. The 72B reads the whole pool and writes about 2 references per question.
+  - 27.5% of the references on known paragraphs are rewritten rather than copied, as in "Shirley Temple portrayed
+    Corliss Archer in the 1945 film 'Kiss and Tell'".
+  - The gold answer already appears in its selected text for 85.4% of test questions.
+  - nano-jev's top 5 holds both gold passages for 75.8% of questions (86.7% of gold passages).
+- **The cheap fix is sampling, not a bigger reader.** On the same nano-jev passages, the 3B with 20 samples fused
+  (75.08) beats the 70B (68.33) at a quarter of its price.

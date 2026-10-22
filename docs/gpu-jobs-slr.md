@@ -64,8 +64,10 @@ reruns:
 - **Prices** (`cost = "table5"`):
   - 3B 3; ×10 / ×20 / ×40 fused 12 / 22 / 42 (Eq. 8, Tables 6–9), plus a fusion call at 3;
   - 70B 115;
-  - nano-jev's ranking call by `budget()` at its measured tokens, about 1.
-- **A qpa judge** pays the cheapest option it read (fixed 2026-10-21).
+  - nano-jev's ranking call by `budget()` at its measured tokens: about 49k tokens for the 100-passage pool, 6.6 a
+    question. Every option's price includes it.
+- **A qpa judge** pays the cheapest option it read (fixed 2026-10-21), and every policy that runs two options pays the
+  ranking once (fixed 2026-10-22, `dd5b76f`, re-evaluated by 43116).
 
 - **What experiment 10 trains:** one typed-decision judge per (judge set, inputs, seed). Each judge answers two yes/no
   questions:
