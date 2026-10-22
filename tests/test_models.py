@@ -436,7 +436,7 @@ def test_exp8_judge_trains_and_evaluates(tiny_models, tmp_path):
         out = pd.DataFrame({"id": df["id"], "question": df["question"],
                             "passages": [c.split(". ")[:3] for c in df["full_context"]],
                             "pred0": ["alpha beta"] * n, "entropy0": rng.random(n),
-                            "nanojev": [rng.random(100) for _ in range(n)]})
+                            "nanojev": [rng.random(100) for _ in range(n)], "shared_cost": 1.0})
         return out, ok, cost
 
     tables = {"router_train": table(30, 0), "calib": table(15, 30), "test": table(15, 45)}

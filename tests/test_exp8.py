@@ -46,6 +46,8 @@ def test_a_judge_that_read_the_cheapest_answer_pays_for_it():
     choice = np.array([0, 2])
     assert ev.point(ok, cost, choice)["cost"] == pytest.approx((3 + 50) / 2)
     assert ev.point(ok, cost, choice, post=True)["cost"] == pytest.approx((3 + 50 + 3) / 2)  # option 0 ran first
+    # every option's cost includes a ranking call of 1 that ran once: option 0 adds only its answer (2)
+    assert ev.point(ok, cost, choice, post=True, shared=1.0)["cost"] == pytest.approx((3 + 50 + 2) / 2)
 
 
 def test_strongest_option_is_the_most_accurate_not_the_last():
@@ -79,6 +81,7 @@ def test_score_points_between_two_options():
     first, last = ev.score_points(ok, cost, score, 0, 1, post=False)[0], ev.score_points(ok, cost, score, 0, 1, post=False)[-1]
     assert (first["f1"], first["cost"]) == (0.5, 2.0) and (last["f1"], last["cost"]) == (0.75, 10.0)
     assert ev.score_points(ok, cost, score, 0, 1, post=True)[-1]["cost"] == 12.0  # post: escalated pay both calls (2 + 10)
+    assert ev.score_points(ok, cost, score, 0, 1, post=True, shared=1.0)[-1]["cost"] == 11.0  # the shared 1 once
     half = [p for p in ev.score_points(ok, cost, score, 0, 1, post=False) if p["rate"] == 0.5][0]
     assert half["f1"] == 1.0  # the two highest scores are the ones the strong option fixes
 
@@ -155,6 +158,21 @@ def test_load_tables_standard_ruler(tmp_path):
     _, ok, cost = ev.load_tables(out, "test", ["cheap", "strong"], 2, metric="lenient_std")
     assert ok[:, 0].tolist() == [True, False, False, False, True, False]
     assert cost[0].tolist() == [1.0, 9.0]  # no commit step under the response-level ruler
+
+
+def test_the_ranking_every_option_includes_is_paid_once(tmp_path):
+    out = _out_dir(tmp_path)
+    f = out / "scores" / "test.parquet"
+    pd.read_parquet(f).assign(tokens=20_000).to_parquet(f)  # nano-jev read 20k tokens: 1,336 GFLOPs
+    df, ok, cost = ev.load_tables(out, "test", ["cheap", "strong"], 2, prices=[3, 115])
+    ranking = 3 * 1336 / 1152 - 2  # budget(): 1.48
+    assert df["shared_cost"].iat[0] == pytest.approx(ranking)
+    assert cost[0].tolist() == pytest.approx([3 + ranking, 115 + ranking])
+    escalate = np.ones(len(df), dtype=int)  # read the cheap answer, then ran the strong option
+    assert ev.point(ok, cost, escalate, post=True, shared=df["shared_cost"].to_numpy())["cost"] == \
+        pytest.approx(3 + 115 + ranking)
+    measured, _, _ = ev.load_tables(out, "test", ["cheap", "strong"], 2)
+    assert measured["shared_cost"].iat[0] == pytest.approx(1336 / 1152)  # inside each answer's measured units
 
 
 def test_rescore_helpers():

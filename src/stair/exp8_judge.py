@@ -129,6 +129,7 @@ def run_eval(tables: dict, plan: dict, out: Path, exclude: set[str] | None = Non
     if exclude:
         keep = ~df_t["id"].isin(exclude).to_numpy()
         df_t, ok_t, cost_t = df_t[keep].reset_index(drop=True), ok_t[keep], cost_t[keep]
+    sh_c, sh_t = df_c["shared_cost"].to_numpy(), df_t["shared_cost"].to_numpy()  # nano-jev's ranking: paid once
     n, K = ok_t.shape
     order = np.argsort(cost_c.mean(0))
     if list(order) != list(range(K)):
@@ -146,9 +147,9 @@ def run_eval(tables: dict, plan: dict, out: Path, exclude: set[str] | None = Non
     scored = {}  # name -> (calib points, test points function, lo, hi, post)
 
     def add_score(name, calib_score, test_score, post):
-        calib_pts = ev.score_points(ok_c, cost_c, calib_score, 0, top, post)
-        curves[name] = lambda ix, s=test_score, p=post: ev.score_points(ok_t[ix], cost_t[ix], s[ix], 0, top, p)
-        scored[name] = (calib_pts, ev.score_points(ok_t, cost_t, test_score, 0, top, post))
+        calib_pts = ev.score_points(ok_c, cost_c, calib_score, 0, top, post, sh_c)
+        curves[name] = lambda ix, s=test_score, p=post: ev.score_points(ok_t[ix], cost_t[ix], s[ix], 0, top, p, sh_t[ix])
+        scored[name] = (calib_pts, ev.score_points(ok_t, cost_t, test_score, 0, top, post, sh_t))
 
     add_score("entropy threshold", df_c["entropy0"].to_numpy(), df_t["entropy0"].to_numpy(), True)
     # logistic regression routers on the router_train questions: binary, cheapest versus the most accurate option
@@ -173,14 +174,15 @@ def run_eval(tables: dict, plan: dict, out: Path, exclude: set[str] | None = Non
             pt, ut, per_seed = pt[keep], ut[keep], [p[keep] for p in per_seed]
         one = ut / len(jseeds)
         post = inputs == "qpa"  # it read the cheapest option's answer: that option ran on every question
-        curves[name] = lambda ix, p=pt, u=ut, q=post: ev.judge_points(ok_t[ix], cost_t[ix], p[ix], u[ix], q)
-        scored[name] = (ev.judge_points(ok_c, cost_c, pc, uc, post), ev.judge_points(ok_t, cost_t, pt, ut, post))
+        curves[name] = lambda ix, p=pt, u=ut, q=post: ev.judge_points(ok_t[ix], cost_t[ix], p[ix], u[ix], q, sh_t[ix])
+        scored[name] = (ev.judge_points(ok_c, cost_c, pc, uc, post, sh_c), ev.judge_points(ok_t, cost_t, pt, ut, post, sh_t))
         if len(jseeds) > 1:
             for s, p in zip(jseeds, per_seed):
                 seed_curves[f"{name}#seed{s}"] = (lambda ix, p=p, u=one, q=post:
-                                                  ev.judge_points(ok_t[ix], cost_t[ix], p[ix], u[ix], q))
-        judges[name] = {"aiq_per_seed": [aiq(ev.judge_points(ok_t, cost_t, p, 0.0, post), cmin, cmax) for p in per_seed],
-                        "aiq_per_seed_with_cost": [aiq(ev.judge_points(ok_t, cost_t, p, one, post), cmin, cmax)
+                                                  ev.judge_points(ok_t[ix], cost_t[ix], p[ix], u[ix], q, sh_t[ix]))
+        judges[name] = {"aiq_per_seed": [aiq(ev.judge_points(ok_t, cost_t, p, 0.0, post, sh_t), cmin, cmax)
+                                         for p in per_seed],
+                        "aiq_per_seed_with_cost": [aiq(ev.judge_points(ok_t, cost_t, p, one, post, sh_t), cmin, cmax)
                                                    for p in per_seed],
                         "judge_units": float(ut.mean()), "passes": len(jseeds), "init": init,
                         "pays_cheapest_option": post}
