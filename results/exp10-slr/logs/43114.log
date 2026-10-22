@@ -1,0 +1,46 @@
+job 43114.pbs-omega on a-11, step exp10-train
+name, memory.used [MiB], memory.total [MiB], driver_version
+NVIDIA L40S, 14 MiB, 46068 MiB, 555.58.02
+torch 2.14.1+cu126 NVIDIA L40S
+decider-e4b qp seed 0: 12930 items (2583 escalate), 1512 dev items
+HTTP Request: GET https://huggingface.co/api/models/StrandsAgents/strands-decider-e4b-gemma4-v1-2610/revision/main "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: GET https://huggingface.co/api/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/revision/main "HTTP/1.1 200 OK"
+Fetching 23 files:   0%|          | 0/23 [00:00<?, ?it/s]Fetching 23 files: 100%|██████████| 23/23 [00:00<00:00, 2378.43it/s]
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  54%|█████▍    | 1124/2076 [00:00<00:00, 11238.08it/s]Loading weights: 100%|██████████| 2076/2076 [00:00<00:00, 12710.79it/s]
+    epoch 1: train loss 0.4738 dev NLL 0.4581
+    epoch 2: train loss 0.3602 dev NLL 0.4791
+decider-e4b qp seed 1: 12984 items (2593 escalate), 1458 dev items
+HTTP Request: GET https://huggingface.co/api/models/StrandsAgents/strands-decider-e4b-gemma4-v1-2610/revision/main "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: GET https://huggingface.co/api/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/revision/main "HTTP/1.1 200 OK"
+Fetching 23 files:   0%|          | 0/23 [00:00<?, ?it/s]Fetching 23 files: 100%|██████████| 23/23 [00:00<00:00, 2639.23it/s]
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  56%|█████▌    | 1163/2076 [00:00<00:00, 11599.67it/s]Loading weights: 100%|██████████| 2076/2076 [00:00<00:00, 12415.48it/s]
+    epoch 1: train loss 0.4732 dev NLL 0.5009
+    epoch 2: train loss 0.3546 dev NLL 0.4778
+decider-e4b qp seed 2: 13080 items (2614 escalate), 1362 dev items
+HTTP Request: GET https://huggingface.co/api/models/StrandsAgents/strands-decider-e4b-gemma4-v1-2610/revision/main "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: GET https://huggingface.co/api/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/revision/main "HTTP/1.1 200 OK"
+Fetching 23 files:   0%|          | 0/23 [00:00<?, ?it/s]Fetching 23 files: 100%|██████████| 23/23 [00:00<00:00, 2372.40it/s]
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  54%|█████▎    | 1113/2076 [00:00<00:00, 11124.76it/s]Loading weights: 100%|██████████| 2076/2076 [00:00<00:00, 12378.05it/s]
+    epoch 1: train loss 0.4715 dev NLL 0.4351
+    epoch 2: train loss 0.3635 dev NLL 0.4398
+decider-e4b qpa seed 0: 12930 items (2583 escalate), 1512 dev items
+HTTP Request: GET https://huggingface.co/api/models/StrandsAgents/strands-decider-e4b-gemma4-v1-2610/revision/main "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: GET https://huggingface.co/api/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/revision/main "HTTP/1.1 200 OK"
+Fetching 23 files:   0%|          | 0/23 [00:00<?, ?it/s]Fetching 23 files: 100%|██████████| 23/23 [00:00<00:00, 2298.03it/s]
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  57%|█████▋    | 1186/2076 [00:00<00:00, 11859.11it/s]Loading weights: 100%|██████████| 2076/2076 [00:00<00:00, 12796.42it/s]
+    epoch 1: train loss 0.3944 dev NLL 0.3736
+    epoch 2: train loss 0.2198 dev NLL 0.4196
+decider-e4b qpa seed 1: 12984 items (2593 escalate), 1458 dev items
+HTTP Request: GET https://huggingface.co/api/models/StrandsAgents/strands-decider-e4b-gemma4-v1-2610/revision/main "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: GET https://huggingface.co/api/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/revision/main "HTTP/1.1 200 OK"
+Fetching 23 files:   0%|          | 0/23 [00:00<?, ?it/s]Fetching 23 files: 100%|██████████| 23/23 [00:00<00:00, 2222.58it/s]
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  52%|█████▏    | 1087/2076 [00:00<00:00, 10861.39it/s]Loading weights: 100%|██████████| 2076/2076 [00:00<00:00, 12355.27it/s]
+    epoch 1: train loss 0.3904 dev NLL 0.4912
+    epoch 2: train loss 0.2290 dev NLL 0.3848
+decider-e4b qpa seed 2: 13080 items (2614 escalate), 1362 dev items
+HTTP Request: GET https://huggingface.co/api/models/StrandsAgents/strands-decider-e4b-gemma4-v1-2610/revision/main "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: GET https://huggingface.co/api/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/revision/main "HTTP/1.1 200 OK"
+Fetching 23 files:   0%|          | 0/23 [00:00<?, ?it/s]Fetching 23 files: 100%|██████████| 23/23 [00:00<00:00, 2313.96it/s]
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  59%|█████▉    | 1223/2076 [00:00<00:00, 12221.45it/s]Loading weights: 100%|██████████| 2076/2076 [00:00<00:00, 12850.98it/s]
+    epoch 1: train loss 0.3909 dev NLL 0.3637
+    epoch 2: train loss 0.2273 dev NLL 0.4110

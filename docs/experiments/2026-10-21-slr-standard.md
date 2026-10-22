@@ -1,12 +1,10 @@
 # HotpotQA on the golden set: Jonathan's Stage-Level Routing setup
 
-**In progress.**
-- **Done:**
-  - the golden set is imported and verified;
-  - experiment 10 with nano-jev judges and the 2B decider;
-  - experiments 7 and 9 with nano-jev, MS MARCO, zero-shot and fine-tuned decider judges;
-  - experiment 8 and the H2 diagnosis.
-- **Running:** experiment 10's E4B decider (43114, then eval 43115).
+**Done (2026-10-23).**
+- the golden set is imported and verified;
+- experiment 10 with nano-jev judges and the 2B and E4B deciders;
+- experiments 7 and 9 with nano-jev, MS MARCO, zero-shot and fine-tuned decider judges;
+- experiment 8 and the H2 diagnosis.
 
 See [the job sheet](../gpu-jobs-slr.md).
 
@@ -90,14 +88,16 @@ epoch. Thresholds come from `slr-val` with his sweep and his two rules (peak, pa
 (training, 11 minutes) and 43082 (eval). Output: [results/exp10-slr](../../results/exp10-slr/eval/report.json).
 
 **`slr-test`, 1,481 questions.** AIQ is over weak-first prices from 80 (all WW) to 1,009 (all SS), with the paired
-bootstrap. Judges are the mean of 3 seeds. The 2B decider (job 43098, eval 43100) is the Strands Decider 2B with LoRA,
-trained like experiment 9's.
+bootstrap. Judges are the mean of 3 seeds. The deciders are the Strands Deciders with LoRA, trained like experiment 9's:
+the 2B in job 43098 (eval 43100), the E4B in 43114 (eval 43115).
 
 | Router | AIQ [95% CI] | With its own price | One seed | Peak point (val rule → test) | Parity point |
 |---|---|---|---|---|---|
-| **Decider 2B qpa** | **0.731** [0.711, 0.753] | 0.730 (4.7 a question, 3 passes) | 0.733, 0.726, 0.726 | 76.77 at 1,009 (all SS) | 76.77 at 1,009 |
+| **Decider E4B qpa** | **0.736** [0.717, 0.758] | 0.730 (20.2 a question, 3 passes) | 0.731, 0.735, 0.729 | **76.70 at 737.5** | 76.70 at 737.5 |
+| Decider 2B qpa | 0.731 [0.711, 0.753] | 0.730 (4.7 a question, 3 passes) | 0.733, 0.726, 0.726 | 76.77 at 1,009 (all SS) | 76.77 at 1,009 |
 | SLR SFT (label) + reward (his) | 0.726 [0.705, 0.747] | (uncharged) | | 75.96 at 679.3 | 75.96 at 664.7 |
 | SLR SFT (label) (his) | 0.724 [0.704, 0.745] | (uncharged) | | 76.70 at 834.8 | 75.35 at 670.3 |
+| Decider E4B qp | 0.723 [0.702, 0.744] | 0.717 | 0.718, 0.721, 0.720 | 76.77 at 1,009 | 76.77 at 1,009 |
 | Decider 2B qp | 0.722 [0.701, 0.742] | 0.720 | 0.720, 0.719, 0.721 | 76.77 at 1,009 | 76.77 at 1,009 |
 | nano-jev qpa | 0.719 [0.698, 0.739] | 0.719 | 0.717, 0.717, 0.717 | 76.77 at 1,009 | 76.77 at 1,009 |
 | nano-jev qp | 0.718 [0.697, 0.739] | 0.718 | 0.716, 0.715, 0.716 | 76.77 at 1,009 | 76.77 at 1,009 |
@@ -116,7 +116,29 @@ trained like experiment 9's.
   - It is not short of operating points: it has 106 val-Pareto points, against his routers' 121 and 133.
   - So it ranks questions better on average (AIQ), but his routers own the top end: points at or above always-strong's
     accuracy for less.
-- **The E4B decider** is running (43114; the first try, 43099, ran out of memory).
+  - One seed alone does find such points: seed 0's parity point gives 76.64 at 814.2, and seed 2's 76.50 at 824.3.
+
+**The E4B decider reading the weak answer beats both his routers before its price, and ties them with it.**
+- **Before its price:**
+  - qpa − his label router is **[+0.004, +0.021]**;
+  - qpa − his reward router is **[+0.003, +0.019]**;
+  - it beats the fixed paths by [+0.035, +0.053].
+- **With its price:** three passes cost 20.2 a question (one pass 6.5, both stages), and the difference to his routers
+  is [−0.002, +0.015] and [−0.003, +0.013], ties.
+- **One seed with its price** scores 0.730, 0.733 and 0.727. Seed 1 still beats his label router ([+0.001, +0.016])
+  and ties his reward router; seeds 0 and 2 tie both.
+- **Clean test** (1,303): 0.739 against his 0.727 and 0.729. Before its price it beats both ([+0.003, +0.021],
+  [+0.001, +0.018]); with it, it ties both.
+- **It gives the first real operating point under his rules.**
+  - The mean of three seeds reaches **76.70 at 737.5**: his label router's accuracy (76.70 at 834.8) at 12% less.
+  - It takes all four paths: WW 230, WS 149, SW 584, SS 518. It leans on SW (72B retrieval, 3B answer), which his
+    label router never uses and his reward router uses for 187 questions.
+  - Even with its own three passes (+20.2), it costs 757.7, still below his 834.8.
+  - One seed alone does not repeat this: seeds 0 and 1 escalate everything, and seed 2's parity point is 76.03 at 710.5.
+    So the point needs the three-seed ensemble.
+- **The E4B qp decider,** without the weak answer, ties his routers before its price ([−0.007, +0.003],
+  [−0.009, +0.002]). With it, it is worse ([−0.013, −0.003], [−0.015, −0.004]).
+- **The first E4B run** (43099) ran out of GPU memory at micro-batch 4. This one trained at 2, as experiment 9's E4B.
 
 **nano-jev judges (33M):**
 
@@ -132,7 +154,7 @@ trained like experiment 9's.
 - **The judge's own cost doesn't change this.** A nano-jev call prices at 0 under `budget()`, since it is cheaper than
   one 3B sample.
 - **Why, most likely:** his routers are Qwen2.5-1.5B with LoRA, about 45 times nano-jev's size. The size-matched 2B
-  decider (above) closes the gap and edges ahead on AIQ.
+  decider (above) closes the gap and edges ahead on AIQ, and the E4B goes past them.
 
 ## Experiments 7 and 9 on the golden set (pair A)
 
