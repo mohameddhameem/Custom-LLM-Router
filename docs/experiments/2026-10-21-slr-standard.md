@@ -3,11 +3,11 @@
 **In progress.**
 - **Done:**
   - the golden set is imported and verified;
-  - experiment 10 with nano-jev judges;
+  - experiment 10 with nano-jev judges and the 2B decider;
   - experiments 7 and 9 with nano-jev, MS MARCO and zero-shot judges;
   - experiment 8 and the H2 diagnosis.
-- **Running:** the fine-tuned deciders (experiment 10's 2B and E4B; experiment 9's E4B). Experiment 9's 2B is
-  trained, and its evaluation waits for the E4B.
+- **Running:** experiment 10's E4B decider, and experiment 9's E4B. Experiment 9's 2B is trained, and its
+  evaluation waits for the E4B.
 
 See [the job sheet](../gpu-jobs-slr.md).
 
@@ -90,16 +90,36 @@ epoch. Thresholds come from `slr-val` with his sweep and his two rules (peak, pa
 `slr-test`. Code: `src/stair/exp10_slr.py`, [configs/exp10-slr.toml](../../configs/exp10-slr.toml). Jobs 43081
 (training, 11 minutes) and 43082 (eval). Output: [results/exp10-slr](../../results/exp10-slr/eval/report.json).
 
-**nano-jev judges (33M), `slr-test`, 1,481 questions.** AIQ is over weak-first prices from 80 (all WW) to 1,009 (all
-SS), with the paired bootstrap.
+**`slr-test`, 1,481 questions.** AIQ is over weak-first prices from 80 (all WW) to 1,009 (all SS), with the paired
+bootstrap. Judges are the mean of 3 seeds. The 2B decider (job 43098, eval 43100) is the Strands Decider 2B with LoRA,
+trained like experiment 9's.
 
-| Router | AIQ [95% CI] | One seed | Peak point (val rule → test) | Parity point |
-|---|---|---|---|---|
-| SLR SFT (label) + reward (his) | **0.726** [0.705, 0.747] | | 75.96 at 679.3 | 75.96 at 664.7 |
-| SLR SFT (label) (his) | 0.724 [0.704, 0.745] | | 76.70 at 834.8 | 75.35 at 670.3 |
-| nano-jev qpa | 0.719 [0.698, 0.739] | 0.717, 0.717, 0.717 | 76.77 at 1,009 (all SS) | 76.77 at 1,009 |
-| nano-jev qp | 0.718 [0.697, 0.739] | 0.716, 0.715, 0.716 | 76.77 at 1,009 | 76.77 at 1,009 |
-| Fixed paths (hull) | 0.693 [0.672, 0.714] | | | |
+| Router | AIQ [95% CI] | With its own price | One seed | Peak point (val rule → test) | Parity point |
+|---|---|---|---|---|---|
+| **Decider 2B qpa** | **0.731** [0.711, 0.753] | 0.730 (4.7 a question, 3 passes) | 0.733, 0.726, 0.726 | 76.77 at 1,009 (all SS) | 76.77 at 1,009 |
+| SLR SFT (label) + reward (his) | 0.726 [0.705, 0.747] | (uncharged) | | 75.96 at 679.3 | 75.96 at 664.7 |
+| SLR SFT (label) (his) | 0.724 [0.704, 0.745] | (uncharged) | | 76.70 at 834.8 | 75.35 at 670.3 |
+| Decider 2B qp | 0.722 [0.701, 0.742] | 0.720 | 0.720, 0.719, 0.721 | 76.77 at 1,009 | 76.77 at 1,009 |
+| nano-jev qpa | 0.719 [0.698, 0.739] | 0.719 | 0.717, 0.717, 0.717 | 76.77 at 1,009 | 76.77 at 1,009 |
+| nano-jev qp | 0.718 [0.697, 0.739] | 0.718 | 0.716, 0.715, 0.716 | 76.77 at 1,009 | 76.77 at 1,009 |
+| Fixed paths (hull) | 0.693 [0.672, 0.714] | | | | |
+
+**The 2B decider reading the weak answer is the first of our judges to match his routers.**
+- **Before its price:**
+  - qpa − his label router is **[+0.001, +0.014]**, better;
+  - qpa − his reward router is [−0.000, +0.012], a tie.
+- **With its price** (1.6 a pass, at its measured tokens): [−0.000, +0.012] and [−0.002, +0.011], ties with both.
+- **One seed:** seed 0 beats both his routers ([+0.002, +0.016] and [+0.001, +0.014]); seeds 1 and 2 tie them.
+- **Clean test** (1,303): 0.735 against his 0.727 and 0.729; − label [−0.000, +0.015], − reward [−0.002, +0.013].
+- **The 2B qp decider,** which doesn't read the weak answer, ties his routers ([−0.008, +0.002], [−0.010, +0.001]).
+- **At his operating rules, it still escalates everything,** like nano-jev: on val, no threshold point reaches
+  always-strong's accuracy at a lower price, so both rules pick all-SS.
+  - It is not short of operating points: it has 106 val-Pareto points, against his routers' 121 and 133.
+  - So it ranks questions better on average (AIQ), but his routers own the top end: points at or above always-strong's
+    accuracy for less.
+- **The E4B decider** is running (43114; the first try, 43099, ran out of memory).
+
+**nano-jev judges (33M):**
 
 - **His routers win, narrowly but clearly:**
   - qpa − his label router is [−0.011, −0.0004];
@@ -112,8 +132,8 @@ SS), with the paired bootstrap.
 - **Clean test** (1,303 questions): the same order. The judges score 0.721 and 0.722, his routers 0.727 and 0.729.
 - **The judge's own cost doesn't change this.** A nano-jev call prices at 0 under `budget()`, since it is cheaper than
   one 3B sample.
-- **Why, most likely:** his routers are Qwen2.5-1.5B with LoRA, about 45 times nano-jev's size. The 2B Strands
-  Decider (job sheet row 10.3) is the size-matched comparison.
+- **Why, most likely:** his routers are Qwen2.5-1.5B with LoRA, about 45 times nano-jev's size. The size-matched 2B
+  decider (above) closes the gap and edges ahead on AIQ.
 
 ## Experiments 7 and 9 on the golden set (pair A)
 

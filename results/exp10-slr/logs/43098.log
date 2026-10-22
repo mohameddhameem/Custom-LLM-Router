@@ -1,0 +1,55 @@
+job 43098.pbs-omega on a-11, step exp10-train
+name, memory.used [MiB], memory.total [MiB], driver_version
+NVIDIA L40S, 14 MiB, 46068 MiB, 555.58.02
+torch 2.14.1+cu126 NVIDIA L40S
+decider-2b qp seed 0: 12930 items (2583 escalate), 1512 dev items
+HTTP Request: GET https://huggingface.co/api/models/StrandsAgents/strands-decider-2B-hobson-v21/revision/main "HTTP/1.1 200 OK"
+Fetching 27 files:   0%|          | 0/27 [00:00<?, ?it/s]Fetching 27 files: 100%|██████████| 27/27 [00:00<00:00, 2816.93it/s]
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen3.5-2B-Base/resolve/b1485b2fa6dfa1287294f269f5fb618e03d52d7c/model.safetensors "HTTP/1.1 404 Not Found"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 12053.79it/s]
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen3.5-2B-Base/resolve/b1485b2fa6dfa1287294f269f5fb618e03d52d7c/generation_config.json "HTTP/1.1 404 Not Found"
+[transformers] `causal_conv1d_fn` is falling back to its reference PyTorch implementation because `causal_conv1d` is not installed. This is correct but much slower; install `causal_conv1d` for the optimized kernel.
+    epoch 1: train loss 0.4598 dev NLL 0.4558
+    epoch 2: train loss 0.3085 dev NLL 0.5133
+decider-2b qp seed 1: 12984 items (2593 escalate), 1458 dev items
+HTTP Request: GET https://huggingface.co/api/models/StrandsAgents/strands-decider-2B-hobson-v21/revision/main "HTTP/1.1 200 OK"
+Fetching 27 files:   0%|          | 0/27 [00:00<?, ?it/s]Fetching 27 files: 100%|██████████| 27/27 [00:00<00:00, 2844.10it/s]
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen3.5-2B-Base/resolve/b1485b2fa6dfa1287294f269f5fb618e03d52d7c/model.safetensors "HTTP/1.1 404 Not Found"
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 11657.73it/s]
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen3.5-2B-Base/resolve/b1485b2fa6dfa1287294f269f5fb618e03d52d7c/generation_config.json "HTTP/1.1 404 Not Found"
+    epoch 1: train loss 0.4593 dev NLL 0.5193
+    epoch 2: train loss 0.3026 dev NLL 0.5791
+decider-2b qp seed 2: 13080 items (2614 escalate), 1362 dev items
+HTTP Request: GET https://huggingface.co/api/models/StrandsAgents/strands-decider-2B-hobson-v21/revision/main "HTTP/1.1 200 OK"
+Fetching 27 files:   0%|          | 0/27 [00:00<?, ?it/s]Fetching 27 files: 100%|██████████| 27/27 [00:00<00:00, 2810.50it/s]
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen3.5-2B-Base/resolve/b1485b2fa6dfa1287294f269f5fb618e03d52d7c/model.safetensors "HTTP/1.1 404 Not Found"
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 10952.53it/s]
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen3.5-2B-Base/resolve/b1485b2fa6dfa1287294f269f5fb618e03d52d7c/generation_config.json "HTTP/1.1 404 Not Found"
+    epoch 1: train loss 0.4640 dev NLL 0.4235
+    epoch 2: train loss 0.3072 dev NLL 0.4835
+decider-2b qpa seed 0: 12930 items (2583 escalate), 1512 dev items
+HTTP Request: GET https://huggingface.co/api/models/StrandsAgents/strands-decider-2B-hobson-v21/revision/main "HTTP/1.1 200 OK"
+Fetching 27 files:   0%|          | 0/27 [00:00<?, ?it/s]Fetching 27 files: 100%|██████████| 27/27 [00:00<00:00, 2348.09it/s]
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen3.5-2B-Base/resolve/b1485b2fa6dfa1287294f269f5fb618e03d52d7c/model.safetensors "HTTP/1.1 404 Not Found"
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 10800.41it/s]
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen3.5-2B-Base/resolve/b1485b2fa6dfa1287294f269f5fb618e03d52d7c/generation_config.json "HTTP/1.1 404 Not Found"
+    epoch 1: train loss 0.3945 dev NLL 0.3756
+    epoch 2: train loss 0.2004 dev NLL 0.5093
+decider-2b qpa seed 1: 12984 items (2593 escalate), 1458 dev items
+HTTP Request: GET https://huggingface.co/api/models/StrandsAgents/strands-decider-2B-hobson-v21/revision/main "HTTP/1.1 200 OK"
+Fetching 27 files:   0%|          | 0/27 [00:00<?, ?it/s]Fetching 27 files: 100%|██████████| 27/27 [00:00<00:00, 2492.93it/s]
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen3.5-2B-Base/resolve/b1485b2fa6dfa1287294f269f5fb618e03d52d7c/model.safetensors "HTTP/1.1 404 Not Found"
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 11639.83it/s]
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen3.5-2B-Base/resolve/b1485b2fa6dfa1287294f269f5fb618e03d52d7c/generation_config.json "HTTP/1.1 404 Not Found"
+    epoch 1: train loss 0.3992 dev NLL 0.4337
+    epoch 2: train loss 0.2052 dev NLL 0.5220
+decider-2b qpa seed 2: 13080 items (2614 escalate), 1362 dev items
+HTTP Request: GET https://huggingface.co/api/models/StrandsAgents/strands-decider-2B-hobson-v21/revision/main "HTTP/1.1 200 OK"
+Fetching 27 files:   0%|          | 0/27 [00:00<?, ?it/s]Fetching 27 files: 100%|██████████| 27/27 [00:00<00:00, 2482.27it/s]
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen3.5-2B-Base/resolve/b1485b2fa6dfa1287294f269f5fb618e03d52d7c/model.safetensors "HTTP/1.1 404 Not Found"
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 10647.98it/s]
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen3.5-2B-Base/resolve/b1485b2fa6dfa1287294f269f5fb618e03d52d7c/generation_config.json "HTTP/1.1 404 Not Found"
+    epoch 1: train loss 0.4025 dev NLL 0.3755
+    epoch 2: train loss 0.2090 dev NLL 0.4109
