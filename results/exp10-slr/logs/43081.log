@@ -1,0 +1,41 @@
+job 43081.pbs-omega on a-11, step exp10-train
+name, memory.used [MiB], memory.total [MiB], driver_version
+NVIDIA L40S, 1872 MiB, 46068 MiB, 555.58.02
+torch 2.14.1+cu126 NVIDIA L40S
+nano-jev qp seed 0: 12930 items (2583 escalate), 1512 dev items
+HTTP Request: GET https://huggingface.co/api/agent-harnesses "HTTP/1.1 200 OK"
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1770.50it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 13681.07it/s]
+    epoch 1: train loss 0.4840 dev NLL 0.4612
+    epoch 2: train loss 0.4152 dev NLL 0.4837
+nano-jev qp seed 1: 12984 items (2593 escalate), 1458 dev items
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1566.13it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11101.74it/s]
+    epoch 1: train loss 0.4826 dev NLL 0.4928
+    epoch 2: train loss 0.4239 dev NLL 0.4822
+nano-jev qp seed 2: 13080 items (2614 escalate), 1362 dev items
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1677.22it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 10997.76it/s]
+    epoch 1: train loss 0.4869 dev NLL 0.4542
+    epoch 2: train loss 0.4160 dev NLL 0.4678
+nano-jev qpa seed 0: 12930 items (2583 escalate), 1512 dev items
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1422.16it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 10522.80it/s]
+    epoch 1: train loss 0.4815 dev NLL 0.4592
+    epoch 2: train loss 0.3982 dev NLL 0.5038
+nano-jev qpa seed 1: 12984 items (2593 escalate), 1458 dev items
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1605.17it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11146.95it/s]
+    epoch 1: train loss 0.4774 dev NLL 0.5127
+    epoch 2: train loss 0.4049 dev NLL 0.5003
+nano-jev qpa seed 2: 13080 items (2614 escalate), 1362 dev items
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1698.44it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 10609.40it/s]
+    epoch 1: train loss 0.4874 dev NLL 0.4657
+    epoch 2: train loss 0.4129 dev NLL 0.4896

@@ -38,7 +38,27 @@ Experiment 7 answers it.
 | RQ answers | RQ1: zero-shot ties entropy. RQ2: the passages carry the signal (qp ≈ qpa ≫ q, qa). RQ3: large-helps > small-fails. RQ4: nano-jev pretraining > MS MARCO (+0.013). RQ5: qp transfers across pairs within 0.004. RQ6: 3% cost, AIQ −0.0001 | [Experiment 7](experiments/2026-10-07-system-one-router.md) |
 | Against published results | Beats the HotpotQA baseline (58.3 F1), Llama-2-70B and Mixtral few-shot CoT (67.7 / 68.1). Below GPT-3.5 CoT (77.2) | [experiments.md](experiments.md) |
 
-## Headline numbers on the common standard (test = dev[500:1000], 500 questions, lenient, AgentTTS units)
+## Headline numbers on the golden set (`slr-test`, 1,481 questions, lenient, Table 5 prices)
+
+Since 2026-10-21 the HotpotQA headline follows Jonathan's Stage-Level Routing setup
+([write-up](experiments/2026-10-21-slr-standard.md)). Our rows land here as experiments 10, 7/9 and 8 move.
+
+| Claim | Number | Source |
+|---|---|---|
+| Menu A ladder | WW 0.503 at 80, WS 0.640 at 192, SW 0.618 at 817, always-strong 0.768 at 929; oracle 0.815 at 205.5 | [Golden set](experiments/2026-10-21-slr-standard.md) |
+| Jonathan's SLR routers (reference) | SFT (label) 76.70 at 834.8; SFT (label) + reward 75.96 at 664.7. Both reproduced exactly, with thresholds re-selected on val | [Golden set](experiments/2026-10-21-slr-standard.md) |
+| Experiment 10, nano-jev judge on menu A | AIQ 0.719 (qpa) against his routers' 0.724 / 0.726: worse, [−0.011, −0.0004] and [−0.013, −0.002]; better than fixed paths by +0.026. At his operating rules it escalates everything (76.77 at 1,009) | [Golden set](experiments/2026-10-21-slr-standard.md) |
+| Experiment 10, 2B decider on menu A (size-matched to his 1.5B routers) | qpa AIQ 0.731: beats his label router before its price ([+0.001, +0.014]), ties his reward router; with its price (4.7 a question) 0.730, ties both. Like nano-jev, it escalates everything at his operating rules | [Golden set](experiments/2026-10-21-slr-standard.md) |
+| Experiment 10, E4B decider on menu A | qpa AIQ 0.736: beats both his routers before its price ([+0.004, +0.021], [+0.003, +0.019]); with its price (20.2 a question, 3 passes) 0.730, ties both. The 3-seed mean gives 76.70 at 737.5 under his rules: his label router's accuracy (834.8) at 12% less, 757.7 with its own passes. One seed alone doesn't repeat it | [Golden set](experiments/2026-10-21-slr-standard.md) |
+| Experiment 8 on the golden set: cheap retrieval + sampling | nano-jev top 5 → Llama-3.2-3B, 20 samples fused: 75.08 at 31.6 (3.4% of 929). It ties always-strong (76.77; −1.69 [−4.19, +0.68]) and both of his routers, and beats his WS path (64.01 at 192) by +11.1. On the same passages the 70B scores 68.33 at 121.6 | [Golden set](experiments/2026-10-21-slr-standard.md) |
+| Experiment 8, option judge on the golden set | nano-jev qp 0.746, qpa 0.742: tie the best fixed mix (0.743), entropy (0.737) and the LR routers. The oracle (0.847) leaves about 10 points that no router finds | [Golden set](experiments/2026-10-21-slr-standard.md) |
+| H2 diagnosis | Our 70B with his prompt on his 72B's selections: 76.23 against his 76.77 (reproduced). nano-jev's top 5 instead: −6.4 [−8.2, −4.7]; AgentTTS's prompt instead of his: −1.5 [−3.8, +0.8]. The gap is retrieval: his 72B writes question-focused references that already contain the answer for 85% of questions | [Golden set](experiments/2026-10-21-slr-standard.md) |
+| Experiment 9 on the golden set: fine-tuned deciders (pair A) | Before cost, the E4B qpa decider is the best router (0.711; +0.02 to +0.06 over entropy, the LR cascade and nano-jev). With its price, one 2B qpa judge (1.3 a call) is the best deployable router: 0.677–0.682, better than entropy for all three seeds, level with the LR cascade. One E4B judge (4.4 a call) falls to 0.655 | [Golden set](experiments/2026-10-21-slr-standard.md) |
+| Experiments 7/9 on the golden set (pair A, Table 5 prices) | nano-jev qpa 0.677 ties entropy (0.665) and the LR cascade (0.676) at no price. Zero-shot E4B decider 0.696 beats both before cost, but its 4.5 a call (nearly half a 7B answer) drops it to 0.650, below both. RQ2/RQ4 hold (passages carry the signal; nano-jev pretraining beats MS MARCO by +0.007 to +0.031) | [Golden set](experiments/2026-10-21-slr-standard.md) |
+
+## Headline numbers on the common standard (AgentTTS slice: test = dev[500:1000], 500 questions, lenient, AgentTTS units)
+
+Kept for the comparison with the AgentTTS paper on its own 500 questions.
 
 | Claim | Number | Source |
 |---|---|---|
@@ -46,4 +66,4 @@ Experiment 7 answers it.
 | nano-jev judges (experiment 7) | qp 0.696, qpa 0.698: tie entropy and the LR routers on 500 questions | [Common redo](experiments/2026-10-18-common-redo.md) |
 | Mean of 3 seeds vs one judge | The E4B mean scores 0.740 before cost, but 0.708 with its three passes (ties entropy). One judge is the better deployment | [Common redo](experiments/2026-10-18-common-redo.md) |
 | Experiment 8, cheapest strong option | 3B ×40 fused: lenient 0.746 (equal to AgentTTS) at 71 units under AgentTTS Eq. 8, below the 70B (0.670, 94 units). AgentTTS's recipe costs at least 302 units (97% of strong-everything, 311), so this is its accuracy at under a quarter of its cost | [Common redo](experiments/2026-10-18-common-redo.md) |
-| Experiment 8, option judge | nano-jev qpa 0.714: ties the best fixed mix (0.716), beats entropy [+0.008, +0.044]. On the LLM grade it beats the fixed mix but ties entropy. Deciders don't help with five options | [Common redo](experiments/2026-10-18-common-redo.md) |
+| Experiment 8, option judge | nano-jev qpa 0.711 (corrected 2026-10-21: it pays the 3B answer it reads; and 2026-10-22: the ranking is paid once): ties the best fixed mix (0.716), beats entropy [+0.003, +0.039]. On the LLM grade it beats the fixed mix but ties entropy. Deciders don't help with five options | [Common redo](experiments/2026-10-18-common-redo.md) |

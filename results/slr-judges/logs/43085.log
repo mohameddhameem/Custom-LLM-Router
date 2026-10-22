@@ -1,0 +1,24 @@
+job 43085.pbs-omega on a-11, step slr7-judges
+name, memory.used [MiB], memory.total [MiB], driver_version
+NVIDIA L40S, 14 MiB, 46068 MiB, 555.58.02
+torch 2.14.1+cu126 NVIDIA L40S
+HTTP Request: GET https://huggingface.co/api/models/sdmlai/nano-jev/revision/v1.0 "HTTP/1.1 200 OK"
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 1409.91it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 12032.64it/s]
+zeroshot A/calib: 1110 questions, 4.5 ms/question for both judges
+zeroshot A/test: 1481 questions, 4.2 ms/question for both judges
+HTTP Request: GET https://huggingface.co/api/models/StrandsAgents/strands-decider-2B-hobson-v21/revision/main "HTTP/1.1 200 OK"
+Fetching 27 files:   0%|          | 0/27 [00:00<?, ?it/s]Fetching 27 files: 100%|██████████| 27/27 [00:00<00:00, 2910.99it/s]
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen3.5-2B-Base/resolve/b1485b2fa6dfa1287294f269f5fb618e03d52d7c/model.safetensors "HTTP/1.1 404 Not Found"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 11203.02it/s]
+HTTP Request: HEAD https://huggingface.co/Qwen/Qwen3.5-2B-Base/resolve/b1485b2fa6dfa1287294f269f5fb618e03d52d7c/generation_config.json "HTTP/1.1 404 Not Found"
+[transformers] `causal_conv1d_fn` is falling back to its reference PyTorch implementation because `causal_conv1d` is not installed. This is correct but much slower; install `causal_conv1d` for the optimized kernel.
+zeroshot A/calib: 1110 questions, 61.7 ms/question for both judges
+zeroshot A/test: 1481 questions, 58.7 ms/question for both judges
+HTTP Request: GET https://huggingface.co/api/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/revision/main "HTTP/1.1 200 OK"
+Fetching 23 files:   0%|          | 0/23 [00:00<?, ?it/s]Fetching 23 files: 100%|██████████| 23/23 [00:00<00:00, 2452.25it/s]
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  57%|█████▋    | 1187/2076 [00:00<00:00, 11859.10it/s]Loading weights: 100%|██████████| 2076/2076 [00:00<00:00, 12952.20it/s]
+zeroshot A/calib: 1110 questions, 145.3 ms/question for both judges
+zeroshot A/test: 1481 questions, 141.5 ms/question for both judges

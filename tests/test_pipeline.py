@@ -183,7 +183,7 @@ def test_end_to_end_smoke(tmp_path):
     assert report["n_test"] == 120
     assert report["cost_unit"] == "flops"
     assert report["expert_params_b"] == {"small": 1.5, "large": 7.0}
-    assert set(report["single_expert_costs"]) == {"flops", "tokens", "seconds", "agenttts"}
+    assert set(report["single_expert_costs"]) == {"flops", "tokens", "seconds", "agenttts"}  # table5 needs model names
     assert report["metric"] == "f1"
     rates = report["escalate_label_rate"]
     assert 0 < rates["large-helps"] <= rates["small-fails"] < 1

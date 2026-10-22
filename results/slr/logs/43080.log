@@ -1,0 +1,12 @@
+job 43080.pbs-omega on a-4 (CPU, queue short), step slr-ladder
+   Building stair @ file:///storage/home/dhameem.m.2025/Custom-LLM-Router
+      Built stair @ file:///storage/home/dhameem.m.2025/Custom-LLM-Router
+Uninstalled 1 package in 9ms
+Installed 1 package in 51ms
+always-strong                his 76.77 at 929.0, ours 76.77 at 929.0  ok
+SLR SFT (label)              his 76.70 at 834.8, ours 76.70 at 834.8 (t re-selected on val: [0.95, 1.0, 1.0])  ok
+SLR SFT (label) + reward     his 75.96 at 664.7, ours 75.96 at 664.7 (t re-selected on val: [0.8, 0.55, 0.6])  ok
+ruler mismatches: 0 of 29620; split problems: []
+val        n= 1110  WW 0.523@80  WS 0.650@192  SW 0.632@817  SS 0.768@929  oracle 0.815@200
+test       n= 1481  WW 0.503@80  WS 0.640@192  SW 0.618@817  SS 0.768@929  oracle 0.815@205
+test-clean n= 1303  WW 0.500@80  WS 0.645@192  SW 0.619@817  SS 0.771@929  oracle 0.821@208

@@ -1,0 +1,139 @@
+job 43089.pbs-omega on a-11, step exp8-score
+name, memory.used [MiB], memory.total [MiB], driver_version
+NVIDIA L40S, 14 MiB, 46068 MiB, 555.58.02
+torch 2.14.1+cu126 NVIDIA L40S
+test: 1481 pools, 60 chunks, 60 to score
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 12032.30it/s]
+  chunk 1/60: 0.29 s/question
+  chunk 2/60: 0.29 s/question
+  chunk 3/60: 0.30 s/question
+  chunk 4/60: 0.29 s/question
+  chunk 5/60: 0.28 s/question
+  chunk 6/60: 0.30 s/question
+  chunk 7/60: 0.30 s/question
+  chunk 8/60: 0.30 s/question
+  chunk 9/60: 0.29 s/question
+  chunk 10/60: 0.27 s/question
+  chunk 11/60: 0.30 s/question
+  chunk 12/60: 0.29 s/question
+  chunk 13/60: 0.28 s/question
+  chunk 14/60: 0.30 s/question
+  chunk 15/60: 0.29 s/question
+  chunk 16/60: 0.28 s/question
+  chunk 17/60: 0.30 s/question
+  chunk 18/60: 0.29 s/question
+  chunk 19/60: 0.29 s/question
+  chunk 20/60: 0.29 s/question
+  chunk 21/60: 0.30 s/question
+  chunk 22/60: 0.30 s/question
+  chunk 23/60: 0.31 s/question
+  chunk 24/60: 0.29 s/question
+  chunk 25/60: 0.30 s/question
+  chunk 26/60: 0.30 s/question
+  chunk 27/60: 0.28 s/question
+  chunk 28/60: 0.29 s/question
+  chunk 29/60: 0.30 s/question
+  chunk 30/60: 0.30 s/question
+  chunk 31/60: 0.29 s/question
+  chunk 32/60: 0.30 s/question
+  chunk 33/60: 0.30 s/question
+  chunk 34/60: 0.29 s/question
+  chunk 35/60: 0.29 s/question
+  chunk 36/60: 0.28 s/question
+  chunk 37/60: 0.30 s/question
+  chunk 38/60: 0.30 s/question
+  chunk 39/60: 0.30 s/question
+  chunk 40/60: 0.29 s/question
+  chunk 41/60: 0.31 s/question
+  chunk 42/60: 0.30 s/question
+  chunk 43/60: 0.29 s/question
+  chunk 44/60: 0.30 s/question
+  chunk 45/60: 0.30 s/question
+  chunk 46/60: 0.31 s/question
+  chunk 47/60: 0.30 s/question
+  chunk 48/60: 0.30 s/question
+  chunk 49/60: 0.30 s/question
+  chunk 50/60: 0.31 s/question
+  chunk 51/60: 0.30 s/question
+  chunk 52/60: 0.29 s/question
+  chunk 53/60: 0.31 s/question
+  chunk 54/60: 0.30 s/question
+  chunk 55/60: 0.31 s/question
+  chunk 56/60: 0.29 s/question
+  chunk 57/60: 0.30 s/question
+  chunk 58/60: 0.30 s/question
+  chunk 59/60: 0.29 s/question
+  chunk 60/60: 0.31 s/question
+saved runs/exp8-slr/scores/test.parquet
+calib: 500 pools, 20 chunks, 20 to score
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 14631.29it/s]
+  chunk 1/20: 0.30 s/question
+  chunk 2/20: 0.32 s/question
+  chunk 3/20: 0.29 s/question
+  chunk 4/20: 0.32 s/question
+  chunk 5/20: 0.30 s/question
+  chunk 6/20: 0.29 s/question
+  chunk 7/20: 0.30 s/question
+  chunk 8/20: 0.29 s/question
+  chunk 9/20: 0.31 s/question
+  chunk 10/20: 0.29 s/question
+  chunk 11/20: 0.29 s/question
+  chunk 12/20: 0.29 s/question
+  chunk 13/20: 0.30 s/question
+  chunk 14/20: 0.32 s/question
+  chunk 15/20: 0.32 s/question
+  chunk 16/20: 0.29 s/question
+  chunk 17/20: 0.30 s/question
+  chunk 18/20: 0.30 s/question
+  chunk 19/20: 0.30 s/question
+  chunk 20/20: 0.31 s/question
+saved runs/exp8-slr/scores/calib.parquet
+router_train: 1000 pools, 40 chunks, 40 to score
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11873.68it/s]
+  chunk 1/40: 0.30 s/question
+  chunk 2/40: 0.31 s/question
+  chunk 3/40: 0.29 s/question
+  chunk 4/40: 0.30 s/question
+  chunk 5/40: 0.31 s/question
+  chunk 6/40: 0.29 s/question
+  chunk 7/40: 0.30 s/question
+  chunk 8/40: 0.30 s/question
+  chunk 9/40: 0.29 s/question
+  chunk 10/40: 0.30 s/question
+  chunk 11/40: 0.29 s/question
+  chunk 12/40: 0.29 s/question
+  chunk 13/40: 0.30 s/question
+  chunk 14/40: 0.31 s/question
+  chunk 15/40: 0.30 s/question
+  chunk 16/40: 0.30 s/question
+  chunk 17/40: 0.29 s/question
+  chunk 18/40: 0.31 s/question
+  chunk 19/40: 0.30 s/question
+  chunk 20/40: 0.30 s/question
+  chunk 21/40: 0.30 s/question
+  chunk 22/40: 0.29 s/question
+  chunk 23/40: 0.30 s/question
+  chunk 24/40: 0.29 s/question
+  chunk 25/40: 0.31 s/question
+  chunk 26/40: 0.31 s/question
+  chunk 27/40: 0.29 s/question
+  chunk 28/40: 0.30 s/question
+  chunk 29/40: 0.30 s/question
+  chunk 30/40: 0.30 s/question
+  chunk 31/40: 0.29 s/question
+  chunk 32/40: 0.30 s/question
+  chunk 33/40: 0.29 s/question
+  chunk 34/40: 0.32 s/question
+  chunk 35/40: 0.29 s/question
+  chunk 36/40: 0.30 s/question
+  chunk 37/40: 0.30 s/question
+  chunk 38/40: 0.31 s/question
+  chunk 39/40: 0.30 s/question
+  chunk 40/40: 0.30 s/question
+saved runs/exp8-slr/scores/router_train.parquet
+test: 1481 pools of 100.2 | nano-jev 3290 GFLOPs = 2.86 AgentTTS units per question, 0.3 s per question (device: see provenance.jsonl)
+  all        n=1481  both gold in top-k  @2: nano-jev 0.544 BM25 0.228 | @3: nano-jev 0.660 BM25 0.332 | @5: nano-jev 0.758 BM25 0.438 | @10: nano-jev 0.858 BM25 0.585
+  bridge     n=1184  both gold in top-k  @2: nano-jev 0.441 BM25 0.206 | @3: nano-jev 0.578 BM25 0.302 | @5: nano-jev 0.698 BM25 0.395 | @10: nano-jev 0.823 BM25 0.520
+  comparison n=297   both gold in top-k  @2: nano-jev 0.956 BM25 0.316 | @3: nano-jev 0.990 BM25 0.451 | @5: nano-jev 1.000 BM25 0.606 | @10: nano-jev 1.000 BM25 0.845
+  clean      n=1303  both gold in top-k  @2: nano-jev 0.540 BM25 0.225 | @3: nano-jev 0.657 BM25 0.328 | @5: nano-jev 0.755 BM25 0.440 | @10: nano-jev 0.854 BM25 0.593
+saved runs/exp8-slr/recall-test.json

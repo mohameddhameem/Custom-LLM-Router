@@ -1,0 +1,15 @@
+job 43082.pbs-omega on a-4 (CPU, queue short), step exp10-eval
+decider-2b qp: not trained yet
+decider-2b qpa: not trained yet
+decider-e4b qp: not trained yet
+decider-e4b qpa: not trained yet
+SLR SFT (label)                    AIQ 0.7242 | peak 76.70 at 834.8 | parity 75.35 at 670.3
+SLR SFT (label) + reward           AIQ 0.7255 | peak 75.96 at 679.3 | parity 75.96 at 664.7
+nano-jev qp#seed0                  AIQ 0.7161 | peak 76.77 at 1009.0 | parity 76.77 at 1009.0
+nano-jev qp#seed1                  AIQ 0.7154 | peak 76.77 at 1009.0 | parity 76.77 at 1009.0
+nano-jev qp#seed2                  AIQ 0.7157 | peak 76.77 at 1009.0 | parity 76.77 at 1009.0
+nano-jev qp                        AIQ 0.7179 | peak 76.77 at 1009.0 | parity 76.77 at 1008.9
+nano-jev qpa#seed0                 AIQ 0.7172 | peak 76.77 at 1009.0 | parity 76.57 at 994.1
+nano-jev qpa#seed1                 AIQ 0.7170 | peak 76.77 at 1009.0 | parity 76.77 at 1009.0
+nano-jev qpa#seed2                 AIQ 0.7166 | peak 76.77 at 1009.0 | parity 76.77 at 1009.0
+nano-jev qpa                       AIQ 0.7189 | peak 76.77 at 1009.0 | parity 76.77 at 1009.0

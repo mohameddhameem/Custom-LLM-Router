@@ -1,0 +1,294 @@
+job 43099.pbs-omega on a-11, step exp10-train
+name, memory.used [MiB], memory.total [MiB], driver_version
+NVIDIA L40S, 14 MiB, 46068 MiB, 555.58.02
+torch 2.14.1+cu126 NVIDIA L40S
+decider-e4b qp seed 0: 12930 items (2583 escalate), 1512 dev items
+HTTP Request: GET https://huggingface.co/api/models/StrandsAgents/strands-decider-e4b-gemma4-v1-2610/revision/main "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: GET https://huggingface.co/api/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/revision/main "HTTP/1.1 200 OK"
+HTTP Request: GET https://huggingface.co/api/models/StrandsAgents/strands-decider-e4b-gemma4-v1-2610/tree/1344d44397c457f3be34b8ff15c593b41248c6bf?recursive=true&expand=false "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: GET https://huggingface.co/api/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/tree/1344d44397c457f3be34b8ff15c593b41248c6bf?recursive=true&expand=false "HTTP/1.1 200 OK"
+Fetching 23 files:   0%|          | 0/23 [00:00<?, ?it/s]HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-e4b-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/chat_template.jinja "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-e4b-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/MANIFEST.sha256 "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-e4b-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/README.md "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-e4b-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/eval/internal/eval.log "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-e4b-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/eval/internal/recipe_heldout.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-e4b-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/.gitattributes "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-e4b-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/LICENSE.md "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-e4b-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/eval/jevbench-w4096/health.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/MANIFEST.sha256 "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/chat_template.jinja "HTTP/1.1 307 Temporary Redirect"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/README.md "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/MANIFEST.sha256?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2FMANIFEST.sha256=&etag=%22b56f0b479682e8361d7e3849914284dd936019bf%22 "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/README.md?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2FREADME.md=&etag=%222709ded05fa1102bce47cf4cf90bf9faddef8f4e%22 "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/chat_template.jinja?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2Fchat_template.jinja=&etag=%22fbe3b59b625cd1b8850ea592d4203df6ec04684b%22 "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/eval/internal/eval.log "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: GET https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/MANIFEST.sha256?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2FMANIFEST.sha256=&etag=%22b56f0b479682e8361d7e3849914284dd936019bf%22 "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/eval%2Finternal%2Feval.log?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2Feval%2Finternal%2Feval.log=&etag=%22528c07a10b3dba610254081feba2743a2485fbc3%22 "HTTP/1.1 200 OK"
+HTTP Request: GET https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/README.md?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2FREADME.md=&etag=%222709ded05fa1102bce47cf4cf90bf9faddef8f4e%22 "HTTP/1.1 200 OK"
+HTTP Request: GET https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/chat_template.jinja?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2Fchat_template.jinja=&etag=%22fbe3b59b625cd1b8850ea592d4203df6ec04684b%22 "HTTP/1.1 200 OK"
+Fetching 23 files:   4%|▍         | 1/23 [00:00<00:11,  1.97it/s]HTTP Request: GET https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/eval%2Finternal%2Feval.log?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2Feval%2Finternal%2Feval.log=&etag=%22528c07a10b3dba610254081feba2743a2485fbc3%22 "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/.gitattributes "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/eval/internal/recipe_heldout.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/LICENSE.md "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/.gitattributes?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2F.gitattributes=&etag=%2252373fe24473b1aa44333d318f578ae6bf04b49b%22 "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/eval%2Finternal%2Frecipe_heldout.json?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2Feval%2Finternal%2Frecipe_heldout.json=&etag=%2299468db805ea6a5687a4a01bbfb90fb73810277a%22 "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/LICENSE.md?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2FLICENSE.md=&etag=%220927197ca8a24e9a476fa5a515021c8c7cd46728%22 "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/eval/jevbench-w4096/health.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/eval%2Fjevbench-w4096%2Fhealth.json?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2Feval%2Fjevbench-w4096%2Fhealth.json=&etag=%22a26ff172cb9f5639e2b2b0d497c7f2c82a65126a%22 "HTTP/1.1 200 OK"
+HTTP Request: GET https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/.gitattributes?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2F.gitattributes=&etag=%2252373fe24473b1aa44333d318f578ae6bf04b49b%22 "HTTP/1.1 200 OK"
+HTTP Request: GET https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/eval%2Finternal%2Frecipe_heldout.json?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2Feval%2Finternal%2Frecipe_heldout.json=&etag=%2299468db805ea6a5687a4a01bbfb90fb73810277a%22 "HTTP/1.1 200 OK"
+HTTP Request: GET https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/LICENSE.md?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2FLICENSE.md=&etag=%220927197ca8a24e9a476fa5a515021c8c7cd46728%22 "HTTP/1.1 200 OK"
+Fetching 23 files:  22%|██▏       | 5/23 [00:00<00:02,  8.38it/s]HTTP Request: GET https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/eval%2Fjevbench-w4096%2Fhealth.json?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2Feval%2Fjevbench-w4096%2Fhealth.json=&etag=%22a26ff172cb9f5639e2b2b0d497c7f2c82a65126a%22 "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-e4b-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/eval/jevbench-w4096/manifest.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-e4b-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/eval/jevbench-w4096/paired.txt "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-e4b-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/eval/jevbench-w4096/results.jsonl "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-e4b-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/eval/jevbench-w4096/paired.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-e4b-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/eval/jevbench-w4096/summary.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-e4b-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/eval/summary.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-e4b-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/lora/adapter_config.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/eval/jevbench-w4096/manifest.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/eval%2Fjevbench-w4096%2Fmanifest.json?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2Feval%2Fjevbench-w4096%2Fmanifest.json=&etag=%22036d76d63ad530820a953b64a6b70613d1f1db1a%22 "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/eval/jevbench-w4096/paired.txt "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/eval%2Fjevbench-w4096%2Fpaired.txt?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2Feval%2Fjevbench-w4096%2Fpaired.txt=&etag=%2244b95e02efcfcd668d81644423c1861aa448a6ba%22 "HTTP/1.1 200 OK"
+HTTP Request: GET https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/eval%2Fjevbench-w4096%2Fmanifest.json?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2Feval%2Fjevbench-w4096%2Fmanifest.json=&etag=%22036d76d63ad530820a953b64a6b70613d1f1db1a%22 "HTTP/1.1 200 OK"
+Fetching 23 files:  43%|████▎     | 10/23 [00:00<00:01, 12.37it/s]HTTP Request: GET https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/eval%2Fjevbench-w4096%2Fpaired.txt?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2Feval%2Fjevbench-w4096%2Fpaired.txt=&etag=%2244b95e02efcfcd668d81644423c1861aa448a6ba%22 "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-e4b-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/eval/jevbench-w4096/run_meta.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/eval/jevbench-w4096/paired.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/eval%2Fjevbench-w4096%2Fpaired.json?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2Feval%2Fjevbench-w4096%2Fpaired.json=&etag=%2248825f460feb298d6eef3fe58ddf3facd90e1446%22 "HTTP/1.1 200 OK"
+HTTP Request: GET https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/eval%2Fjevbench-w4096%2Fpaired.json?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2Feval%2Fjevbench-w4096%2Fpaired.json=&etag=%2248825f460feb298d6eef3fe58ddf3facd90e1446%22 "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/eval/jevbench-w4096/results.jsonl "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/eval%2Fjevbench-w4096%2Fresults.jsonl?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2Feval%2Fjevbench-w4096%2Fresults.jsonl=&etag=%22258c438f79fefc670fc08d7815cbee8ff7b949b7%22 "HTTP/1.1 200 OK"
+HTTP Request: GET https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/eval%2Fjevbench-w4096%2Fresults.jsonl?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2Feval%2Fjevbench-w4096%2Fresults.jsonl=&etag=%22258c438f79fefc670fc08d7815cbee8ff7b949b7%22 "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/eval/jevbench-w4096/summary.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/eval/summary.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/eval%2Fjevbench-w4096%2Fsummary.json?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2Feval%2Fjevbench-w4096%2Fsummary.json=&etag=%22bc48df26947eb228c5a6a8e4e0bc48bc1004a4a7%22 "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/lora/adapter_config.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/eval%2Fsummary.json?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2Feval%2Fsummary.json=&etag=%229199a7655f18140529b086df854d5ea711c46230%22 "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/lora%2Fadapter_config.json?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2Flora%2Fadapter_config.json=&etag=%22b0288b91d9d8a73db8689bbf27d289703d24df58%22 "HTTP/1.1 200 OK"
+HTTP Request: GET https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/eval%2Fjevbench-w4096%2Fsummary.json?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2Feval%2Fjevbench-w4096%2Fsummary.json=&etag=%22bc48df26947eb228c5a6a8e4e0bc48bc1004a4a7%22 "HTTP/1.1 200 OK"
+HTTP Request: GET https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/eval%2Fsummary.json?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2Feval%2Fsummary.json=&etag=%229199a7655f18140529b086df854d5ea711c46230%22 "HTTP/1.1 200 OK"
+Fetching 23 files:  70%|██████▉   | 16/23 [00:01<00:00, 17.32it/s]HTTP Request: GET https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/lora%2Fadapter_config.json?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2Flora%2Fadapter_config.json=&etag=%22b0288b91d9d8a73db8689bbf27d289703d24df58%22 "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-e4b-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/provenance.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-e4b-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/strands_decider_config.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/eval/jevbench-w4096/run_meta.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/eval%2Fjevbench-w4096%2Frun_meta.json?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2Feval%2Fjevbench-w4096%2Frun_meta.json=&etag=%2227ef2f3d6830dbb9d399ea15935620a340fce485%22 "HTTP/1.1 200 OK"
+HTTP Request: GET https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/eval%2Fjevbench-w4096%2Frun_meta.json?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2Feval%2Fjevbench-w4096%2Frun_meta.json=&etag=%2227ef2f3d6830dbb9d399ea15935620a340fce485%22 "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-e4b-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-e4b-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/train_config.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/provenance.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/provenance.json?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2Fprovenance.json=&etag=%220089ebc89cdf6540db4eafdbb57283f51a23d743%22 "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/strands_decider_config.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: GET https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/provenance.json?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2Fprovenance.json=&etag=%220089ebc89cdf6540db4eafdbb57283f51a23d743%22 "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/strands_decider_config.json?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2Fstrands_decider_config.json=&etag=%2247f81b18dfe7bbd8b6569992b58f16ab4928dc7b%22 "HTTP/1.1 200 OK"
+Fetching 23 files:  87%|████████▋ | 20/23 [00:01<00:00, 16.11it/s]HTTP Request: GET https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/strands_decider_config.json?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2Fstrands_decider_config.json=&etag=%2247f81b18dfe7bbd8b6569992b58f16ab4928dc7b%22 "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/tokenizer_config.json?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2Ftokenizer_config.json=&etag=%22bd297dce3d66737f7d6f9136691db3ad05991a2f%22 "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/resolve/1344d44397c457f3be34b8ff15c593b41248c6bf/train_config.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: GET https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/tokenizer_config.json?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2Ftokenizer_config.json=&etag=%22bd297dce3d66737f7d6f9136691db3ad05991a2f%22 "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/train_config.json?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2Ftrain_config.json=&etag=%22111f4cb497617c6d9944fb0763a11bf93aad36c6%22 "HTTP/1.1 200 OK"
+HTTP Request: GET https://huggingface.co/api/resolve-cache/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/1344d44397c457f3be34b8ff15c593b41248c6bf/train_config.json?%2FStrandsAgents%2Fstrands-decider-E4B-gemma4-v1-2610%2Fresolve%2F1344d44397c457f3be34b8ff15c593b41248c6bf%2Ftrain_config.json=&etag=%22111f4cb497617c6d9944fb0763a11bf93aad36c6%22 "HTTP/1.1 200 OK"
+Fetching 23 files: 100%|██████████| 23/23 [00:01<00:00, 14.72it/s]
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  56%|█████▌    | 1167/2076 [00:00<00:00, 11634.75it/s]Loading weights: 100%|██████████| 2076/2076 [00:00<00:00, 12825.39it/s]
+[W1022 14:22:07.427399744 CUDACachingAllocator.cpp:3934] memory allocation failed with OOM on device 0 while trying to allocate 132120576 bytes (free: 9240576, total: 47704637440).
+[W1022 14:22:07.533182547 CUDACachingAllocator.cpp:3934] memory allocation failed with OOM on device 0 while trying to allocate 132120576 bytes (free: 70057984, total: 47704637440).
+[W1022 14:22:07.533287488 CUDACachingAllocator.cpp:3934] memory allocation failed with OOM on device 0 while trying to allocate 132120576 bytes (free: 70057984, total: 47704637440).
+Traceback (most recent call last):
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/bin/exp10-slr", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/src/stair/exp10_slr.py", line 306, in main
+    run_train(df, plan, spec, inputs, seed, args.device)
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/src/stair/exp10_slr.py", line 133, in run_train
+    history = fine_tune(judge, tr_items, tr_y, dev_items, dev_y, hp["epochs"], hp["lr"], hp["weight_decay"],
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/src/stair/judge.py", line 246, in fine_tune
+    losses.append(accumulate(judge, [items[j] for j in b], target[b], micro_batch))
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/src/stair/judge.py", line 211, in accumulate
+    loss = torch.nn.functional.cross_entropy(judge.logits(items[j: j + micro_batch]),
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/src/stair/decider.py", line 102, in logits
+    out = self.model(input_ids=ids, attention_mask=mask, n_slots=torch.full((len(items),), k, device=self.device),
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1783, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1794, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/strands_decider/modeling.py", line 583, in forward
+    hidden = self.encode(input_ids, attention_mask, past_key_values=past_key_values)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/strands_decider/modeling.py", line 473, in encode
+    out = self.torso(
+          ^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1783, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1794, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/peft/peft_model.py", line 3186, in forward
+    return self.base_model(
+           ^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1783, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1794, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/peft/tuners/tuners_utils.py", line 359, in forward
+    return self.model(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1783, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1794, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/transformers/utils/generic.py", line 1068, in wrapper
+    output = func(self, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/transformers/utils/output_capturing.py", line 286, in wrapper
+    outputs = func(self, *args, **kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/transformers/models/gemma4/modeling_gemma4.py", line 1692, in forward
+    hidden_states = decoder_layer(
+                    ^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/transformers/modeling_layers.py", line 109, in __call__
+    return super().__call__(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1783, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1794, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/transformers/models/gemma4/modeling_gemma4.py", line 1412, in forward
+    hidden_states = self.mlp(hidden_states)
+                    ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1783, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1794, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/transformers/models/gemma4/modeling_gemma4.py", line 1076, in forward
+    down_proj = self.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
+                                           ^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1783, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1794, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/peft/tuners/lora/layer.py", line 1102, in forward
+    result = result + lora_B(lora_A(dropout(x))) * scaling
+                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 126.00 MiB. GPU 0 has a total capacity of 44.43 GiB of which 66.81 MiB is free. Including non-PyTorch memory, this process has 44.34 GiB memory in use. Of the allocated memory 39.72 GiB is allocated by PyTorch, and 4.12 GiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+attempt 1/2 of exp10-train failed at Thu Oct 22 14:22:08 +08 2026
+decider-e4b qp seed 0: 12930 items (2583 escalate), 1512 dev items
+HTTP Request: GET https://huggingface.co/api/models/StrandsAgents/strands-decider-e4b-gemma4-v1-2610/revision/main "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: GET https://huggingface.co/api/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/revision/main "HTTP/1.1 200 OK"
+Fetching 23 files:   0%|          | 0/23 [00:00<?, ?it/s]Fetching 23 files: 100%|██████████| 23/23 [00:00<00:00, 2621.01it/s]
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  58%|█████▊    | 1203/2076 [00:00<00:00, 12024.51it/s]Loading weights: 100%|██████████| 2076/2076 [00:00<00:00, 12876.60it/s]
+[W1022 14:23:29.587518051 CUDACachingAllocator.cpp:3934] memory allocation failed with OOM on device 0 while trying to allocate 132120576 bytes (free: 9240576, total: 47704637440).
+[W1022 14:23:29.693298027 CUDACachingAllocator.cpp:3934] memory allocation failed with OOM on device 0 while trying to allocate 132120576 bytes (free: 70057984, total: 47704637440).
+[W1022 14:23:29.693403687 CUDACachingAllocator.cpp:3934] memory allocation failed with OOM on device 0 while trying to allocate 132120576 bytes (free: 70057984, total: 47704637440).
+Traceback (most recent call last):
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/bin/exp10-slr", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/src/stair/exp10_slr.py", line 306, in main
+    run_train(df, plan, spec, inputs, seed, args.device)
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/src/stair/exp10_slr.py", line 133, in run_train
+    history = fine_tune(judge, tr_items, tr_y, dev_items, dev_y, hp["epochs"], hp["lr"], hp["weight_decay"],
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/src/stair/judge.py", line 246, in fine_tune
+    losses.append(accumulate(judge, [items[j] for j in b], target[b], micro_batch))
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/src/stair/judge.py", line 211, in accumulate
+    loss = torch.nn.functional.cross_entropy(judge.logits(items[j: j + micro_batch]),
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/src/stair/decider.py", line 102, in logits
+    out = self.model(input_ids=ids, attention_mask=mask, n_slots=torch.full((len(items),), k, device=self.device),
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1783, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1794, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/strands_decider/modeling.py", line 583, in forward
+    hidden = self.encode(input_ids, attention_mask, past_key_values=past_key_values)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/strands_decider/modeling.py", line 473, in encode
+    out = self.torso(
+          ^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1783, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1794, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/peft/peft_model.py", line 3186, in forward
+    return self.base_model(
+           ^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1783, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1794, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/peft/tuners/tuners_utils.py", line 359, in forward
+    return self.model(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1783, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1794, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/transformers/utils/generic.py", line 1068, in wrapper
+    output = func(self, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/transformers/utils/output_capturing.py", line 286, in wrapper
+    outputs = func(self, *args, **kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/transformers/models/gemma4/modeling_gemma4.py", line 1692, in forward
+    hidden_states = decoder_layer(
+                    ^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/transformers/modeling_layers.py", line 109, in __call__
+    return super().__call__(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1783, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1794, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/transformers/models/gemma4/modeling_gemma4.py", line 1412, in forward
+    hidden_states = self.mlp(hidden_states)
+                    ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1783, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1794, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/transformers/models/gemma4/modeling_gemma4.py", line 1076, in forward
+    down_proj = self.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
+                                           ^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1783, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1794, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/dhameem.m.2025/Custom-LLM-Router/.venv/lib/python3.12/site-packages/peft/tuners/lora/layer.py", line 1102, in forward
+    result = result + lora_B(lora_A(dropout(x))) * scaling
+                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 126.00 MiB. GPU 0 has a total capacity of 44.43 GiB of which 66.81 MiB is free. Including non-PyTorch memory, this process has 44.34 GiB memory in use. Of the allocated memory 39.72 GiB is allocated by PyTorch, and 4.12 GiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+attempt 2/2 of exp10-train failed at Thu Oct 22 14:23:30 +08 2026

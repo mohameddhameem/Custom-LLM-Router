@@ -2594,7 +2594,7 @@ requires-dist = [
     { name = "pyarrow", specifier = ">=25.0.1" },
     { name = "scikit-learn", specifier = ">=1.9.1" },
     { name = "scipy", specifier = ">=1.14" },
-    { name = "stair-common", extras = ["plot"], git = "https://github.com/mohameddhameem/STAIR.git?subdirectory=common&rev=c906e3dcdb0a704e06a16061809799b08851ad6d" },
+    { name = "stair-common", extras = ["plot"], git = "https://github.com/mohameddhameem/STAIR.git?subdirectory=common&rev=00ee140c323159619b471253502d2e6537f83dde" },
     { name = "strands-decider", marker = "sys_platform != 'linux' and extra == 'decider'", git = "https://github.com/strands-labs/strands-decider?rev=6039cf8b64c6074e75804000c07ac3d4cce795f7" },
     { name = "strands-decider", extras = ["cuda"], marker = "sys_platform == 'linux' and extra == 'decider'", git = "https://github.com/strands-labs/strands-decider?rev=6039cf8b64c6074e75804000c07ac3d4cce795f7" },
     { name = "torch", marker = "extra == 'llm'", specifier = ">=2.14.0", index = "https://download.pytorch.org/whl/cu126" },
@@ -2607,8 +2607,8 @@ dev = [{ name = "pytest", specifier = ">=9.1.1" }]
 
 [[package]]
 name = "stair-common"
-version = "0.2.0"
-source = { git = "https://github.com/mohameddhameem/STAIR.git?subdirectory=common&rev=c906e3dcdb0a704e06a16061809799b08851ad6d#c906e3dcdb0a704e06a16061809799b08851ad6d" }
+version = "0.3.0"
+source = { git = "https://github.com/mohameddhameem/STAIR.git?subdirectory=common&rev=00ee140c323159619b471253502d2e6537f83dde#00ee140c323159619b471253502d2e6537f83dde" }
 dependencies = [
     { name = "numpy" },
     { name = "pandas" },

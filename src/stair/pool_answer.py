@@ -63,6 +63,23 @@ def qa_prompt(question: str, passages: list[str]) -> str:
             f"Here is the query and references: \n {query_references}.")
 
 
+SLR_QA = ("Your task is to answer the query using the provided references. "
+          "If the references are insufficient, supplement your response with your own knowledge. "
+          "Answer with ONLY the exact answer phrase - no explanation, no full sentence.\n")
+
+
+def slr_qa_prompt(question: str, block: str) -> str:
+    """Jonathan's grid answering prompt (STAIR jonathan/lab_package/run_labels4.py, qa_prompt), verbatim: AgentTTS's
+    task with "answer with only the exact answer phrase". `block` is "Query: ...\\nSelected references: [n] ..."."""
+    return SLR_QA + f"Query: {question}\n{block}"
+
+
+def slr_block(question: str, passages: list[str]) -> str:
+    """His build_block layout for passages we chose: "Query: ...\\nSelected references: [1] title: text [2] ..."."""
+    refs = " ".join(f"[{i + 1}] {p}" for i, p in enumerate(passages)) or "(none)"
+    return f"Query: {question}\nSelected references: {refs}"
+
+
 def fuser_prompt(query: str, responses: list[str]) -> str:
     """Archon's make_fuser_prompt (no critiques), verbatim; `query` is the answerer's user message."""
     prompt = (f"You have been provided with a set of responses from various open-source models to the latest user query, "
@@ -185,7 +202,10 @@ def top_passages(pool: pd.Series, scores: list[float], k: int) -> list[str]:
 
 def answer_chunk(gen: Generator, cell: dict, rows: pd.DataFrame, seed: int) -> pd.DataFrame:
     n, fuse = cell.get("samples", 1), cell.get("fuse", False)
-    users = [qa_prompt(r["question"], r["passages"]) for _, r in rows.iterrows()]
+    if cell.get("prompt") == "slr":  # rows carry the references block (passage_blocks)
+        users = [slr_qa_prompt(r["question"], r["block"]) for _, r in rows.iterrows()]
+    else:
+        users = [qa_prompt(r["question"], r["passages"]) for _, r in rows.iterrows()]
     out_rows, b = [], cell.get("batch_size", 8)
     for i in range(0, len(users), b):
         part = rows.iloc[i: i + b]
@@ -216,6 +236,29 @@ def answer_chunk(gen: Generator, cell: dict, rows: pd.DataFrame, seed: int) -> p
     return pd.DataFrame(out_rows)
 
 
+def passage_blocks(df: pd.DataFrame, cell: dict) -> list[str]:
+    """The references block of an `slr`-prompt cell: nano-jev's top k as "title: text" (passages = "nanojev"), or
+    Jonathan's Qwen2.5-72B selection from his grid (passages = "slr-72b", read through `slr_plan`)."""
+    if cell.get("passages", "nanojev") == "nanojev":
+        return [slr_block(r["question"], [f"{r['titles'][i]}: {r['texts'][i]}"
+                                          for i in np.argsort(-np.asarray(r["nanojev"]), kind="stable")[:cell["top_k"]]])
+                for _, r in df.iterrows()]
+    from stair import slr
+
+    slr_plan = tomllib.loads(Path(cell["slr_plan"]).read_text(encoding="utf-8"))
+    slr.check_files(slr_plan)
+    position = {q: i for i, q in enumerate(pd.read_parquet(slr_plan["dev"], columns=["id"])["id"])}
+    selected = {r["k"]: r["v"] for r in slr.read_jsonl(Path(slr_plan["out"]) / slr.GRID / "retr_strong.jsonl")}
+    return [str(selected[str(position[q])]) for q in df["id"]]
+
+
+def reused_answers(plan: dict, cell: str) -> pd.DataFrame:
+    """Earlier answers of the same cell (plan `reuse_answers`: answer folders), by id; empty if none."""
+    found = [pd.read_parquet(Path(d) / f"{cell}.parquet") for d in plan.get("reuse_answers", [])
+             if (Path(d) / f"{cell}.parquet").exists()]
+    return pd.concat(found).drop_duplicates("id").set_index("id") if found else pd.DataFrame()
+
+
 def load_split(out: Path, split: str, k: int, limit: int | None) -> pd.DataFrame:
     pools = pd.read_parquet(out / "pools" / f"{split}.parquet")
     scores = pd.read_parquet(out / "scores" / f"{split}.parquet", columns=["id", "nanojev", "tokens"])
@@ -233,12 +276,17 @@ def cmd_run(args, plan: dict) -> None:
         if args.only and cell["name"] not in args.only:
             continue
         df = load_split(out, args.split, cell["top_k"], args.limit)
+        if cell.get("prompt") == "slr":
+            df["block"] = passage_blocks(df, cell)
         suffix = f"-limit{args.limit}" if args.limit else ""
         parts = out / "answers" / f"{args.split}{suffix}" / f"{cell['name']}.parts"
         parts.mkdir(parents=True, exist_ok=True)
-        chunks = [df.iloc[i: i + args.chunk_size] for i in range(0, len(df), args.chunk_size)]
+        reused = reused_answers(plan, cell["name"])
+        new = df[~df["id"].isin(reused.index)] if len(reused) else df  # keeps df's index: the sampling seeds
+        chunks = [new.iloc[i: i + args.chunk_size] for i in range(0, len(new), args.chunk_size)]
         todo = [c for c in range(len(chunks)) if not (parts / f"{c:05d}.parquet").exists()]
-        log.info(f"{args.split}/{cell['name']}: {len(df)} questions, {len(todo)} of {len(chunks)} chunks to run")
+        log.info(f"{args.split}/{cell['name']}: {len(df)} questions ({len(df) - len(new)} reused), "
+                 f"{len(todo)} of {len(chunks)} chunks to run")
         if todo:
             gen = Generator(cell["model"], args.device, load_in_4bit=cell.get("load_in_4bit", False),
                             revision=cell.get("revision"))
@@ -261,7 +309,9 @@ def cmd_run(args, plan: dict) -> None:
                 pass
         files = sorted(parts.glob("*.parquet"))
         if len(files) == len(chunks):
-            merged = pd.concat([pd.read_parquet(f) for f in files], ignore_index=True)
+            merged = pd.concat([pd.read_parquet(f) for f in files]
+                               + ([reused.loc[df["id"][df["id"].isin(reused.index)]].reset_index()] if len(reused) else []),
+                               ignore_index=True).set_index("id").loc[df["id"]].reset_index()  # the split's order
             # from the tokens, so chunks written before the Eq. 8 change merge right; every cell pays nano-jev's scoring
             merged["gflops"] = token_gflops(merged, cell["params"]) + df["nanojev_gflops"].to_numpy()
             merged["units"] = merged["gflops"] / UNIT_GFLOPS
@@ -314,10 +364,16 @@ def cmd_recost(args, plan: dict) -> None:
 def cmd_summary(args, plan: dict) -> None:
     out = Path(plan.get("out", "runs/exp8"))
     rows = []
+    from stair_common.score import lenient as lenient_std
+
     for split_dir in sorted((out / "answers").glob("*")):
         cells = {f.stem: pd.read_parquet(f) for f in sorted(split_dir.glob("*.parquet"))}
+        pools = out / "pools" / f"{split_dir.name.split('-limit')[0]}.parquet"
+        gold = pd.read_parquet(pools, columns=["id", "answer"]).set_index("id")["answer"] if pools.exists() else None
         for name, d in cells.items():
-            rows.append({"split": split_dir.name, "cell": name, "n": len(d), "lenient": d["lenient"].mean(),
+            std = (float(np.mean([lenient_std(str(p), [str(gold[i])]) for i, p in zip(d["id"], d["pred"])]))
+                   if gold is not None else float("nan"))  # the team's standard ruler
+            rows.append({"split": split_dir.name, "cell": name, "n": len(d), "lenient_std": std, "lenient": d["lenient"].mean(),
                          "em": d["em"].mean(), "f1": d["f1"].mean(), "short_em": d["short_em"].mean(),
                          "short_f1": d["short_f1"].mean(), "units": d["units"].mean(), "gflops": d["gflops"].mean(),
                          "s_per_q": d["seconds"].mean()})

@@ -53,13 +53,18 @@ def cumulative_choice(probs: np.ndarray, t: float) -> np.ndarray:
     return np.minimum((cum < t - 1e-9).sum(axis=1), probs.shape[1] - 1)
 
 
-def point(ok: np.ndarray, cost: np.ndarray, choice: np.ndarray, extra: np.ndarray | float = 0.0) -> dict:
+def point(ok: np.ndarray, cost: np.ndarray, choice: np.ndarray, extra: np.ndarray | float = 0.0,
+          post: bool = False, shared: np.ndarray | float = 0.0) -> dict:
+    """`post`: the policy read the cheapest option's answer, so that option ran too whatever it chose.
+    `shared`: the per-question cost that every option's cost includes (nano-jev's ranking), which runs once."""
     rows = np.arange(len(choice))
-    return {"f1": float(ok[rows, choice].mean()), "cost": float((cost[rows, choice] + extra).mean())}
+    paid = cost[rows, choice] + extra + (np.where(choice != 0, cost[:, 0] - shared, 0.0) if post else 0.0)
+    return {"f1": float(ok[rows, choice].mean()), "cost": float(paid.mean())}
 
 
-def judge_points(ok: np.ndarray, cost: np.ndarray, probs: np.ndarray, extra: np.ndarray | float = 0.0) -> list[dict]:
-    return [{"t": float(t), **point(ok, cost, cumulative_choice(probs, t), extra)} for t in THRESHOLDS]
+def judge_points(ok: np.ndarray, cost: np.ndarray, probs: np.ndarray, extra: np.ndarray | float = 0.0,
+                 post: bool = False, shared: np.ndarray | float = 0.0) -> list[dict]:
+    return [{"t": float(t), **point(ok, cost, cumulative_choice(probs, t), extra, post, shared)} for t in THRESHOLDS]
 
 
 def always_points(ok: np.ndarray, cost: np.ndarray) -> list[dict]:
@@ -70,15 +75,17 @@ def oracle_point(ok: np.ndarray, cost: np.ndarray) -> dict:
     return point(ok, cost, cheapest_correct_label(ok, cost))
 
 
-def score_points(ok: np.ndarray, cost: np.ndarray, score: np.ndarray, lo: int, hi: int, post: bool) -> list[dict]:
+def score_points(ok: np.ndarray, cost: np.ndarray, score: np.ndarray, lo: int, hi: int, post: bool,
+                 shared: np.ndarray | float = 0.0) -> list[dict]:
     """Escalate the highest-scoring fraction of questions from option `lo` to option `hi`.
 
-    `post`: the score needs `lo`'s answer, so escalated questions pay for both calls.
+    `post`: the score needs `lo`'s answer, so escalated questions pay for both calls. `shared` (see `point`) is
+    paid once.
     """
     n = len(score)
     order = np.argsort(-np.asarray(score), kind="stable")
     d_ok = ok[:, hi].astype(float) - ok[:, lo]
-    d_cost = cost[:, hi] if post else cost[:, hi] - cost[:, lo]
+    d_cost = cost[:, hi] - shared if post else cost[:, hi] - cost[:, lo]
     cum_ok = np.concatenate([[0.0], np.cumsum(d_ok[order])])
     cum_cost = np.concatenate([[0.0], np.cumsum(d_cost[order])])
     out = []
@@ -135,8 +142,25 @@ def diff(boot: dict, a: str, b: str) -> dict:
     return {"ci95": [float(np.percentile(d, 2.5)), float(np.percentile(d, 97.5))], "p_le_0": float((d <= 0).mean())}
 
 
-def load_tables(out, split: str, options: list[str], state_k: int, metric: str = "lenient", rescore_dir=None):
+def nanojev_price(nanojev_gflops: np.ndarray) -> np.ndarray:
+    """nano-jev's ranking call at the golden set's prices: stair_common.cost.budget (3 x units - 2, floored at 0)."""
+    from stair_common.cost import UNIT_GFLOPS
+
+    return np.maximum(0.0, 3 * np.asarray(nanojev_gflops, dtype=float) / UNIT_GFLOPS - 2)
+
+
+def golden_set_cost(prices: list[float], nanojev_gflops: np.ndarray) -> np.ndarray:
+    """[questions, options] at the golden set's prices: each option's Table 5 price, plus nano-jev's ranking call."""
+    return np.asarray(prices, dtype=float)[None, :] + nanojev_price(nanojev_gflops)[:, None]
+
+
+def load_tables(out, split: str, options: list[str], state_k: int, metric: str = "lenient", rescore_dir=None,
+                prices: list[float] | None = None):
     """Question table (pool_answer.load_split) plus ok/cost/entropy/pred matrices over the common ids.
+
+    `prices`: the options' golden-set prices (Table 5 scale); the cost is then golden_set_cost, not measured units.
+    Either way every option's cost includes nano-jev's ranking of the pool, which runs once per question: the table's
+    `shared_cost` column, for the policies that run two options (`post`).
 
     `metric` is the correctness column: "lenient" from the answer files (the old placeholder scorer),
     "lenient_std" (the team's standard ruler, stair_common.score.lenient, on the same response: AgentTTS-comparable),
@@ -171,8 +195,14 @@ def load_tables(out, split: str, options: list[str], state_k: int, metric: str =
         if missing:
             raise ValueError(f"re-scored answers missing for {missing} on {split}: run `rescore run --split {split}`")
         ok = np.stack([graded[o].loc[ids, metric].to_numpy() >= 0.5 for o in options], axis=1)
+    from stair_common.cost import UNIT_GFLOPS
+
     cost = np.stack([answers[o].loc[ids, "units"].to_numpy() for o in options], axis=1)
-    if metric not in ("lenient", "lenient_std"):  # the self-commit step (stair.rescore, version 4) is part of each option's cost
+    df["shared_cost"] = df["nanojev_gflops"].to_numpy(dtype=float) / UNIT_GFLOPS  # inside every answer's units
+    if prices is not None:
+        cost = golden_set_cost(prices, df["nanojev_gflops"].to_numpy())
+        df["shared_cost"] = nanojev_price(df["nanojev_gflops"].to_numpy())
+    elif metric not in ("lenient", "lenient_std"):  # the self-commit step (stair.rescore, version 4) is part of each option's cost
         cost = cost + np.stack([graded[o].loc[ids, "commit_units"].to_numpy() if "commit_units" in graded[o]
                                 else np.zeros(len(ids)) for o in options], axis=1)
     df["entropy0"] = answers[options[0]].loc[ids, "entropy"].to_numpy()

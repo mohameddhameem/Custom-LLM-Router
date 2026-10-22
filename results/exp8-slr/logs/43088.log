@@ -1,0 +1,29 @@
+job 43088.pbs-omega on a-4 (CPU, queue short), step exp8s-pools
+golden-set splits: router_train 1000 (slr-train), calib 500 (slr-val), test 1481 (slr-test); 1000 of them preferred
+Saved data/hotpotqa/splits-exp8-slr.json
+Using the latest cached version of the dataset since hotpotqa/hotpot_qa couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Using the latest cached version of the dataset since hotpotqa/hotpot_qa couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'distractor' at /storage/home/dhameem.m.2025/.cache/huggingface/datasets/hotpotqa___hotpot_qa/distractor/0.0.0/1908d6afbbead072334abe2965f91bd2709910ab (last modified on Mon Oct  5 21:57:30 2026).
+Found the latest cached dataset configuration 'distractor' at /storage/home/dhameem.m.2025/.cache/huggingface/datasets/hotpotqa___hotpot_qa/distractor/0.0.0/1908d6afbbead072334abe2965f91bd2709910ab (last modified on Mon Oct  5 21:57:30 2026).
+router_train: 1000 questions from validation
+BM25 over 66,635 distinct validation paragraphs, built in 8 s
+  500/1000 pools
+  1000/1000 pools
+saved runs/exp8-slr/pools/router_train.parquet: pool size mean 100.1 (min 95, max 102), gold per question 2.00, questions with < 2 gold 0
+Using the latest cached version of the dataset since hotpotqa/hotpot_qa couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Using the latest cached version of the dataset since hotpotqa/hotpot_qa couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'distractor' at /storage/home/dhameem.m.2025/.cache/huggingface/datasets/hotpotqa___hotpot_qa/distractor/0.0.0/1908d6afbbead072334abe2965f91bd2709910ab (last modified on Mon Oct  5 21:57:30 2026).
+Found the latest cached dataset configuration 'distractor' at /storage/home/dhameem.m.2025/.cache/huggingface/datasets/hotpotqa___hotpot_qa/distractor/0.0.0/1908d6afbbead072334abe2965f91bd2709910ab (last modified on Mon Oct  5 21:57:30 2026).
+calib: 500 questions from validation
+BM25 over 66,635 distinct validation paragraphs, built in 7 s
+  500/500 pools
+saved runs/exp8-slr/pools/calib.parquet: pool size mean 100.1 (min 95, max 101), gold per question 2.00, questions with < 2 gold 0
+Using the latest cached version of the dataset since hotpotqa/hotpot_qa couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Using the latest cached version of the dataset since hotpotqa/hotpot_qa couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'distractor' at /storage/home/dhameem.m.2025/.cache/huggingface/datasets/hotpotqa___hotpot_qa/distractor/0.0.0/1908d6afbbead072334abe2965f91bd2709910ab (last modified on Mon Oct  5 21:57:30 2026).
+Found the latest cached dataset configuration 'distractor' at /storage/home/dhameem.m.2025/.cache/huggingface/datasets/hotpotqa___hotpot_qa/distractor/0.0.0/1908d6afbbead072334abe2965f91bd2709910ab (last modified on Mon Oct  5 21:57:30 2026).
+test: 1481 questions from validation
+BM25 over 66,635 distinct validation paragraphs, built in 7 s
+  500/1481 pools
+  1000/1481 pools
+saved runs/exp8-slr/pools/test.parquet: pool size mean 100.2 (min 98, max 102), gold per question 2.00, questions with < 2 gold 0

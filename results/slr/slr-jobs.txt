@@ -1,0 +1,3 @@
+golden set (SLR) + experiment 10: S1 slr-ladder 43080.pbs-omega | 10.1 exp10-train nano-jev 43081.pbs-omega | 10.2 exp10-eval 43082.pbs-omega (after 10.1)
+experiments 7/9 on the golden set: 7.1 slr7-prepare 43083.pbs-omega | 7.2 slr7-judges nano-jev+ms-marco 43084.pbs-omega | 7.3 zeroshot 43085.pbs-omega | 7.4 slr7-eval 43086.pbs-omega
+experiment 8 on the golden set: 8.1 exp8s-pools 43088.pbs-omega | 8.2 score 43089.pbs-omega | H2 43090.pbs-omega | 8.3 3B 43091.pbs-omega | 8.4 x10 43092.pbs-omega | 8.5 x20 43093.pbs-omega | 8.6 x40 43094.pbs-omega | 8.7 70B 43095.pbs-omega | 8.8 judge 43096.pbs-omega

@@ -42,7 +42,7 @@ import pandas as pd
 from scipy.optimize import minimize_scalar
 
 from stair import provenance
-from stair_common.cost import UNIT_GFLOPS
+from stair_common.cost import TABLE5_HOTPOTQA, UNIT_GFLOPS, budget
 
 from stair.metrics import METRICS, metric_view, normalize_answer
 from stair.router import LABELS, escalation_label, predict_escalation
@@ -50,7 +50,8 @@ from stair.router import LABELS, escalation_label, predict_escalation
 log = logging.getLogger(__name__)
 
 RATES = np.round(np.linspace(0, 1, 21), 2)
-COST_UNITS = ("flops", "tokens", "seconds", "agenttts")  # agenttts: flops / one 3B pass of 128+64 tokens
+# agenttts: flops / one 3B pass of 128+64 tokens; table5: the HotpotQA golden set's fixed price per answering call
+COST_UNITS = ("flops", "tokens", "seconds", "agenttts", "table5")
 CPT_FRACTIONS = (0.5, 0.8)
 CURVE_COLUMNS = ("small_f1", "large_f1", "small_em", "large_em", "small_cost", "large_cost", "small_uncertainty")
 BASELINES = ("small-entropy (post)", "random")
@@ -68,15 +69,41 @@ def expert_params(cfg: dict) -> dict[str, float | None]:
     return params
 
 
-def with_cost_unit(df: pd.DataFrame, unit: str, params: dict[str, float | None]) -> pd.DataFrame:
-    """Copy of df whose small_cost/large_cost are in `unit` (cached costs are tokens)."""
+def table5_price(model: str, params_b: float) -> float:
+    """The golden set's price of one HotpotQA answering call: AgentTTS Table 5 for a model it lists, else the same
+    formula at Table 4's answering lengths (stair_common.cost.budget, 256 + 64 tokens), with the nominal size in the
+    model's name, as Table 5 counts (Qwen2.5-1.5B is 1.5, though a config may give its exact 1.54)."""
+    for name, price in TABLE5_HOTPOTQA["answer"].items():
+        if re.search(rf"{re.escape(name)}(?![\d.])", model):
+            return float(price)
+    nominal = re.search(r"(\d+(?:\.\d+)?)[Bb]\b", model)
+    return budget(float(nominal.group(1)) if nominal else params_b, 256, 64)
+
+
+def judge_cost_in(unit: str, gflops):
+    """A judge call's GFLOPs in a curve's unit; under table5, each call priced with stair_common.cost.budget."""
+    if unit == "agenttts":
+        return gflops / UNIT_GFLOPS
+    if unit == "table5":
+        return np.maximum(0.0, 3 * np.asarray(gflops, dtype=float) / UNIT_GFLOPS - 2)
+    return gflops
+
+
+def with_cost_unit(df: pd.DataFrame, unit: str, params: dict[str, float | None],
+                   models: dict[str, str] | None = None) -> pd.DataFrame:
+    """Copy of df whose small_cost/large_cost are in `unit` (cached costs are tokens). `table5` needs the experts'
+    model names (`models`)."""
     df = df.copy()
     for name in ("small", "large"):
+        if unit in ("flops", "agenttts", "table5") and params.get(name) is None:
+            raise ValueError(f"no parameter count for expert '{name}': add `params = <billions>` to its "
+                             "config or use --cost tokens")
         if unit in ("flops", "agenttts"):
-            if params.get(name) is None:
-                raise ValueError(f"no parameter count for expert '{name}': add `params = <billions>` to its "
-                                 "config or use --cost tokens")
             df[f"{name}_cost"] = 2 * params[name] * df[f"{name}_cost"] / (UNIT_GFLOPS if unit == "agenttts" else 1)
+        elif unit == "table5":
+            if not (models or {}).get(name):
+                raise ValueError(f"cost table5 needs expert '{name}''s model name")
+            df[f"{name}_cost"] = table5_price(models[name], params[name])
         elif unit == "seconds":
             df[f"{name}_cost"] = df[f"{name}_seconds"]
     return df
@@ -352,7 +379,7 @@ def main(argv: list[str] | None = None) -> None:
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     saved = pickle.loads((args.run / "routers.pkl").read_bytes())
     cfg = tomllib.loads((args.run / "config.toml").read_text())
-    params = expert_params(cfg)
+    params, models = expert_params(cfg), {e["name"]: e.get("model", "") for e in cfg["experts"]}
     test = metric_view(pd.read_parquet(args.run / "test.parquet"), args.metric)
     if saved.get("metric", "f1") != args.metric:
         raise ValueError(f"routers.pkl was trained with metric {saved.get('metric', 'f1')!r}; rerun train-router --metric {args.metric}")
@@ -369,7 +396,7 @@ def main(argv: list[str] | None = None) -> None:
     single = {}
     for unit in COST_UNITS:
         try:
-            t = with_cost_unit(test, unit, params)
+            t = with_cost_unit(test, unit, params, models)
         except ValueError:
             continue
         single[unit] = {"small": float(t["small_cost"].mean()), "large": float(t["large_cost"].mean())}
@@ -379,8 +406,8 @@ def main(argv: list[str] | None = None) -> None:
         scorer_params = cfg.get("scorer", {}).get("params")
         scorer_cost = {"tokens": tokens, "flops": 2 * scorer_params * tokens if scorer_params else None,
                        "truncated_question_rate": float((test["scorer_truncated"] > 0).mean())}
-    test = with_cost_unit(test, args.cost, params)
-    calib = with_cost_unit(calib, args.cost, params) if calib is not None else None
+    test = with_cost_unit(test, args.cost, params, models)
+    calib = with_cost_unit(calib, args.cost, params, models) if calib is not None else None
 
     report, curves = evaluate(test, calib, saved["routers"], saved["tau"], args.max_drop, args.bootstrap, args.seed)
     report = {"metric": args.metric, "cost_unit": args.cost, "expert_params_b": params, "excluded_files": [str(p) for p in args.exclude],

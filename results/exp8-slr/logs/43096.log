@@ -1,0 +1,34 @@
+job 43096.pbs-omega on a-11, step exp8-judge
+name, memory.used [MiB], memory.total [MiB], driver_version
+NVIDIA L40S, 14 MiB, 46068 MiB, 555.58.02
+torch 2.14.1+cu126 NVIDIA L40S
+train qp seed 0: 1000 questions, label counts [745, 159, 43, 24, 29]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11097.94it/s]
+    epoch 1: train loss 1.1830 dev NLL 0.8548
+    epoch 2: train loss 0.8287 dev NLL 0.8004
+    epoch 3: train loss 0.7603 dev NLL 0.8882
+train qp seed 1: 1000 questions, label counts [745, 159, 43, 24, 29]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11450.97it/s]
+    epoch 1: train loss 1.1643 dev NLL 0.8875
+    epoch 2: train loss 0.8330 dev NLL 0.8488
+    epoch 3: train loss 0.7598 dev NLL 0.8735
+train qp seed 2: 1000 questions, label counts [745, 159, 43, 24, 29]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11282.10it/s]
+    epoch 1: train loss 1.1053 dev NLL 0.8657
+    epoch 2: train loss 0.8283 dev NLL 0.9675
+    epoch 3: train loss 0.7721 dev NLL 0.8546
+train qpa seed 0: 1000 questions, label counts [745, 159, 43, 24, 29]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11756.78it/s]
+    epoch 1: train loss 1.1144 dev NLL 0.8022
+    epoch 2: train loss 0.8374 dev NLL 0.7870
+    epoch 3: train loss 0.7798 dev NLL 0.8269
+train qpa seed 1: 1000 questions, label counts [745, 159, 43, 24, 29]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 10258.64it/s]
+    epoch 1: train loss 1.1139 dev NLL 0.8823
+    epoch 2: train loss 0.8329 dev NLL 0.8326
+    epoch 3: train loss 0.7756 dev NLL 0.8922
+train qpa seed 2: 1000 questions, label counts [745, 159, 43, 24, 29]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11219.49it/s]
+    epoch 1: train loss 1.0709 dev NLL 0.8118
+    epoch 2: train loss 0.8064 dev NLL 1.0059
+    epoch 3: train loss 0.7559 dev NLL 0.8585
