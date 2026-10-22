@@ -61,6 +61,6 @@ lr = 1e-4
 weight_decay = 0.01
 warmup = 0.06
 batch_size = 16
-micro_batch = 4
+micro_batch = 2         # as experiment 9's E4B: 4 ran out of the L40S's 44 GB (job 43099)
 max_length = 512
 dev_fraction = 0.1

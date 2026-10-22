@@ -18,7 +18,7 @@ resumes.
 | 10.1 | `qsub -l walltime=04:00:00 -v STEP=exp10-train,JUDGE=nano-jev scripts/omega.pbs` | GPU | ~1–2 h | `runs/exp10-slr/judge-nanojev/{qp,qpa}/seed{0,1,2}/` |
 | 10.2 | `qsub -l walltime=01:00:00 -W depend=afterok:<10.1> -v STEP=exp10-eval scripts/omega-cpu.pbs` | CPU | ~10 min | `runs/exp10-slr/eval/report{,-clean}.json` |
 | 10.3 | `qsub -l walltime=08:00:00 -v STEP=exp10-train,JUDGE=decider-2b scripts/omega.pbs` | GPU | ~3–5 h | `runs/exp10-slr/judge-decider-2b/` |
-| 10.4 | `qsub -l walltime=20:00:00 -v STEP=exp10-train,JUDGE=decider-e4b scripts/omega.pbs` | GPU | ~8–12 h | `runs/exp10-slr/judge-decider-e4b/` |
+| 10.4 | `qsub -l walltime=20:00:00 -v STEP=exp10-train,JUDGE=decider-e4b scripts/omega.pbs` | GPU | ~8–12 h | `runs/exp10-slr/judge-decider-e4b/`. Micro-batch 2, as experiment 9's E4B: at 4 it ran out of GPU memory (43099) |
 | 10.5 | rerun 10.2 after 10.3 and 10.4 | CPU | ~15 min | the reports with the deciders |
 
 **Experiments 7 and 9 on the golden set** (`configs/system-one-slr.toml`). Pair A (Qwen2.5-1.5B on the top 2 /
@@ -45,6 +45,8 @@ reruns:
   reused by ID (`reuse_answers`). Their pools rebuild exactly.
 - **New questions:** 1,282 test, 348 train and 351 val, so about 1,981 per answering cell.
 - **Times:** from experiment 8's logs. The fused cells take 10–17 s a question; the 70B 3.5 s on 2 GPUs.
+- **GPU cap:** the GPU queue runs at most 2 GPUs per user (`max_run_res.ngpus = [u:PBS_GENERIC=2]`), on one 4-GPU
+  node (a-11). So a 2-GPU job (H2, 8.7) starts only when none of our 1-GPU jobs is running.
 
 | # | Command | Where | Time | Output |
 |---|---|---|---|---|
@@ -55,6 +57,7 @@ reruns:
 | 8.4 | `... -l walltime=10:00:00 ... CELLS=llama3b-s10fuse-top5` | GPU | ~6 h | 3B ×10 fused |
 | 8.5 | `... -l walltime=14:00:00 ... CELLS=llama3b-s20fuse-top5` | GPU | ~9 h | 3B ×20 fused |
 | 8.6 | `... -l walltime=12:00:00 ... CELLS=llama3b-s40fuse-top5` | GPU | ~8 h | 3B ×40 fused |
+| 8.6b | `qsub -l walltime=04:00:00 -v "STEP=exp8-answer,PLAN=configs/exp8-slr.toml,SPLITS=router_train,CELLS=llama3b-s40fuse-top5" scripts/omega.pbs` | GPU | ~1.5 h | ×40's router_train in parallel, added 2026-10-22: OMEGA's login outage stalled 8.6 by about 3 h. 8.6 reaches router_train last and skips the chunks already written |
 | 8.7 | `qsub -l select=1:ncpus=8:ngpus=2:mem=96gb -l walltime=05:00:00 -W depend=afterok:<8.2> -v "STEP=exp8-answer,PLAN=configs/exp8-slr.toml,CELLS=llama70b-top5" scripts/omega.pbs` | 2 GPUs | ~2 h | 70B, one answer |
 | 8.8 | `qsub -l walltime=03:00:00 -W depend=afterok:<8.3>:<8.4>:<8.5>:<8.6>:<8.7> -v STEP=exp8-judge,PLAN=configs/exp8-judge-slr.toml scripts/omega.pbs` | GPU | ~1 h | nano-jev option judges and their reports at Table 5 prices |
 
