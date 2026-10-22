@@ -1,0 +1,41 @@
+job 43102.pbs-omega on a-11, step slr7-judges
+name, memory.used [MiB], memory.total [MiB], driver_version
+NVIDIA L40S, 14 MiB, 46068 MiB, 555.58.02
+torch 2.14.1+cu126 NVIDIA L40S
+train qp-large-helps-strands-decider-e4b-gemma4-v1-2610-A seed 0
+HTTP Request: GET https://huggingface.co/api/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/revision/main "HTTP/1.1 200 OK"
+Fetching 23 files:   0%|          | 0/23 [00:00<?, ?it/s]Fetching 23 files: 100%|██████████| 23/23 [00:00<00:00, 2496.03it/s]
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  53%|█████▎    | 1102/2076 [00:00<00:00, 11016.73it/s]Loading weights: 100%|██████████| 2076/2076 [00:00<00:00, 12860.17it/s]
+[W1022 15:21:47.286045495 CUDACachingAllocator.cpp:3934] memory allocation failed with OOM on device 0 while trying to allocate 301989888 bytes (free: 218955776, total: 47704637440).
+    epoch 1: train loss 0.4542 dev NLL 0.4701
+    epoch 2: train loss 0.3421 dev NLL 0.4592
+train qp-large-helps-strands-decider-e4b-gemma4-v1-2610-A seed 1
+HTTP Request: GET https://huggingface.co/api/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/revision/main "HTTP/1.1 200 OK"
+Fetching 23 files:   0%|          | 0/23 [00:00<?, ?it/s]Fetching 23 files: 100%|██████████| 23/23 [00:00<00:00, 2560.63it/s]
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  54%|█████▍    | 1125/2076 [00:00<00:00, 11225.90it/s]Loading weights: 100%|██████████| 2076/2076 [00:00<00:00, 12563.87it/s]
+    epoch 1: train loss 0.4633 dev NLL 0.4052
+    epoch 2: train loss 0.3358 dev NLL 0.4362
+train qp-large-helps-strands-decider-e4b-gemma4-v1-2610-A seed 2
+HTTP Request: GET https://huggingface.co/api/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/revision/main "HTTP/1.1 200 OK"
+Fetching 23 files:   0%|          | 0/23 [00:00<?, ?it/s]Fetching 23 files: 100%|██████████| 23/23 [00:00<00:00, 2390.15it/s]
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  59%|█████▉    | 1232/2076 [00:00<00:00, 12284.19it/s]Loading weights: 100%|██████████| 2076/2076 [00:00<00:00, 12657.63it/s]
+    epoch 1: train loss 0.4675 dev NLL 0.4179
+    epoch 2: train loss 0.3415 dev NLL 0.4478
+train qpa-large-helps-strands-decider-e4b-gemma4-v1-2610-A seed 0
+HTTP Request: GET https://huggingface.co/api/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/revision/main "HTTP/1.1 200 OK"
+Fetching 23 files:   0%|          | 0/23 [00:00<?, ?it/s]Fetching 23 files: 100%|██████████| 23/23 [00:00<00:00, 2426.10it/s]
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  58%|█████▊    | 1206/2076 [00:00<00:00, 12051.59it/s]Loading weights: 100%|██████████| 2076/2076 [00:00<00:00, 12721.38it/s]
+    epoch 1: train loss 0.4086 dev NLL 0.3535
+    epoch 2: train loss 0.2431 dev NLL 0.4387
+train qpa-large-helps-strands-decider-e4b-gemma4-v1-2610-A seed 1
+HTTP Request: GET https://huggingface.co/api/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/revision/main "HTTP/1.1 200 OK"
+Fetching 23 files:   0%|          | 0/23 [00:00<?, ?it/s]Fetching 23 files: 100%|██████████| 23/23 [00:00<00:00, 2340.86it/s]
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  59%|█████▉    | 1221/2076 [00:00<00:00, 12208.12it/s]Loading weights: 100%|██████████| 2076/2076 [00:00<00:00, 12853.45it/s]
+    epoch 1: train loss 0.4309 dev NLL 0.3341
+    epoch 2: train loss 0.2767 dev NLL 0.4121
+train qpa-large-helps-strands-decider-e4b-gemma4-v1-2610-A seed 2
+HTTP Request: GET https://huggingface.co/api/models/StrandsAgents/strands-decider-E4B-gemma4-v1-2610/revision/main "HTTP/1.1 200 OK"
+Fetching 23 files:   0%|          | 0/23 [00:00<?, ?it/s]Fetching 23 files: 100%|██████████| 23/23 [00:00<00:00, 2339.21it/s]
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  56%|█████▌    | 1161/2076 [00:00<00:00, 11609.24it/s]Loading weights: 100%|██████████| 2076/2076 [00:00<00:00, 12755.87it/s]
+    epoch 1: train loss 0.4108 dev NLL 0.3681
+    epoch 2: train loss 0.2647 dev NLL 0.4228

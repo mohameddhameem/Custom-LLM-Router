@@ -4,10 +4,9 @@
 - **Done:**
   - the golden set is imported and verified;
   - experiment 10 with nano-jev judges and the 2B decider;
-  - experiments 7 and 9 with nano-jev, MS MARCO and zero-shot judges;
+  - experiments 7 and 9 with nano-jev, MS MARCO, zero-shot and fine-tuned decider judges;
   - experiment 8 and the H2 diagnosis.
-- **Running:** experiment 10's E4B decider, and experiment 9's E4B. Experiment 9's 2B is trained, and its
-  evaluation waits for the E4B.
+- **Running:** experiment 10's E4B decider (43114, then eval 43115).
 
 See [the job sheet](../gpu-jobs-slr.md).
 
@@ -140,13 +139,14 @@ trained like experiment 9's.
 **Setup.** Experiment 7's pair A is not menu A: Qwen2.5-1.5B reads the top 2 of the 10 distractor passages, and
 Qwen2.5-7B reads all 10. Its caches are cut from experiment 1's full-dev run onto `slr-train` / `slr-val` /
 `slr-test`, with no model calls (job 43083). The judges and LR routers retrain on `slr-train` (43084, 43085), and are
-evaluated on `slr-test` (43097).
+evaluated on `slr-test` (43097). The fine-tuned deciders trained in 43101 (2B) and 43102 (E4B), and 43103 re-evaluated
+everything with them; the earlier rows are unchanged.
 
 **Prices:**
 - The 7B pays 10 (Table 5). The 1.5B pays 0.5: the same formula at its nominal size, as Table 5 doesn't list it.
 - A router that reads the small answer pays both calls when it escalates.
-- A judge's own calls are priced with `budget()` at their measured tokens: nano-jev 0, the 2B decider about 1.2, the
-  E4B about 4.5.
+- A judge's own calls are priced with `budget()` at their measured tokens: nano-jev 0, the 2B decider about 1.2–1.3,
+  the E4B about 4.4–4.5 a call.
 
 Output: [results/slr-judges](../../results/slr-judges/eval/A/report.json).
 
@@ -155,8 +155,12 @@ Output: [results/slr-judges](../../results/slr-judges/eval/A/report.json).
 | Router | AIQ [95% CI] | With its own price |
 |---|---|---|
 | Oracle | 0.758 | |
-| Decider E4B, zero-shot (`grounded`) | **0.696** [0.675, 0.717] | 0.650 |
+| **Decider E4B fine-tuned, qpa** (mean of 3 seeds) | **0.711** [0.691, 0.731] | one judge: 0.655, 0.655, 0.654 (4.4 a call); mean of 3: 0.609* |
+| Decider 2B fine-tuned, qpa (mean of 3 seeds) | 0.696 [0.676, 0.718] | one judge: **0.682, 0.681, 0.677** (1.3 a call); mean of 3: 0.658 |
+| Decider E4B, zero-shot (`grounded`) | 0.696 [0.675, 0.717] | 0.650 |
+| Decider E4B fine-tuned, qp | 0.684 [0.664, 0.706] | one judge: 0.647, 0.643, 0.644 |
 | LR evidence + small answer | 0.681 [0.661, 0.702] | |
+| Decider 2B fine-tuned, qp | 0.679 [0.658, 0.701] | one judge: 0.665, 0.670, 0.670 |
 | Decider 2B, zero-shot (`correct`) | 0.678 [0.656, 0.698] | 0.667 |
 | nano-jev qpa (mean of 3 seeds) | 0.677 [0.658, 0.699] | 0.677 (one seed: 0.669–0.678) |
 | LR cascade (question + evidence + small answer) | 0.676 [0.655, 0.698] | |
@@ -167,6 +171,9 @@ Output: [results/slr-judges](../../results/slr-judges/eval/A/report.json).
 | nano-jev q | 0.641 | |
 | Random | 0.638 | |
 
+\* Three E4B passes cost 13.3 a question, more than the 7B's answer (10). The curve then lies wholly above the AIQ
+price range, and its AIQ floors at always-small's 0.609, for qp and qpa alike.
+
 **Paired differences:**
 
 | Comparison | Before its price | With its price |
@@ -176,6 +183,12 @@ Output: [results/slr-judges](../../results/slr-judges/eval/A/report.json).
 | Zero-shot E4B − entropy | [+0.019, +0.043] | **[−0.030, −0.003]** |
 | Zero-shot E4B − LR cascade | [+0.009, +0.030] | **[−0.039, −0.015]** |
 | Zero-shot 2B − LR cascade | [−0.009, +0.012] | [−0.019, −0.0001] |
+| Fine-tuned 2B qpa − entropy | [+0.020, +0.045] | one judge: **[+0.006, +0.028]**, [+0.005, +0.028], [+0.001, +0.024] |
+| Fine-tuned 2B qpa − LR cascade | [+0.011, +0.032] | one judge: [−0.004, +0.016], [−0.005, +0.016], [−0.008, +0.011] |
+| Fine-tuned 2B qpa − nano-jev qpa | [+0.009, +0.029] | mean of 3: [−0.031, −0.011] |
+| Fine-tuned E4B qpa − entropy | [+0.033, +0.058] | one judge: [−0.023, +0.001], [−0.024, +0.001], [−0.024, +0.000] |
+| Fine-tuned E4B qpa − LR cascade | [+0.024, +0.046] | one judge: [−0.033, −0.010], [−0.034, −0.011], [−0.035, −0.011] |
+| Fine-tuned E4B qp − LR cascade | [+0.000, +0.019] | |
 | MS MARCO qp − nano-jev qp | [−0.024, −0.007] | |
 | MS MARCO qpa − nano-jev qpa | [−0.031, −0.014] | |
 
@@ -184,11 +197,21 @@ Output: [results/slr-judges](../../results/slr-judges/eval/A/report.json).
   - **RQ3:** the label doesn't matter here. large-helps and small-fails give 0.674 against 0.674 (qp), and 0.677
     against 0.675 (qpa).
   - **RQ4:** nano-jev's pretraining beats MS MARCO's, by +0.007 to +0.031.
-- **The best router before cost is the zero-shot E4B decider.** But at Table 5 prices its 4.5 a call is nearly half
-  the 7B's answer, so it pays for itself out of the lead. Every LR router and entropy beat it with its price.
+- **Before cost, fine-tuning helps and size helps.** The fine-tuned E4B reading the small answer is the best router
+  (0.711). It beats entropy, the LR cascade and nano-jev qpa by +0.02 to +0.06, and scores above its zero-shot
+  version (0.696). The fine-tuned 2B is next (0.696).
+- **With its price, one fine-tuned 2B qpa judge is the best deployable router.**
+  - Its call costs 1.3, an eighth of the 7B's answer.
+  - It scores 0.677–0.682: better than entropy for all three seeds, and level with the LR cascade.
+  - This is the common standard's result again ([2026-10-18](2026-10-18-common-redo.md)), now on 1,481 questions.
+- **The E4B pays for itself out of its lead.** At 4.4 a call (nearly half the 7B's answer), one fine-tuned E4B judge
+  falls to 0.654–0.655, which ties entropy and is worse than the LR cascade. The zero-shot E4B does the same (0.650).
+- **Averaging three seeds never pays here:** three passes cost 3.8 (2B) or 13.3 (E4B) a question.
 - **The 33M nano-jev judge ties entropy and the LR cascade,** at no price.
-- **Clean test** (1,303): the same order. E4B zero-shot 0.694, LR 0.676, nano-jev qpa 0.672, entropy 0.661.
-- **Fine-tuned deciders:** queued (job sheet rows 7.5, 7.6).
+- **Clean test** (1,303): the same order.
+  - Before cost: E4B fine-tuned qpa 0.711, 2B fine-tuned qpa 0.695, E4B zero-shot 0.694, LR 0.676, nano-jev qpa
+    0.672, entropy 0.661.
+  - One 2B qpa judge with its price: 0.675–0.681.
 - **Caveat on the prices:** Table 5 prices each answering call at the paper's nominal lengths (256 + 64 tokens), while
   the 7B here reads all 10 passages. A judge has no Table 5 entry, so it is priced at its measured tokens. Relative to
   the experts, judges are therefore dearer here than in measured AgentTTS units. There, the E4B zero-shot with its cost
