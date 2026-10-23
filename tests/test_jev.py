@@ -141,11 +141,30 @@ def test_multihop_splits_follow_the_team_rule(tmp_path):
     assert not set(splits["router_train"]) & set(splits["calib"]) and len(splits["test"]) == 300
 
 
-def test_twowiki_needs_the_team_ids():
+def test_a_dataset_without_gold_answers_is_refused():
     import pandas as pd
 
     from stair.prepare_multihop import SIZES, check
 
-    frames = {part: pd.DataFrame({"id": [f"x{i}" for i in range(n)]}) for part, n in SIZES["2wikimultihopqa"].items()}
-    with pytest.raises(ValueError, match="team's 2wikimultihopqa/val"):
+    frames = {part: pd.DataFrame({"id": [f"{part}{i}" for i in range(n)], "answer": ["a"] * n})
+              for part, n in SIZES["2wikimultihopqa"].items()}
+    check("2wikimultihopqa", frames)
+    frames["dev"].loc[:, "answer"] = ""  # the team's 2Wiki source: the official test set, answers hidden
+    with pytest.raises(ValueError, match="without a gold answer"):
         check("2wikimultihopqa", frames)
+
+
+def test_twowiki_splits_cut_the_answered_dev_set(tmp_path):
+    import pandas as pd
+    from stair_common.splits import shuffled
+
+    from stair.make_splits import main as make_splits_main
+
+    pd.DataFrame({"id": [f"t{i}" for i in range(5000)]}).to_parquet(tmp_path / "train.parquet")
+    dev = [f"d{i}" for i in range(4000)]
+    pd.DataFrame({"id": dev}).to_parquet(tmp_path / "dev.parquet")
+    make_splits_main(["--dataset", "2wikimultihopqa", "--data-dir", str(tmp_path)])
+    splits = json.loads((tmp_path / "splits.json").read_text())
+    order = shuffled(dev)
+    assert splits["calib"] == sorted(order[:500]) and splits["test"] == sorted(order[500:1000])
+    assert splits["test_ext"] == sorted(order[1000:3000])

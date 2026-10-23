@@ -218,4 +218,15 @@ Added before any 2Wiki or MuSiQue answer exists:
 
 ## Deviations
 
-(none yet)
+1. **2026-10-24, before any 2WikiMultiHopQA answer existed: the 2Wiki split.**
+   - **What was found:** the team's `stair_common` 2Wiki parts (val, test, train_extra) cannot be scored. Their
+     source is AgentTTS's `tts_train.json` (pinned at `3f0c2df`, sha256 `4f60ba6a…`). That file holds the official
+     2Wiki *test* set: all 12,576 questions have an empty answer and no supporting facts. A Hugging Face mirror
+     (`framolfese/2WikiMultihopQA`) lists the same ids under "test", also without answers.
+   - **New rule:**
+     - 2Wiki's calib, test and test_ext are the first 500, the next 500 and the next 2,000 ids of the official dev
+       set, which has answers (the mirror's "validation", 12,576), in the team's random order
+       (`stair_common.splits.shuffled`).
+     - router_train is unchanged.
+     - `prepare-multihop` now refuses any part with questions that lack a gold answer.
+   - **Aliases:** 2Wiki's alias file is not in the mirror, so the secondary alias score exists for MuSiQue only.

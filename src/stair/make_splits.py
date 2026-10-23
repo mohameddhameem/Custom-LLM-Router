@@ -104,16 +104,18 @@ MULTIHOP_CALIB = 500
 def multihop_splits(dataset: str, data_dir: Path) -> dict[str, list[str]]:
     """Jev novelty E2's splits (docs/experiments/2026-10-24-jev-preregistration.md), by the team's rule
     (stair_common.splits.shuffled: sort, then shuffle with its seed):
-        2wikimultihopqa  router_train = the first 4,814 shuffled official train ids; calib / test = the team's val
-                         (dev[0:500]) / test (dev[500:1000]); test_ext = dev[1000:3000], the first 2,000 of its train_extra
+        2wikimultihopqa  router_train = the first 4,814 shuffled official train ids; calib / test / test_ext = the
+                         first 500 / next 500 / next 2,000 shuffled official dev ids (not the team's 2Wiki parts:
+                         their questions have no gold answers, see prepare_multihop)
         musique          router_train / calib = the first 4,814 / next 500 shuffled train ids; test = all 2,417 dev ids"""
-    from stair_common.splits import load_split, shuffled
+    from stair_common.splits import shuffled
 
     order = shuffled(pd.read_parquet(data_dir / "train.parquet", columns=["id"])["id"].tolist())
     n = MULTIHOP_TRAIN[dataset]
     if dataset == "2wikimultihopqa":
-        return {"router_train": sorted(order[:n]), "calib": load_split(dataset, "val"), "test": load_split(dataset, "test"),
-                "test_ext": load_split(dataset, "train_extra")[:2000]}
+        dev = shuffled(pd.read_parquet(data_dir / "dev.parquet", columns=["id"])["id"].tolist())
+        return {"router_train": sorted(order[:n]), "calib": sorted(dev[:500]), "test": sorted(dev[500:1000]),
+                "test_ext": sorted(dev[1000:3000])}
     return {"router_train": sorted(order[:n]), "calib": sorted(order[n:n + MULTIHOP_CALIB]),
             "test": pd.read_parquet(data_dir / "dev.parquet", columns=["id"])["id"].tolist()}
 

@@ -3,6 +3,8 @@ the evidence scorer read them unchanged.
 
     2wikimultihopqa  framolfese/2WikiMultihopQA: the official train / dev (167,454 / 12,576; Apache-2.0 repository),
                      already HotpotQA-shaped (10 paragraphs as title + sentences, supporting facts). No alias file.
+                     Not the team's stair_common 2Wiki parts: their source, AgentTTS's tts_train.json, is the official
+                     test set, whose answers are hidden (all 12,576 empty), so it cannot be scored.
     musique          dgslibisey/MuSiQue: MuSiQue-Ans v1.0 train / dev (19,938 / 2,417; CC BY 4.0). Each of the 20
                      paragraphs becomes one sentence; `type` is the hop pattern from the id (2hop, 3hop1, ...).
 
@@ -68,19 +70,14 @@ def convert(dataset: str, examples) -> pd.DataFrame:
 
 
 def check(dataset: str, frames: dict[str, pd.DataFrame]) -> None:
-    """Row counts as published, and (2Wiki) every id of the team's stair_common split present in dev."""
+    """Row counts as published, every question with a gold answer, and train and dev disjoint."""
     for part, n in SIZES[dataset].items():
         if len(frames[part]) != n:
             raise ValueError(f"{dataset} {part}: {len(frames[part])} rows, expected {n}")
-    if dataset == "2wikimultihopqa":
-        from stair_common.splits import load_split
-
-        dev = set(frames["dev"]["id"])
-        for part in ("val", "test", "train_extra"):
-            missing = [i for i in load_split(dataset, part) if i not in dev]
-            if missing:
-                raise ValueError(f"{len(missing)} of the team's 2wikimultihopqa/{part} ids are not in this dev set, "
-                                 f"e.g. {missing[:3]}: use the official files instead")
+        if (empty := int((frames[part]["answer"].astype(str).str.strip() == "").sum())):
+            raise ValueError(f"{dataset} {part}: {empty} questions without a gold answer (a hidden-answer test set?)")
+    if overlap := set(frames["train"]["id"]) & set(frames["dev"]["id"]):
+        raise ValueError(f"{dataset}: {len(overlap)} ids in both train and dev")
 
 
 def main(argv: list[str] | None = None) -> None:
