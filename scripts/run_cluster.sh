@@ -312,6 +312,19 @@ EOF
   e5-eval)  # CPU job: E5's reports per pair (all 1,481 and the clean 1,303)
     $BIN judge eval --plan configs/e5-transfer.toml --data-dir "$DATA" --out runs/e5-transfer       --exclude "$DATA/nanojev_validation_ids.txt"
     ;;
+  confirm)  # CPU job: the pre-registered confirmatory tests on DATASET: H2 + H3 (musique, 2wikimultihopqa; 2Wiki's
+            # secondary test X: H2), H3 exploratory on the HotpotQA golden set (hotpotqa), or H5 (DATASET=e5)
+    case ${DATASET:?DATASET=musique|2wikimultihopqa|hotpotqa|e5} in
+      hotpotqa) $BIN confirm --family H3 --plan configs/system-one-slr.toml --out runs/slr-judges                   --signals runs/slr-pairA/signals --exclude "$DATA/nanojev_validation_ids.txt" ;;
+      e5) $BIN confirm --family H5 --plan configs/e5-transfer.toml --out runs/e5-transfer --exclude "$DATA/nanojev_validation_ids.txt" ;;
+      *) for fam in H2 H3; do
+           $BIN confirm --family "$fam" --plan "configs/e2-$DATASET.toml" --out "runs/e2-$DATASET" --signals "runs/$DATASET-pairA/signals"
+         done
+         if [ "$DATASET" = 2wikimultihopqa ]; then
+           $BIN confirm --family H2 --plan configs/e2-2wikimultihopqa.toml --out runs/e2-2wikimultihopqa --pair X
+         fi ;;
+    esac
+    ;;
   e3-signals)  # GPU: E3's weak-model signals on DATASET=hotpotqa|musique|2wikimultihopqa (pair A's every split), ~1 h
     case ${DATASET:?DATASET=hotpotqa|musique|2wikimultihopqa} in
       hotpotqa) SRUN=runs/slr-pairA; SDATA=$DATA; SARGS="--split router_train --split calib --split test"

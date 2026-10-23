@@ -255,3 +255,39 @@ def test_label_curve_finds_a_pretraining_gain_that_fades_with_labels():
     assert stats["H1d/qp"]["estimate"] > 0 and "p_holm" in stats["H1d/qp"]
     assert {c["budget"] for c in report["cells"]} == {50, 100, 4814}
     assert all(0 < c["gap_closed"] < 1 for c in report["cells"])
+
+
+def _routing_arrays(n=500, seed=0):
+    rng = np.random.default_rng(seed)
+    small = (rng.random(n) < 0.55).astype(float)
+    large = np.maximum(small, (rng.random(n) < 0.35).astype(float))
+    return {"small_f1": small, "large_f1": large, "small_em": small, "large_em": large,
+            "small_cost": np.full(n, 0.5), "large_cost": np.full(n, 10.0), "small_uncertainty": rng.random(n)}
+
+
+def test_confirmatory_tests_find_what_was_planted():
+    from stair.confirm import Policy, Test, run_tests, stronger
+
+    a = _routing_arrays()
+    helps = a["large_f1"] - a["small_f1"]
+    rng = np.random.default_rng(1)
+
+    def scores(q, k=3):
+        return [q * helps + (1 - q) * rng.random(len(helps)) for _ in range(k)]
+
+    pols = {"good": Policy("good", scores(0.6), False), "same": Policy("same", scores(0.6), False),
+            "noise": Policy("noise", scores(0.0), False), "weak": Policy("weak", scores(0.3), False)}
+    tests = [Test("good > noise", "superiority", "good", "noise"),
+             Test("good >= same - delta", "noninferiority", "good", "same"),
+             Test("noise ~ random", "equivalence", "noise"),
+             Test("weak keeps 75% of good's gain", "ratio", "weak", "good", 0.75),
+             Test("good transfers better than weak", "transfer-gap", "good", "same", 0.0, "weak", "same")]
+    r = run_tests(a, pols, tests, n_boot=60, seed=0, delta=0.02)["tests"]
+    assert r["good > noise"]["supported"] and r["good >= same - delta"]["supported"]
+    assert r["noise ~ random"]["supported"]  # a score with no signal is equivalent to random routing
+    assert not r["weak keeps 75% of good's gain"]["supported"] and r["weak keeps 75% of good's gain"]["estimate"] < 0
+    assert r["good transfers better than weak"]["estimate"] > 0
+    assert all("p_holm" in t for t in r.values())
+    for p in pols.values():
+        p.calib = p.seeds
+    assert stronger(a, [pols["weak"], pols["good"], pols["noise"]]).name == "good"  # chosen on calib
