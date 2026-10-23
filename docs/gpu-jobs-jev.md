@@ -23,6 +23,8 @@ from `~/Custom-LLM-Router` on branch `feat/jev-novelty` after `uv sync --extra l
 |---|---|---|---|---|
 | 1.7 | `qsub -l walltime=12:00:00 -W depend=afterok:<1.2> -v "STEP=e1-menuA-train,JUDGES=e1-nanojev:e1-plain:e1-msmarco:e1-nanojev-repro:e1-nanojev-nohotpot:e6-ret-only:e6-answer-only" scripts/omega.pbs` | GPU | ~6 h | `runs/e1-menuA/<set>/qpa/[b<budget>/]seed<k>/` |
 | 1.8 | `qsub -l walltime=04:00:00 -W depend=afterany:<1.7> -v STEP=e1-menuA-eval scripts/omega-cpu.pbs` | CPU | ~40 min | `runs/e1-menuA/eval/report{,-clean}.json` |
+| 1.9 | `qsub -l walltime=02:00:00 -v "STEP=e1-menuA-train,JUDGES=e6-joint" scripts/omega.pbs` | GPU | ~15 min | E6's joint 4-option judge, qp and qpa × 3 seeds: `runs/e1-menuA/e6-joint/` |
+| 1.10 | `qsub -l walltime=04:00:00 -W depend=afterok:<1.9> -v STEP=e1-menuA-eval scripts/omega-cpu.pbs` | CPU | ~40 min | 1.8's reports again, with the joint judge and `aiq_diff_contrasts` (each E6 judge against the two-stage one) |
 
 ## E9: latency
 
@@ -33,6 +35,19 @@ from `~/Custom-LLM-Router` on branch `feat/jev-novelty` after `uv sync --extra l
 
 - **Left out:** HHEM-2.1-Open needs `trust_remote_code` (running its repo's code), so it is in neither E3 nor E9
   (deviation 5).
+
+## E7: which ranker makes cheap evidence plus sampling work (descriptive)
+
+`configs/e7-evidence.toml`: Llama-3.2-3B on 5 pool passages, 1 sample or 20 fused, on slr-test (1,481). The passages
+come from nano-jev (experiment 8's cells, reused), MS MARCO MiniLM-L12, BM25, or the gold oracle. Everything else is
+exp8-slr's. A 20-sample cell takes about 7 h (17.5 s a question), so each gets its own job; chunks resume.
+
+| # | Command | Where | Time | Output |
+|---|---|---|---|---|
+| 7.1 | `qsub -l walltime=01:00:00 -v STEP=e7-prepare scripts/omega.pbs` | GPU | ~20 min | `runs/e7-evidence/{pools,scores}`, `scores/test-msmarco.parquet`, `recall-test.json` (recall@k for each ranker) |
+| 7.2 | `qsub -l walltime=03:00:00 -W depend=afterok:<7.1> -v "STEP=e7-answer,CELLS=llama3b-top5:llama3b-s20fuse-top5:llama70b-slrprompt-72bsel:llama3b-top5-msmarco:llama3b-top5-bm25:llama3b-top5-gold" scripts/omega.pbs` | GPU | ~1 h | the reused cells, and the three 1-sample cells |
+| 7.3 | `qsub -l walltime=12:00:00 -W depend=afterok:<7.1> -v "STEP=e7-answer,CELLS=llama3b-s20fuse-top5-<ranker>" scripts/omega.pbs`, once each for `msmarco`, `bm25`, `gold` | GPU | ~7 h each | `runs/e7-evidence/answers/test/<cell>.parquet` |
+| 7.4 | `qsub -l walltime=01:00:00 -W depend=afterok:<7.2>:<7.3 ×3> -v STEP=e7-summary scripts/omega-cpu.pbs` | CPU | minutes | `answers/summary.csv`, `answers/compare-test.json` (each cell against nano-jev's 20 fused, paired bootstrap) |
 
 ## E2: 2WikiMultiHopQA and MuSiQue, pair A
 

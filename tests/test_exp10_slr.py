@@ -26,6 +26,18 @@ def test_labels_are_his_targets():
         e.labels(df.assign(y_ret=["W", None]))
 
 
+def test_the_joint_question_learns_his_targets_as_one_path_and_routes_like_the_stages():
+    df = pd.DataFrame({"y_ret": ["W", "W", "S", "S"], "y_qa_W": ["W", "S", "S", "W"], "y_qa_S": ["S", "W", "W", "S"]})
+    assert e.joint_labels(df).tolist() == [0, 1, 2, 3]  # WW, WS, SW, SS: the answer target under his retrieval target
+    p = np.full((4, 4), 0.1) + 0.6 * np.eye(4)  # each question's most likely path, 0.7 against 0.1 for the others
+    s = e.joint_scores(p)
+    assert np.allclose(s["ret"], [0.8, 0.8, 0.2, 0.2]) and np.allclose(s["qa_W"][:2], [0.875, 0.125])
+    assert slr.route(s["ret"], {"W": s["qa_W"], "S": s["qa_S"]}, [0.5, 0.5, 0.5]).tolist() == [0, 1, 2, 3]
+    states = e.joint_items(pd.DataFrame({"question": ["who?"], "sel_W": ["[1] A: a"], "answer_WW": ["Ann\nbecause"]}),
+                           "qpa")
+    assert states[0]["state"] == "Proposed answer: Ann\n[1] A: a" and len(states[0]["options"]) == 4
+
+
 def test_pareto_keeps_the_undominated_thresholds():
     points = [(0.5, 0.1, "a"), (0.6, 0.2, "b"), (0.55, 0.3, "c"), (0.6, 0.25, "d"), (0.7, 0.9, "e")]
     assert e.pareto(points) == [("a",), ("b",), ("e",)]

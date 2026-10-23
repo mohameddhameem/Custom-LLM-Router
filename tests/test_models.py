@@ -397,6 +397,15 @@ def test_pools_score_and_recall(tiny_models, tmp_path):
     assert report["subsets"]["all"]["bm25"]["2"]["all_gold"] == 0.0  # BM25 ranks the distractor second
     assert report["subsets"]["all"]["bm25"]["3"]["all_gold"] == 1.0
 
+    # E7: a second ranker (one relevance logit, as MS MARCO's) beside nano-jev's scores, and in the recall report
+    pools.main(["score", *args, "--scorer", str(tiny_models / "ce"), "--kind", "reranker", "--column", "msmarco",
+                "--device", "cpu", "--chunk-size", "2", "--batch", "2"])
+    other = pd.read_parquet(tmp_path / "scores" / "t-msmarco.parquet")
+    assert len(other) == 5 and all(len(s) == 3 for s in other["msmarco"]) and (other["tokens"] > 0).all()
+    assert pd.read_parquet(tmp_path / "scores" / "t.parquet").equals(scores)  # nano-jev's scores untouched
+    pools.main(["recall", *args])
+    assert "msmarco" in json.loads((tmp_path / "recall-t.json").read_text())["subsets"]["all"]
+
 
 def test_entropy_recorder_matches_raw_logits(tiny_models):
     import torch
@@ -495,6 +504,20 @@ def test_exp10_judge_trains_and_routes_menu_a(tiny_models, tmp_path):
                                          "tiny qpa#seed1", "tiny qpa"]
     report = exp10_slr.evaluate(df, routers, plan)
     assert 0 <= report["routers"]["tiny qpa"]["aiq"] <= 1 and "tiny qpa - fixed paths" in report["aiq_diff"]
+
+    # E6: the joint 4-option judge, one item a question, swept and priced like the stage judges
+    joint = {**spec, "name": "joint", "judge_dir": "judge-joint", "inputs": ["qpa"], "seeds": [0], "joint": True}
+    plan = {**plan, "judges": [spec, joint], "contrasts": [["joint qpa#seed0", "tiny qpa"], ["absent", "tiny qpa"]]}
+    exp10_slr.run_train(df, plan, joint, "qpa", 0, "cpu")
+    seed_dir = tmp_path / "exp10" / "judge-joint" / "qpa" / "seed0"
+    done = json.loads((seed_dir / "done.json").read_text())
+    assert done["n_train_items"] + done["n_dev_items"] == 30 and done["train_scores"] == ["joint"]
+    test = pd.read_parquet(seed_dir / "test.parquet")
+    assert np.allclose(test[[f"p_{p}" for p in slr.PATHS]].sum(axis=1), 1)
+    assert np.allclose(test["ret"], test["p_WW"] + test["p_WS"]) and (test["tokens_qa_S"] == 0).all()
+    routers = exp10_slr.judge_routers(plan, ids["test"], ids["val"])
+    report = exp10_slr.evaluate(df, routers, plan)
+    assert "joint qpa#seed0" in report["routers"] and list(report["aiq_diff_contrasts"]) == ["joint qpa#seed0 - tiny qpa"]
 
 
 def test_exp8_judge_trains_and_evaluates(tiny_models, tmp_path):

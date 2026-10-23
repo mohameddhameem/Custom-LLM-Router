@@ -342,3 +342,18 @@ def test_signals_finish_a_run_whose_splits_are_done(tmp_path):
     record = json.loads((run / "signals" / "provenance.jsonl").read_text().splitlines()[-1])
     assert record["pair_run"] == str(run) and record["splits"] == ["test"]
     assert json.loads((run / "signals" / "settings.json").read_text())["k"] == 10  # confirm.py prices the samples by it
+
+
+def test_e7_reuses_experiment_8s_cells_unchanged():
+    import tomllib
+
+    e7 = tomllib.loads((CONFIGS / "e7-evidence.toml").read_text(encoding="utf-8"))
+    exp8 = {c["name"]: c for c in tomllib.loads((CONFIGS / "exp8-slr.toml").read_text(encoding="utf-8"))["cells"]}
+    reused = [c for c in e7["cells"] if c["name"] in exp8]
+    assert {c["name"] for c in reused} == {"llama3b-top5", "llama3b-s20fuse-top5", "llama70b-slrprompt-72bsel"}
+    assert all(c == exp8[c["name"]] for c in reused)  # reused by name: the settings must be the ones that ran
+    for c in e7["cells"]:
+        if "ranker" in c:  # every new cell is its nano-jev twin with only the ranker changed
+            twin = exp8["llama3b-s20fuse-top5" if c.get("fuse") else "llama3b-top5"]
+            assert {k: v for k, v in c.items() if k not in ("name", "ranker")} == {k: v for k, v in twin.items() if k != "name"}
+    assert e7["seed"] == 0 and sorted(c["ranker"] for c in e7["cells"] if "ranker" in c) == sorted(["msmarco", "bm25", "gold"] * 2)

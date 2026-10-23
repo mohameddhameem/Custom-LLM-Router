@@ -345,6 +345,23 @@ EOF
   e1-menuA-eval)  # CPU job: E1 menu A + E6 reports, his routers priced
     $BIN exp10-slr eval --plan configs/e1-menuA.toml
     ;;
+  e7-prepare)  # GPU, ~20 min: E7's pools (experiment 8's golden-set test), MS MARCO's scores on them, recall per ranker
+    mkdir -p runs/e7-evidence/pools runs/e7-evidence/scores
+    for d in pools scores; do cp -n runs/exp8-slr/$d/test.parquet runs/e7-evidence/$d/; done
+    cp -n runs/exp8-slr/nanojev_validation_ids.txt runs/e7-evidence/
+    HF_HUB_OFFLINE=1 $BIN pools score --out runs/e7-evidence --name test --scorer cross-encoder/ms-marco-MiniLM-L12-v2 \
+      --kind reranker --column msmarco --device cuda
+    $BIN pools recall --out runs/e7-evidence --name test --exclude runs/e7-evidence/nanojev_validation_ids.txt
+    ;;
+  e7-answer)  # GPU: E7's answers, CELLS=<cells of configs/e7-evidence.toml, ':'-separated> (reused cells cost nothing);
+              # resumes by chunk
+    only=(); for c in ${CELLS//:/ }; do only+=(--only "$c"); done
+    HF_HUB_OFFLINE=1 $BIN pool-answer run --plan configs/e7-evidence.toml --split test "${only[@]}"
+    ;;
+  e7-summary)  # CPU job: E7's table and each cell against nano-jev's 20 fused samples (paired bootstrap)
+    $BIN pool-answer summary --plan configs/e7-evidence.toml
+    $BIN pool-answer compare --plan configs/e7-evidence.toml --split test --base llama3b-s20fuse-top5
+    ;;
   e9-latency)  # GPU job (DEVICE=cuda) or CPU job (DEVICE=cpu, 8 threads): E9's ms per decision
     HF_HUB_OFFLINE=1 $BIN latency --device "${DEVICE:-cuda}" --threads 8 --out runs/e9-latency
     ;;

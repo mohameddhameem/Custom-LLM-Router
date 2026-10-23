@@ -16,6 +16,12 @@ suffices), his routers' pW:
 Weak-first, as he prices it: the weak answer runs before the answer decision, so qpa reads it at no extra price; the
 retrieval decision reads only the weak selection, as his does. `slr.route` turns the three scores into a path.
 
+A `joint` judge set (Jev novelty E6) asks one 4-option question instead, "which is the cheapest pipeline that answers
+this correctly?" (WW / WS / SW / SS), once, on what the retrieval decision reads (plus path WW's answer for qpa). Its
+label is his two targets as one path; its four probabilities become the same three scores (`joint_scores`), so it is
+swept, priced and compared exactly like the two-question judges. The plan's `contrasts` add paired intervals between
+our own routers.
+
     exp10-slr train --judge nano-jev --plan configs/exp10-slr.toml   # one judge set, every (inputs, seed); resumes
     exp10-slr eval --plan configs/exp10-slr.toml                     # every judge set trained so far, his routers
 
@@ -57,6 +63,9 @@ QUESTIONS = {
 }
 OPTIONS = ("yes", "no")  # option 0 = the weak stage suffices
 SCORES = ["ret", "qa_W", "qa_S"]  # P(yes) per question: retrieval, answer under weak / strong retrieval
+JOINT = ("Which is the cheapest pipeline that answers this question correctly: {question}",  # E6, options in slr.PATHS order
+         ("weak retrieval, weak answer", "weak retrieval, strong answer", "strong retrieval, weak answer",
+          "strong retrieval, strong answer"))
 PRICE_RANGE = (float(SLR_PATH_PRICES["WW"]), float(SLR_PATH_PRICES["SS"]))
 PRICES = np.array([SLR_PATH_PRICES[p] for p in slr.PATHS], dtype=float)
 HIS_PROMPTS = "jonathan/lab_package/router_prompts.py"  # his prompt contract, one copy for every router he trained
@@ -112,6 +121,29 @@ def labels(df: pd.DataFrame) -> dict[str, np.ndarray]:
     return {k: (v == "S").astype(int).to_numpy() for k, v in out.items()}
 
 
+def joint_items(df: pd.DataFrame, inputs: str) -> list[dict]:
+    """E6: one 4-option typed question per question, asked once before anything escalates, so it reads only the weak
+    selection (qp), and path WW's answer too (qpa), which weak-first prices already pay."""
+    states = (df["sel_W"] if inputs == "qp" else
+              [f"Proposed answer: {clean_answer(a)[:200]}\n{s}" for a, s in zip(df["answer_WW"], df["sel_W"])])
+    return [{"question": JOINT[0].format(question=q), "options": JOINT[1], "state": s}
+            for q, s in zip(df["question"], states)]
+
+
+def joint_labels(df: pd.DataFrame) -> np.ndarray:
+    """His two targets as one path (slr.PATHS index): the retrieval target, then the answer target under it."""
+    y = labels(df)
+    return np.where(y["ret"] == 0, y["qa_W"], 2 + y["qa_S"])
+
+
+def joint_scores(p: np.ndarray) -> dict[str, np.ndarray]:
+    """[questions, 4] path probabilities as the three scores slr.route thresholds: P(weak retrieval) = P(WW) + P(WS),
+    then P(weak answer) under each retrieval, so the joint judge runs through the same sweep as the stage judges."""
+    eps = 1e-12
+    return {"ret": p[:, 0] + p[:, 1], "qa_W": p[:, 0] / (p[:, 0] + p[:, 1] + eps),
+            "qa_S": p[:, 2] / (p[:, 2] + p[:, 3] + eps)}
+
+
 # ---------------------------------------------------------------------------------------------
 # Training
 
@@ -130,7 +162,8 @@ def run_train(df: pd.DataFrame, plan: dict, spec: dict, inputs: str, seed: int, 
               budget: int | None = None) -> None:
     """One judge seed. `budget` (Jev novelty E1, menu A) trains on that many questions, its dev hold-out included, nested
     and stratified by his retrieval label (judge.budget_split); a set's `train_scores` (E6) trains on those stages'
-    items only, while every stage is still scored."""
+    items only, while every stage is still scored; a `joint` set (E6) asks the one 4-option question instead, one call
+    a question (its tokens in tokens_ret, so the router pays that call once)."""
     target = run_dir(plan, spec, inputs, seed, budget)
     tag = f"b{budget} " if budget else ""
     if (target / "done.json").exists():
@@ -145,8 +178,12 @@ def run_train(df: pd.DataFrame, plan: dict, spec: dict, inputs: str, seed: int, 
         rng = np.random.default_rng(seed)
         dev_q = rng.random(len(train)) < hp["dev_fraction"]  # held out by question: a question's items stay together
         tr_q = ~dev_q
-    stages = spec.get("train_scores", SCORES)
-    its, ys = items(train, inputs), labels(train)
+    joint = spec.get("joint", False)
+    stages = ["joint"] if joint else spec.get("train_scores", SCORES)
+    if joint:
+        its, ys = {"joint": joint_items(train, inputs)}, {"joint": joint_labels(train)}
+    else:
+        its, ys = items(train, inputs), labels(train)
     pick = lambda mask: ([it for k in stages for it, m in zip(its[k], mask) if m],  # noqa: E731
                          np.concatenate([ys[k][mask] for k in stages]))
     (tr_items, tr_y), (dev_items, dev_y) = pick(tr_q), pick(dev_q)
@@ -161,9 +198,16 @@ def run_train(df: pd.DataFrame, plan: dict, spec: dict, inputs: str, seed: int, 
     for split in ("val", "test"):
         part = df[df["split"] == split].reset_index(drop=True)
         cols = {"idx": part["idx"]}
-        for k, its_k in items(part, inputs).items():
-            p, tokens = judge.probabilities(its_k)
-            cols[k], cols[f"tokens_{k}"] = p[:, 0], tokens
+        if joint:
+            p, tokens = judge.probabilities(joint_items(part, inputs))
+            cols |= joint_scores(p) | {"tokens_ret": tokens, "tokens_qa_W": np.zeros_like(tokens),
+                                       "tokens_qa_S": np.zeros_like(tokens)}
+            for j, path in enumerate(slr.PATHS):
+                cols[f"p_{path}"] = p[:, j]
+        else:
+            for k, its_k in items(part, inputs).items():
+                p, tokens = judge.probabilities(its_k)
+                cols[k], cols[f"tokens_{k}"] = p[:, 0], tokens
         pd.DataFrame(cols).to_parquet(target / f"{split}.parquet", index=False)
     (target / "done.json").write_text(json.dumps({
         "judge": spec["name"], "inputs": inputs, "seed": seed, "init": spec["init"], "train": hp, "budget": budget,
@@ -339,6 +383,9 @@ def evaluate(df: pd.DataFrame, routers: list[Router], plan: dict, keep: np.ndarr
                                            for a in ours for b in theirs}
     report["aiq_diff_both_priced"] = {f"{a} +judge - {b} +judge": ev.diff(boot, a + " +judge", b + " +judge")
                                       for a in ours for b in theirs if b != "fixed paths"}
+    # the plan's own pairs among our routers (E6: each stage-transfer or joint judge against the two-stage judge)
+    report["aiq_diff_contrasts"] = {f"{a} - {b}": ev.diff(boot, a, b) for a, b in plan.get("contrasts", [])
+                                    if a in curves and b in curves}
     return report
 
 

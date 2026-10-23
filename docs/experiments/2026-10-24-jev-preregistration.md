@@ -291,3 +291,22 @@ deviation 1):
    - **Addition:** `risk-control` also reports α = 0.30 and 0.40, marked `posthoc`, to show where the guarantee starts
      to buy savings.
    - **Unchanged:** H6a and H6b are still judged at the pre-registered α only.
+7. **2026-10-24, before E6's joint judge was trained and before any E7 answer: their designs (both stay descriptive).**
+   The stage-transfer judges of E6 had already run; these two parts had not.
+   - **E6, the one 4-option question:**
+     - "Which is the cheapest pipeline that answers this question correctly?" with options WW / WS / SW / SS.
+     - It is asked once, before anything escalates, so it reads only the weak retriever's selection (qp), plus path
+       WW's answer for qpa.
+     - Its label is his two targets as one path. Its four probabilities become the three scores his threshold rule
+       sweeps: P(weak retrieval) = P(WW) + P(WS), then P(weak answer) under each retrieval.
+     - It is compared with the two-stage judge (`e1-nanojev qpa b4814`) by paired bootstrap; so are the stage-transfer
+       judges.
+   - **E7, the arms:** Llama-3.2-3B on 5 pool passages, with 1 sample or 20 fused.
+     - **Four rankers:**
+       - nano-jev: experiment 8's cells, reused;
+       - MS MARCO MiniLM-L12: the same 33M architecture;
+       - BM25: no neural ranker;
+       - the gold oracle: both gold paragraphs, then nano-jev's next 3.
+     - **BM25 and the 1-sample arms are additions to the plan.** They separate the ranker's share from sampling's.
+     - **Reported:** the team's lenient accuracy and Eq. 8 cost, with each cell paying its own ranker; paired bootstrap
+       against nano-jev with 20 fused samples; recall@k per ranker.
