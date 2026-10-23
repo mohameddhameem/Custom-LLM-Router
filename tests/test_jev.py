@@ -104,3 +104,48 @@ def test_the_nohotpot_arm_has_no_hotpotqa_anywhere(tmp_path, monkeypatch):
     assert counts["train"] == {"squad2/sufficient": 6, "mnli/sufficient": 4}
     again = nanojev_pretrain.build_nohotpot(tmp_path / "src", seed=0)
     assert json.dumps(again) == json.dumps(data)  # deterministic for a seed
+
+
+def _musique_example(i: int) -> dict:
+    paragraphs = [{"idx": k, "title": f"T{k}", "paragraph_text": f" text {i}-{k} ", "is_supporting": k in (3, 7)}
+                  for k in range(20)]
+    return {"id": f"2hop__{i}_{i + 1}", "paragraphs": paragraphs, "question": f"q{i}?", "answer": "A",
+            "answer_aliases": ["A", "Alpha"], "answerable": True}
+
+
+def test_musique_becomes_the_hotpotqa_schema():
+    from stair.prepare_hotpotqa import flatten_example
+    from stair.prepare_multihop import convert
+
+    df = convert("musique", [_musique_example(1), _musique_example(2)])
+    row = df.iloc[0]
+    assert row["type"] == "2hop" and row["num_context_paragraphs"] == 20 and list(row["answers"]) == ["A", "Alpha"]
+    assert list(row["context_sentences"][3]) == ["text 1-3"] and list(row["gold_titles"]) == ["T3", "T7"]
+    hotpot_like = {"id": "x", "question": "q", "answer": "a", "type": "bridge", "level": "hard",
+                   "context": {"title": ["A"], "sentences": [["s"]]}, "supporting_facts": {"title": ["A"], "sent_id": [0]}}
+    assert set(flatten_example(hotpot_like)) | {"answers"} == set(df.columns)  # the same columns run-experts reads
+
+
+def test_multihop_splits_follow_the_team_rule(tmp_path):
+    import pandas as pd
+    from stair_common.splits import shuffled
+
+    from stair.make_splits import main as make_splits_main
+
+    train = [f"t{i:05d}" for i in range(6000)]
+    pd.DataFrame({"id": train}).to_parquet(tmp_path / "train.parquet")
+    pd.DataFrame({"id": [f"d{i}" for i in range(300)]}).to_parquet(tmp_path / "dev.parquet")
+    make_splits_main(["--dataset", "musique", "--data-dir", str(tmp_path)])
+    splits = json.loads((tmp_path / "splits.json").read_text())
+    assert splits["router_train"] == sorted(shuffled(train)[:4814]) and len(splits["calib"]) == 500
+    assert not set(splits["router_train"]) & set(splits["calib"]) and len(splits["test"]) == 300
+
+
+def test_twowiki_needs_the_team_ids():
+    import pandas as pd
+
+    from stair.prepare_multihop import SIZES, check
+
+    frames = {part: pd.DataFrame({"id": [f"x{i}" for i in range(n)]}) for part, n in SIZES["2wikimultihopqa"].items()}
+    with pytest.raises(ValueError, match="team's 2wikimultihopqa/val"):
+        check("2wikimultihopqa", frames)

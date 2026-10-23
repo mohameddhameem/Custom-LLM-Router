@@ -258,6 +258,27 @@ EOF
   nanojev-pretrain)  # GPU: E1's retrained nano-jev arms, VARIANT=repro|nohotpot (default both), ~15 min each
     $BIN nanojev-pretrain train --out runs/nanojev-pretrain ${VARIANT:+--variant "$VARIANT"}
     ;;
+  multihop-prepare)  # login node: E2's DATASET=2wikimultihopqa|musique download + light export, then its pre-registered splits
+    $BIN prepare-multihop --dataset "${DATASET:?DATASET=2wikimultihopqa|musique}"
+    $BIN make-splits --dataset "$DATASET"
+    ;;
+  multihop-pilot|multihop-experts)  # GPU: E2's pair A on DATASET, the pilot (PILOT_N test questions, default 50) or every split
+    case ${DATASET:?DATASET=2wikimultihopqa|musique} in
+      2wikimultihopqa) MCONFIG=configs/gpu-2wiki.toml; SOURCE=(train dev dev dev); PARTS=(router_train calib test test_ext) ;;
+      musique) MCONFIG=configs/gpu-musique.toml; SOURCE=(train train dev); PARTS=(router_train calib test) ;;
+      *) echo "unknown DATASET $DATASET"; exit 1 ;;
+    esac
+    MDATA=data/$DATASET
+    if [ "$STEP" = multihop-pilot ]; then
+      CONFIG=$MCONFIG experts "runs/$DATASET-pilot" pilot "$MDATA/dev.parquet" --splits "$MDATA/splits.json" --split test \
+        --limit "${PILOT_N:-50}" --seed 0
+    else
+      for i in "${!PARTS[@]}"; do
+        CONFIG=$MCONFIG experts "runs/$DATASET-pairA" "${PARTS[$i]}" "$MDATA/${SOURCE[$i]}.parquet" \
+          --splits "$MDATA/splits.json" --split "${PARTS[$i]}"
+      done
+    fi
+    ;;
   e1-judges)  # GPU: E1's label-budget grid on pair A, MATCH=<name substring> (e.g. qp-large / qpa-large); resumes
     HF_HUB_OFFLINE=1 $BIN judge train --plan "${PLAN:-configs/e1-label-curve.toml}" --data-dir "$DATA" \
       --out "${JOUT:-runs/e1-label-curve}" ${MATCH:+--match="$MATCH"}
