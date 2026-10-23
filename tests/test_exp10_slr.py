@@ -38,6 +38,51 @@ def test_router_pays_the_retrieval_call_and_the_answer_call_it_took():
     assert e.Router("his", {}, {}).extra(np.array([0, 3])).tolist() == [0.0, 0.0]  # his routers: not charged
 
 
+PROMPTS = '''"""docstring"""
+CHAR_CAP = 5
+MAXLEN   = 12
+WEAK_NAME_DEFAULT   = "w"
+STRONG_NAME_DEFAULT = "s"
+SYS_CASCADE_TEMPLATE = (
+    "route {weak_name} "
+    "or {strong_name}"
+)
+INSTR_RET2 = "R {q} {n_sel}: {selections}"
+INSTR_QA1 = "Q {q} | {evidence} | {weak_answer}"
+def cap(text, n=CHAR_CAP):
+    return text[:n]
+'''
+
+
+class _WordTokenizer:
+    """One token per whitespace-separated word, with the chat template as plain concatenation."""
+
+    def apply_chat_template(self, msgs, tokenize, add_generation_prompt):
+        return " ".join(m["content"] for m in msgs) + " <assistant>"
+
+    def __call__(self, text, add_special_tokens):
+        return {"input_ids": text.split()}
+
+
+def test_his_router_is_priced_on_his_own_prompts(tmp_path):
+    path = tmp_path / "router_prompts.py"
+    path.write_text(PROMPTS)
+    prompts = e.his_prompts(path)
+    assert prompts["SYS_CASCADE_TEMPLATE"] == "route {weak_name} or {strong_name}" and prompts["CHAR_CAP"] == 5
+    assert "cap" not in prompts  # functions are skipped, never run
+    df = pd.DataFrame({"question": ["who?"], "sel_W": ["[1] Alpha beta\n[4] Gamma\n\nSo the answer is A."],
+                       "sel_S": ["[2] Delta"], "answer_WW": ["A"], "answer_SW": ["D"]})
+    system, calls = e.his_router_calls(df, prompts)
+    assert system == "route w or s"
+    assert calls["ret"] == ["R who? 2: [1] Alpha [4] Gamma"]  # capped at 5 characters, the reasoning dropped
+    assert calls["qa_W"] == ["Q who? | [1] Alpha\n[4] Gamma | A"] and calls["qa_S"] == ["Q who? | [2] Delta | D"]
+    tokenizer = _WordTokenizer()
+    price = e.his_router_price(df, prompts, tokenizer)
+    words = len("route w or s".split()) + 1  # the system turn and the opened assistant turn
+    assert price.tolist() == [[e.budget(e.HIS_ROUTER_PARAMS_B, min(words + len(c[0].split()), 12), 0)
+                               for c in (calls["ret"], calls["qa_W"], calls["qa_S"])]]
+
+
 def test_evaluate_compares_ours_with_his_on_his_terms():
     rng = np.random.default_rng(0)
     ok_val, ok_test = rng.random((40, 4)) < [0.5, 0.6, 0.6, 0.8], rng.random((60, 4)) < [0.5, 0.6, 0.6, 0.8]
@@ -60,5 +105,10 @@ def test_evaluate_compares_ours_with_his_on_his_terms():
     assert report["routers"]["ours#seed0"]["aiq_with_judge_price"] <= report["routers"]["ours#seed0"]["aiq"]
     assert set(report["aiq_diff"]) == {"ours#seed0 - SLR perfect", "ours#seed0 - fixed paths"}
     assert report["aiq_diff"]["ours#seed0 - SLR perfect"]["ci95"][1] < 0
+    assert set(report["aiq_diff_both_priced"]) == {"ours#seed0 +judge - SLR perfect +judge"}
+    priced = e.Router("SLR perfect", oracle_scores(ok_val), oracle_scores(ok_test), np.full((60, 3), 50.0))
+    both = e.evaluate(df, [priced, routers[1]], {"bootstrap": 20})
+    his = both["routers"]["SLR perfect"]
+    assert his["aiq_with_judge_price"] < his["aiq"] and his["peak"]["judge_price"] > 0  # his calls now cost something
     clean = e.evaluate(df, routers, {"bootstrap": 20}, keep=np.arange(60) < 30)
     assert clean["n_test"] == 30

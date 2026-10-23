@@ -23,12 +23,16 @@ Eval: for each router (each seed of each judge, the seeds' mean, and his two rou
 slr-val picks the peak and parity points, which are applied to slr-test. AIQ is over the test points of the val-Pareto
 thresholds, at weak-first prices from 80 (all WW) to 1,009 (all SS), with paired bootstrap intervals. Router cost: none,
 as in his rows; and, beside it, each judge call priced with `stair_common.cost.budget` at its measured tokens
-(nano-jev's calls price at 0: they are cheaper than one 3B sample).
+(nano-jev's calls price at 0: they are cheaper than one 3B sample). His routers are priced the same way
+(`his_router_price`): each call is his own prompt (router_prompts.py at the pinned commit, read as literals) rendered
+through Qwen2.5-1.5B-Instruct's chat template, so `aiq_diff_both_priced` compares the two with both routers charged.
 """
 
 import argparse
+import ast
 import json
 import logging
+import re
 import time
 import tomllib
 from pathlib import Path
@@ -55,6 +59,9 @@ OPTIONS = ("yes", "no")  # option 0 = the weak stage suffices
 SCORES = ["ret", "qa_W", "qa_S"]  # P(yes) per question: retrieval, answer under weak / strong retrieval
 PRICE_RANGE = (float(SLR_PATH_PRICES["WW"]), float(SLR_PATH_PRICES["SS"]))
 PRICES = np.array([SLR_PATH_PRICES[p] for p in slr.PATHS], dtype=float)
+HIS_PROMPTS = "jonathan/lab_package/router_prompts.py"  # his prompt contract, one copy for every router he trained
+HIS_ROUTER = "Qwen/Qwen2.5-1.5B-Instruct"  # the base of all his Config B routers (SFT and reward LoRA)
+HIS_ROUTER_PARAMS_B = 1.5  # nominal size, as stair_common prices a model Table 5 does not list
 
 
 # ---------------------------------------------------------------------------------------------
@@ -192,15 +199,66 @@ def judge_routers(plan: dict, test_ids: pd.Series, val_ids: pd.Series) -> list[R
     return routers
 
 
-def his_routers(plan: dict, slr_plan: dict, val_ids: pd.Series, test_ids: pd.Series) -> list[Router]:
+def his_routers(plan: dict, slr_plan: dict, val_ids: pd.Series, test_ids: pd.Series,
+                price: np.ndarray | None = None) -> list[Router]:
+    """His routers from his frozen scores; `price` charges their calls ([test questions, 3]), None leaves them free."""
     out = []
     for row in plan["his_routers"]:
         scores = {}
         for split, names, ids in (("val", row["val"], val_ids), ("test", row["test"], test_ids)):
             ret, qa = slr.his_scores(slr_plan, *names, ids, split=split)
             scores[split] = {"ret": ret, "qa_W": qa["W"], "qa_S": qa["S"]}
-        out.append(Router(row["name"], scores["val"], scores["test"]))
+        out.append(Router(row["name"], scores["val"], scores["test"], price))
     return out
+
+
+def his_prompts(path: Path) -> dict:
+    """The literal constants of his prompt contract (templates, CHAR_CAP, MAXLEN), read with `ast`: never imported."""
+    out = {}
+    for node in ast.parse(path.read_text(encoding="utf-8")).body:
+        if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
+            try:
+                out[node.targets[0].id] = ast.literal_eval(node.value)
+            except ValueError:
+                pass  # not a literal
+    return out
+
+
+def his_router_calls(df: pd.DataFrame, prompts: dict) -> tuple[str, dict[str, list[str]]]:
+    """His system prompt and, per score, the user turn of each question's router call: INSTR_RET2 on the weak
+    selections, INSTR_QA1 on each retrieval's references with the weak answer under it. Passages are capped at
+    CHAR_CAP as his format_selections / format_evidence do; they come from the retrievers' outputs, which can reword
+    a pool passage, so the counts are close to his, not identical."""
+    cap = prompts["CHAR_CAP"]
+    system = prompts["SYS_CASCADE_TEMPLATE"].format(weak_name=prompts["WEAK_NAME_DEFAULT"],
+                                                    strong_name=prompts["STRONG_NAME_DEFAULT"])
+
+    def refs(sel: str) -> list[str]:
+        return [m.group(1) + m.group(2)[:cap] for m in re.finditer(r"^(\[\d+\] )(.*)$", sel, re.MULTILINE)]
+
+    calls = {k: [] for k in SCORES}
+    for row in df.itertuples():
+        weak = refs(row.sel_W)
+        calls["ret"].append(prompts["INSTR_RET2"].format(q=row.question, n_sel=len(weak),
+                                                        selections=" ".join(weak) or "(none)"))
+        for x in "WS":
+            calls[f"qa_{x}"].append(prompts["INSTR_QA1"].format(
+                q=row.question, evidence="\n".join(refs(getattr(row, f"sel_{x}"))),
+                weak_answer=getattr(row, f"answer_{x}W")))
+    return system, calls
+
+
+def his_router_price(df: pd.DataFrame, prompts: dict, tokenizer) -> np.ndarray:
+    """[questions, 3]: each of his router calls priced like ours, `budget` at its prompt tokens (his routers read the
+    next-token logits, so they generate none); the prompt is cut to MAXLEN tokens as his assemble() does."""
+    system, calls = his_router_calls(df, prompts)
+
+    def tokens(user: str) -> int:
+        text = tokenizer.apply_chat_template([{"role": "system", "content": system}, {"role": "user", "content": user}],
+                                             tokenize=False, add_generation_prompt=True)
+        return min(len(tokenizer(text, add_special_tokens=False)["input_ids"]), prompts["MAXLEN"])
+
+    return np.array([[budget(HIS_ROUTER_PARAMS_B, tokens(calls[k][i]), 0) for k in SCORES] for i in range(len(df))])
 
 
 def pareto(points: list[tuple]) -> list[tuple]:
@@ -259,13 +317,22 @@ def evaluate(df: pd.DataFrame, routers: list[Router], plan: dict, keep: np.ndarr
     report["aiq_diff"] = {f"{a} - {b}": ev.diff(boot, a, b) for a in ours for b in theirs}
     report["aiq_diff_with_judge_price"] = {f"{a} +judge - {b}": ev.diff(boot, a + " +judge", b)
                                            for a in ours for b in theirs}
+    report["aiq_diff_both_priced"] = {f"{a} +judge - {b} +judge": ev.diff(boot, a + " +judge", b + " +judge")
+                                      for a in ours for b in theirs if b != "fixed paths"}
     return report
 
 
 def run_eval(df: pd.DataFrame, plan: dict) -> dict:
+    from transformers import AutoTokenizer
+
     slr_plan = tomllib.loads(Path(plan["slr_plan"]).read_text(encoding="utf-8"))
     val_ids, test_ids = (df.loc[df["split"] == s, "idx"].reset_index(drop=True) for s in ("val", "test"))
-    routers = his_routers(plan, slr_plan, val_ids, test_ids) + judge_routers(plan, test_ids, val_ids)
+    test = df[df["split"] == "test"].set_index("idx").loc[test_ids].reset_index()
+    prompts = his_prompts(Path(slr_plan["out"]) / HIS_PROMPTS)
+    price = his_router_price(test, prompts, AutoTokenizer.from_pretrained(HIS_ROUTER))
+    log.info(f"his router calls: {price.mean(axis=0).round(2).tolist()} a question (ret, qa under W, under S), "
+             f"{HIS_ROUTER}@{provenance.hub_revision(HIS_ROUTER)}")
+    routers = his_routers(plan, slr_plan, val_ids, test_ids, price) + judge_routers(plan, test_ids, val_ids)
     out = Path(plan["out"]) / "eval"
     out.mkdir(parents=True, exist_ok=True)
     seen = set(load_split("hotpotqa", "nanojev_v1_seen"))
