@@ -337,6 +337,15 @@ EOF
       $BIN risk-control --plan "$EPLAN" --out "$EOUT" "${EX[@]}"
     fi
     ;;
+  e1-menuA-train)  # GPU: E1 on menu A + E6, JUDGES=<comma-separated judge sets of configs/e1-menuA.toml>; resumes
+    HF_HUB_OFFLINE=1 $BIN exp10-slr train --plan configs/e1-menuA.toml --judge "${JUDGES:?JUDGES=e1-nanojev,...}"
+    ;;
+  e1-menuA-eval)  # CPU job: E1 menu A + E6 reports, his routers priced
+    $BIN exp10-slr eval --plan configs/e1-menuA.toml
+    ;;
+  e9-latency)  # GPU job (DEVICE=cuda) or CPU job (DEVICE=cpu, 8 threads): E9's ms per decision
+    HF_HUB_OFFLINE=1 $BIN latency --device "${DEVICE:-cuda}" --threads 8 --out runs/e9-latency
+    ;;
   e3-signals)  # GPU: E3's weak-model signals on DATASET=hotpotqa|musique|2wikimultihopqa (pair A's every split), ~1 h
     case ${DATASET:?DATASET=hotpotqa|musique|2wikimultihopqa} in
       hotpotqa) SRUN=runs/slr-pairA; SDATA=$DATA; SARGS="--split router_train --split calib --split test"

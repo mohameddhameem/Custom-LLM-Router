@@ -16,6 +16,8 @@ cached nano-jev ranking, experiment 1's prompt and chat template, transformers b
                            clusters of the samples plus the cached answer
     self-verification      AutoMix style: k_verify samples (default 8) of "does the context support the answer?";
                            the share answering yes
+    NLI                    cross-encoder/nli-deberta-v3-xsmall (71M): P(entailment) that the weak model's passages
+                           entail "The answer to <question> is <answer>." (sig_nli_entail; added to finished splits too)
 
 Every extra call's tokens are kept (prompt once, generated tokens summed over samples, as AgentTTS Eq. 8 prices them),
 so the analysis can charge each signal its own calls. Writes <run>/signals/<split>.parquet; resumes per split.
@@ -39,6 +41,8 @@ from stair.metrics import normalize_answer, text
 
 log = logging.getLogger(__name__)
 
+NLI = "cross-encoder/nli-deberta-v3-xsmall"
+CLAIM = 'The answer to "{question}" is {answer}.'
 PTRUE = ("Question: {question}\nProposed answer: {answer}\nIs the proposed answer correct? Reply with only yes or no.")
 VERIFY = ("{context}\n\nQuestion: {question}\nProposed answer: {answer}\n"
           "Does the context above support the proposed answer? Reply with only yes or no.")
@@ -145,6 +149,26 @@ class WeakModel:
         return texts, np.asarray(p_tok), np.asarray(g_tok)
 
 
+def nli_entailment(df: pd.DataFrame, device: str | None = None, batch_size: int = 64) -> np.ndarray:
+    """P(entailment) that each question's passages entail the claim built from its weak answer."""
+    import torch
+    from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
+    device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+    tok = AutoTokenizer.from_pretrained(NLI)
+    model = AutoModelForSequenceClassification.from_pretrained(NLI).to(device).eval()
+    entail = next(i for i, name in model.config.id2label.items() if name.lower().startswith("entail"))
+    premises = ["\n".join(p) for p in df["passages"]]
+    claims = [CLAIM.format(question=q, answer=text(a)) for q, a in zip(df["question"], df["small_pred"])]
+    out = []
+    for i in range(0, len(claims), batch_size):
+        enc = tok(premises[i: i + batch_size], claims[i: i + batch_size], truncation="only_first", max_length=512,
+                  padding=True, return_tensors="pt").to(device)
+        with torch.no_grad():
+            out += torch.softmax(model(**enc).logits.float(), dim=-1)[:, entail].tolist()
+    return np.asarray(out)
+
+
 def run_split(model: WeakModel, df: pd.DataFrame, k: int, k_verify: int, temperature: float) -> tuple[pd.DataFrame, np.ndarray]:
     answers = [text(a) for a in df["small_pred"]]
     prompts = [model.expert._prompt(q, p) for q, p in zip(df["question"], df["passages"])]
@@ -191,13 +215,22 @@ def main(argv: list[str] | None = None) -> None:
     files = dict(zip(args.split, args.split_data)) if args.split_data else {}
     model = None
     for split in args.split:
-        if (target / f"{split}.parquet").exists():
-            log.info(f"signals {split}: done")
+        path = target / f"{split}.parquet"
+        if path.exists():
+            done = pd.read_parquet(path)
+            if "sig_nli_entail" not in done:
+                df = load_pair_split(args.run, args.data_dir, split, split_data={split: files[split]} if split in files else None)
+                done["sig_nli_entail"] = pd.Series(nli_entailment(df, args.device), index=df["id"]).loc[done["id"]].to_numpy()
+                done.to_parquet(path, index=False)
+                log.info(f"signals {split}: NLI added, mean entailment {done['sig_nli_entail'].mean():.3f}")
+            else:
+                log.info(f"signals {split}: done")
             continue
         df = load_pair_split(args.run, args.data_dir, split, split_data={split: files[split]} if split in files else None)
         model = model or WeakModel(small, args.device, args.batch_size)
         model.torch.manual_seed(args.seed)
         out, hidden = run_split(model, df, args.k, args.k_verify, args.temperature)
+        out["sig_nli_entail"] = nli_entailment(df, args.device)
         np.save(target / f"{split}-hidden.npy", hidden)
         out.to_parquet(target / f"{split}.parquet", index=False)
         log.info(f"signals {split}: {len(out)} questions | MSP {out['sig_msp'].mean():.3f}, P(True) {out['sig_ptrue'].mean():.3f}, "

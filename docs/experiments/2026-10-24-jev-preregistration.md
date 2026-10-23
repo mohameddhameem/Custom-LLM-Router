@@ -280,3 +280,8 @@ deviation 1):
      - Each test uses a Clopper-Pearson upper bound at δ = 0.1, and the scan stops at the first failure.
      - This bounds the conditional error with probability ≥ 0.9, which is exactly H6a's "exceeds α in at most 10%".
    - **No temperature scaling:** only the score's order matters to this rule, so scaling cannot change it.
+5. **2026-10-24, before E3 and E9 ran: HHEM-2.1-Open is dropped.**
+   - **Why:** it loads only with `trust_remote_code`, which would run code from its Hugging Face repository on the
+     cluster.
+   - **Coverage kept:** H3a's evidence-verifier family keeps the NLI cross-encoder (`nli-deberta-v3-xsmall`, 71M, no
+     remote code) and the retrieval-score trees. E9 times the NLI model in its place.

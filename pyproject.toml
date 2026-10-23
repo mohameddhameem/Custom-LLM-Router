@@ -43,6 +43,7 @@ signals = "stair.signals:main"
 confirm = "stair.confirm:main"
 zero-label = "stair.zero_label:main"
 risk-control = "stair.risk_control:main"
+latency = "stair.latency:main"
 
 [project.optional-dependencies]
 llm = [

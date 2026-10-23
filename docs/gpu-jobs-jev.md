@@ -17,6 +17,23 @@ from `~/Custom-LLM-Router` on branch `feat/jev-novelty` after `uv sync --extra l
 | 1.5 | `qsub -l walltime=12:00:00 -W depend=afterok:<1.2> -v "STEP=e1-judges,MATCH=qpa-large" scripts/omega.pbs` | GPU | ~5 h | qpa: the other 550 |
 | 1.6 | `qsub -l walltime=04:00:00 -W depend=afterany:<1.4>:<1.5> -v STEP=e1-curve scripts/omega-cpu.pbs` | CPU | ~1 h | `runs/e1-label-curve/label-curve/{report,report-clean}.json`, `cells*.csv`, `curves.png`: H1a–H1d |
 
+**E1 on menu A (exploratory) and E6 (descriptive)**, `configs/e1-menuA.toml`:
+
+| # | Command | Where | Time | Output |
+|---|---|---|---|---|
+| 1.7 | `qsub -l walltime=12:00:00 -W depend=afterok:<1.2> -v "STEP=e1-menuA-train,JUDGES=e1-nanojev,e1-plain,e1-msmarco,e1-nanojev-repro,e1-nanojev-nohotpot,e6-ret-only,e6-answer-only" scripts/omega.pbs` | GPU | ~6 h | `runs/e1-menuA/<set>/qpa/[b<budget>/]seed<k>/` |
+| 1.8 | `qsub -l walltime=04:00:00 -W depend=afterany:<1.7> -v STEP=e1-menuA-eval scripts/omega-cpu.pbs` | CPU | ~40 min | `runs/e1-menuA/eval/report{,-clean}.json` |
+
+## E9: latency
+
+| # | Command | Where | Time | Output |
+|---|---|---|---|---|
+| 9.1 | `qsub -l walltime=02:00:00 -v STEP=e9-latency,DEVICE=cuda scripts/omega.pbs` | GPU | ~30 min | `runs/e9-latency/cuda.json` |
+| 9.2 | `qsub -l walltime=04:00:00 -v STEP=e9-latency,DEVICE=cpu scripts/omega-cpu.pbs` | CPU (8 threads) | ~1–2 h | `runs/e9-latency/cpu.json` |
+
+- **Left out:** HHEM-2.1-Open needs `trust_remote_code` (running its repo's code), so it is in neither E3 nor E9
+  (deviation 5).
+
 ## E2: 2WikiMultiHopQA and MuSiQue, pair A
 
 | # | Command | Where | Time | Output |

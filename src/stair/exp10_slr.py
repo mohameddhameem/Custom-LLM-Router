@@ -46,7 +46,7 @@ from stair import exp8_eval as ev
 from stair import provenance, slr
 from stair.evaluate_routing import aiq
 from stair.experts import clean_answer
-from stair.judge import fine_tune, judge_params_b, make_judge
+from stair.judge import budget_split, fine_tune, judge_params_b, make_judge
 
 log = logging.getLogger(__name__)
 
@@ -120,25 +120,42 @@ def judge_set(plan: dict, name: str) -> dict:
     return next(j for j in plan["judges"] if j["name"] == name)
 
 
-def run_train(df: pd.DataFrame, plan: dict, spec: dict, inputs: str, seed: int, device: str | None) -> None:
-    target = Path(plan["out"]) / spec["judge_dir"] / inputs / f"seed{seed}"
+def run_dir(plan: dict, spec: dict, inputs: str, seed: int, budget: int | None = None) -> Path:
+    """<out>/<judge_dir>/<inputs>[/b<budget>]/seed<k>."""
+    root = Path(plan["out"]) / spec["judge_dir"] / inputs
+    return (root / f"b{budget}" if budget else root) / f"seed{seed}"
+
+
+def run_train(df: pd.DataFrame, plan: dict, spec: dict, inputs: str, seed: int, device: str | None,
+              budget: int | None = None) -> None:
+    """One judge seed. `budget` (Jev novelty E1, menu A) trains on that many questions, its dev hold-out included, nested
+    and stratified by his retrieval label (judge.budget_split); a set's `train_scores` (E6) trains on those stages'
+    items only, while every stage is still scored."""
+    target = run_dir(plan, spec, inputs, seed, budget)
+    tag = f"b{budget} " if budget else ""
     if (target / "done.json").exists():
-        log.info(f"{spec['name']} {inputs} seed {seed}: done")
+        log.info(f"{spec['name']} {inputs} {tag}seed {seed}: done")
         return
     hp = spec["train"]
     train = df[df["split"] == "train"].reset_index(drop=True)
-    rng = np.random.default_rng(seed)
-    dev_q = rng.random(len(train)) < hp["dev_fraction"]  # held out by question, so a question's three items stay together
+    if budget:
+        tr, dev = budget_split((train["y_ret"] == "S").astype(int).to_numpy(), budget, hp["dev_fraction"], seed)
+        tr_q, dev_q = np.isin(np.arange(len(train)), tr), np.isin(np.arange(len(train)), dev)
+    else:
+        rng = np.random.default_rng(seed)
+        dev_q = rng.random(len(train)) < hp["dev_fraction"]  # held out by question: a question's items stay together
+        tr_q = ~dev_q
+    stages = spec.get("train_scores", SCORES)
     its, ys = items(train, inputs), labels(train)
-    pick = lambda mask: ([it for k in SCORES for it, m in zip(its[k], mask) if m],  # noqa: E731
-                         np.concatenate([ys[k][mask] for k in SCORES]))
-    (tr_items, tr_y), (dev_items, dev_y) = pick(~dev_q), pick(dev_q)
-    log.info(f"{spec['name']} {inputs} seed {seed}: {len(tr_items)} items ({int(tr_y.sum())} escalate), "
+    pick = lambda mask: ([it for k in stages for it, m in zip(its[k], mask) if m],  # noqa: E731
+                         np.concatenate([ys[k][mask] for k in stages]))
+    (tr_items, tr_y), (dev_items, dev_y) = pick(tr_q), pick(dev_q)
+    log.info(f"{spec['name']} {inputs} {tag}seed {seed}: {len(tr_items)} items ({int(tr_y.sum())} escalate), "
              f"{len(dev_items)} dev items")
     judge = make_judge(spec["init"], device, hp.get("max_length", 512), spec.get("score_batch"))
     start = time.perf_counter()
     history = fine_tune(judge, tr_items, tr_y, dev_items, dev_y, hp["epochs"], hp["lr"], hp["weight_decay"],
-                        hp["warmup"], hp["batch_size"], seed, hp.get("micro_batch"))
+                        hp["warmup"], hp["batch_size"], seed, hp.get("micro_batch"), hp.get("min_steps", 0))
     train_seconds = time.perf_counter() - start
     target.mkdir(parents=True, exist_ok=True)
     for split in ("val", "test"):
@@ -149,7 +166,8 @@ def run_train(df: pd.DataFrame, plan: dict, spec: dict, inputs: str, seed: int, 
             cols[k], cols[f"tokens_{k}"] = p[:, 0], tokens
         pd.DataFrame(cols).to_parquet(target / f"{split}.parquet", index=False)
     (target / "done.json").write_text(json.dumps({
-        "judge": spec["name"], "inputs": inputs, "seed": seed, "init": spec["init"], "train": hp,
+        "judge": spec["name"], "inputs": inputs, "seed": seed, "init": spec["init"], "train": hp, "budget": budget,
+        "train_scores": list(stages), "n_train_questions": int(tr_q.sum()), "n_dev_questions": int(dev_q.sum()),
         "n_train_items": len(tr_items), "n_dev_items": len(dev_items), "history": history, "train_seconds": train_seconds,
         "init_revision": provenance.hub_revision(spec["init"]), "device": judge.device}, indent=1))
 
@@ -181,21 +199,23 @@ def judge_routers(plan: dict, test_ids: pd.Series, val_ids: pd.Series) -> list[R
     for spec in plan["judges"]:
         params = judge_params_b(spec["init"])
         for inputs in spec["inputs"]:
-            root = Path(plan["out"]) / spec["judge_dir"] / inputs
-            seeds = [s for s in spec["seeds"] if (root / f"seed{s}" / "done.json").exists()]
-            if not seeds:
-                log.info(f"{spec['name']} {inputs}: not trained yet")
-                continue
-            per = {}
-            for s in seeds:
-                val = pd.read_parquet(root / f"seed{s}" / "val.parquet").set_index("idx").loc[val_ids]
-                test = pd.read_parquet(root / f"seed{s}" / "test.parquet").set_index("idx").loc[test_ids]
-                price = np.stack([[budget(params, int(t), 0) for t in test[f"tokens_{k}"]] for k in SCORES], axis=1)
-                per[s] = ({k: val[k].to_numpy() for k in SCORES}, {k: test[k].to_numpy() for k in SCORES}, price)
-                routers.append(Router(f"{spec['name']} {inputs}#seed{s}", *per[s]))
-            if len(seeds) > 1:
-                mean = lambda i: {k: np.mean([per[s][i][k] for s in seeds], axis=0) for k in SCORES}  # noqa: E731
-                routers.append(Router(f"{spec['name']} {inputs}", mean(0), mean(1), sum(per[s][2] for s in seeds)))
+            for b in spec.get("budgets", [None]):
+                label = f"{spec['name']} {inputs}" + (f" b{b}" if b else "")
+                seeds = [s for s in spec["seeds"] if (run_dir(plan, spec, inputs, s, b) / "done.json").exists()]
+                if not seeds:
+                    log.info(f"{label}: not trained yet")
+                    continue
+                per = {}
+                for s in seeds:
+                    folder = run_dir(plan, spec, inputs, s, b)
+                    val = pd.read_parquet(folder / "val.parquet").set_index("idx").loc[val_ids]
+                    test = pd.read_parquet(folder / "test.parquet").set_index("idx").loc[test_ids]
+                    price = np.stack([[budget(params, int(t), 0) for t in test[f"tokens_{k}"]] for k in SCORES], axis=1)
+                    per[s] = ({k: val[k].to_numpy() for k in SCORES}, {k: test[k].to_numpy() for k in SCORES}, price)
+                    routers.append(Router(f"{label}#seed{s}", *per[s]))
+                if len(seeds) > 1:
+                    mean = lambda i: {k: np.mean([per[s][i][k] for s in seeds], axis=0) for k in SCORES}  # noqa: E731
+                    routers.append(Router(label, mean(0), mean(1), sum(per[s][2] for s in seeds)))
     return routers
 
 
@@ -352,7 +372,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("step", choices=["train", "eval"])
     parser.add_argument("--plan", type=Path, default=Path("configs/exp10-slr.toml"))
-    parser.add_argument("--judge", help="train: the judge set (a [[judges]] name)")
+    parser.add_argument("--judge", help="train: the judge set (a [[judges]] name; several, comma-separated)")
     parser.add_argument("--device", help="cuda or cpu (default: cuda if available)")
     return parser.parse_args(argv)
 
@@ -367,10 +387,11 @@ def main(argv: list[str] | None = None) -> None:
     if args.step == "train":
         if not args.judge:
             raise SystemExit("train needs --judge <name>")
-        spec = judge_set(plan, args.judge)
-        for inputs in spec["inputs"]:
-            for seed in spec["seeds"]:
-                run_train(df, plan, spec, inputs, seed, args.device)
+        for spec in [judge_set(plan, name) for name in args.judge.split(",")]:
+            for inputs in spec["inputs"]:
+                for b in spec.get("budgets", [None]):
+                    for seed in spec["seeds"]:
+                        run_train(df, plan, spec, inputs, seed, args.device, b)
     else:
         run_eval(df, plan)
 
