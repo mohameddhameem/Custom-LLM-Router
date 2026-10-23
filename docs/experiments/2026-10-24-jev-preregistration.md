@@ -285,3 +285,9 @@ deviation 1):
      cluster.
    - **Coverage kept:** H3a's evidence-verifier family keeps the NLI cross-encoder (`nli-deberta-v3-xsmall`, 71M, no
      remote code) and the retrieval-score trees. E9 times the NLI model in its place.
+6. **2026-10-24, after the HotpotQA E8 result (post-hoc, labelled exploratory): two more α values.**
+   - **What happened:** the weak model is wrong on 39.5% of HotpotQA questions. At the pre-registered α (0.05,
+     0.10, 0.20), the threshold rule keeps 0–6% of questions on it. So H6a holds, but only trivially.
+   - **Addition:** `risk-control` also reports α = 0.30 and 0.40, marked `posthoc`, to show where the guarantee starts
+     to buy savings.
+   - **Unchanged:** H6a and H6b are still judged at the pre-registered α only.

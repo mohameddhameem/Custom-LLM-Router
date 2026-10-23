@@ -29,7 +29,8 @@ from stair.judge import load_plan
 
 log = logging.getLogger(__name__)
 
-ALPHAS = (0.05, 0.10, 0.20)
+ALPHAS = (0.05, 0.10, 0.20)  # pre-registered
+POSTHOC_ALPHAS = (0.30, 0.40)  # added after HotpotQA kept ~nothing at the others (deviation 6); exploratory
 KEEP_GRID = tuple(round(0.05 * k, 2) for k in range(1, 21))  # kept fractions, tested in this order
 
 
@@ -109,8 +110,9 @@ def main(argv: list[str] | None = None) -> None:
     for name in [k for k in pols if k.startswith("judge/qpa") or k == "small-entropy (post)"]:
         p = pols[name]
         score = np.concatenate([np.mean(p.calib, axis=0), np.mean(p.seeds, axis=0)])
-        report["policies"][name] = [resplits(score, wrong, pool["small_cost"], pool["large_cost"], a, args.delta,
-                                             args.splits, args.seed) for a in ALPHAS]
+        report["policies"][name] = [{**resplits(score, wrong, pool["small_cost"], pool["large_cost"], a, args.delta,
+                                                args.splits, args.seed), "posthoc": a in POSTHOC_ALPHAS}
+                                    for a in (*ALPHAS, *POSTHOC_ALPHAS)]
     if args.shift_from:
         src_plan, src_out = load_plan(args.shift_from[0]), args.shift_from[1]
         sf, sa = {}, {}
@@ -123,10 +125,10 @@ def main(argv: list[str] | None = None) -> None:
         t_score = np.mean(target_pol.seeds, axis=0)
         t_wrong = (arrays["test"]["small_f1"] < 0.5).astype(int)
         report["shift"] = []
-        for a in ALPHAS:
+        for a in (*ALPHAS, *POSTHOC_ALPHAS):
             t = ltt_threshold(src_score, src_wrong, a, args.delta)
             o = outcome(t_score, t_wrong, arrays["test"]["small_cost"], arrays["test"]["large_cost"], t)
-            report["shift"].append({"alpha": a, **o, "violated": bool(o["risk"] > a)})
+            report["shift"].append({"alpha": a, **o, "violated": bool(o["risk"] > a), "posthoc": a in POSTHOC_ALPHAS})
     target = args.out / "confirm"
     target.mkdir(parents=True, exist_ok=True)
     (target / "H6.json").write_text(json.dumps(report, indent=1))
