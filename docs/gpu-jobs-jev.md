@@ -16,6 +16,14 @@ from `~/Custom-LLM-Router` on branch `feat/jev-novelty` after `uv sync --extra l
 | 1.4 | `qsub -l walltime=12:00:00 -W depend=afterok:<1.2> -v "STEP=e1-judges,MATCH=qp-large" scripts/omega.pbs` | GPU | ~5 h | qp: 550 fine-tunes in `runs/e1-label-curve/judges/` |
 | 1.5 | `qsub -l walltime=12:00:00 -W depend=afterok:<1.2> -v "STEP=e1-judges,MATCH=qpa-large" scripts/omega.pbs` | GPU | ~5 h | qpa: the other 550 |
 
+## E2: 2WikiMultiHopQA and MuSiQue, pair A
+
+| # | Command | Where | Time | Output |
+|---|---|---|---|---|
+| 2.1 | `DATASET=2wikimultihopqa bash scripts/run_cluster.sh multihop-prepare`, the same with `DATASET=musique` | login node | minutes | `data/<dataset>/{train,dev}.parquet`, `splits.json` (hashes in the pre-registration) |
+| 2.2 | `qsub -l walltime=01:00:00 -v STEP=multihop-pilot,DATASET=musique scripts/omega.pbs`, then the same for `2wikimultihopqa` | GPU | ~15 min each | `runs/<dataset>-pilot/`: timing, prompt lengths |
+| 2.3 | `qsub -l walltime=12:00:00 -W depend=afterok:<2.2> -v STEP=multihop-experts,DATASET=<dataset> scripts/omega.pbs` | GPU | ~4–6 h each | `runs/<dataset>-pairA/{router_train,calib,test[,test_ext]}.parquet` |
+
 - **Budgets** are nested and stratified (`judge.budget_split`). A budget counts every label the judge sees, including
   its 10% hold-out (at least 10) that picks the epoch.
 - **Small budgets** train for at least 150 optimizer steps (`min_steps`), the same for every starting point.

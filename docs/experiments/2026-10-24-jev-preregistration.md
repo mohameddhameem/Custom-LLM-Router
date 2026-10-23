@@ -212,9 +212,18 @@ These scripts compute the confirmatory numbers, from the run folders named in th
 
 Added before any 2Wiki or MuSiQue answer exists:
 
+sha256 of the part's ids joined by newlines, as `make-splits --dataset` wrote them on OMEGA, 2026-10-24 (2Wiki after
+deviation 1):
+
 | Dataset | Part | n | sha256 |
 |---|---|---|---|
-| (pending `make-splits --dataset`) | | | |
+| 2wikimultihopqa | router_train | 4814 | `6f8e3255247d5706197e4b65fa30cd0ffc1143c7652b25609314d6fb4a34f6f4` |
+| 2wikimultihopqa | calib | 500 | `81a6fd77f8a242a94c3990bd3dbb56639435839cb413f788f9949d43b262c36e` |
+| 2wikimultihopqa | test | 500 | `a310285491780f9a394869c4657112b72aefa382bb4fe85f6ea0b5d5d38620bc` |
+| 2wikimultihopqa | test_ext | 2000 | `e367eb1bf25a727b9ebff9e3af683ec0372e214282dbb91308de81f03ab58972` |
+| musique | router_train | 4814 | `a0d19e6e643d1119f63f2566ed2753a79bc4a19fbf9acd5cbe9b69fa78c4f567` |
+| musique | calib | 500 | `aee3dd6beda2b5a2a8195ef1551a2338bc08bda99d4c18881231ca23a036457d` |
+| musique | test | 2417 | `bad4f9b18a7abb8e475b7285db2c370540b9a4aa51770ce553056e9b0761ce46` |
 
 ## Deviations
 
