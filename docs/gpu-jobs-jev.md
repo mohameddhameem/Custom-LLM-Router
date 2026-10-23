@@ -54,6 +54,11 @@ from `~/Custom-LLM-Router` on branch `feat/jev-novelty` after `uv sync --extra l
 | 3.1 | `qsub -l walltime=04:00:00 -v STEP=e3-signals,DATASET=hotpotqa scripts/omega.pbs` | GPU | ~1 h | `runs/slr-pairA/signals/{router_train,calib,test}.parquet` and `-hidden.npy` |
 | 3.2 | the same with `DATASET=musique` / `2wikimultihopqa`, `-W depend=afterok:<2.3 of that dataset>` | GPU | ~1 h each | `runs/<dataset>-pairA/signals/` |
 
+The first runs (43220, 43224, 43225) ran out of GPU memory: the float log-softmax over every position × 152k
+vocabulary. `teacher_forced` now puts only the answer positions through the LM head. The reruns wait on a CPU job
+that runs the signals test (`STEP=tests,TESTS=weak_model`). HotpotQA's router_train had already finished and is
+kept.
+
 ## Confirmatory tests (CPU, after the runs they read)
 
 | # | Command | Reads | Output |
@@ -67,7 +72,8 @@ from `~/Custom-LLM-Router` on branch `feat/jev-novelty` after `uv sync --extra l
 
 | # | Command | Where | Time | Output |
 |---|---|---|---|---|
-| 5.1 | `qsub -l walltime=12:00:00 -v STEP=pairD-experts scripts/omega.pbs` | GPU | ~4–6 h | `runs/gpu-pairD/test.parquet`: Llama-3.2-3B / 3.1-8B on all 7,405 dev questions (evidence copied from `runs/gpu`) |
+| 5.0 | you, in your own `ssh omega` session (both models are gated; no token goes into a job):<br>`cd ~/Custom-LLM-Router && read -s HF_TOKEN && export HF_TOKEN && uv run python -c "from huggingface_hub import snapshot_download as d; [d(m, ignore_patterns=['original/*']) for m in ('meta-llama/Llama-3.2-3B-Instruct', 'meta-llama/Llama-3.1-8B-Instruct')]"; unset HF_TOKEN` | login node | ~10 min, 22 GB | the weights in the HF cache. 43229 failed with a 401 because only the 3B's tokenizer was cached |
+| 5.1 | `qsub -l walltime=12:00:00 -v STEP=pairD-experts scripts/omega.pbs` (offline: reads the cache from 5.0) | GPU | ~4–6 h | `runs/gpu-pairD/test.parquet`: Llama-3.2-3B / 3.1-8B on all 7,405 dev questions (evidence copied from `runs/gpu`) |
 | 5.2 | `qsub -l walltime=00:30:00 -W depend=afterok:<5.1> -v STEP=e5-prepare scripts/omega-cpu.pbs` | CPU | minutes | `runs/slr-pair{B,C,D}/` |
 | 5.3 | `qsub -l walltime=04:00:00 -W depend=afterok:<5.2> -v STEP=e5-judges scripts/omega.pbs` | GPU | ~1–2 h | `runs/e5-transfer/judges/`: qp / qpa trained on each pair, scored on every pair |
 | 5.4 | `qsub -l walltime=02:00:00 -W depend=afterok:<5.3> -v STEP=e5-eval scripts/omega-cpu.pbs` | CPU | ~30 min | `runs/e5-transfer/eval/<pair>/report{,-clean}.json` |

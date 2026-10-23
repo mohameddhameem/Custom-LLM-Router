@@ -296,8 +296,9 @@ EOF
       done
     fi
     ;;
-  pairD-experts)  # GPU: E5's pair D (Llama-3.2-3B / 3.1-8B) on all 7,405 dev questions; evidence copied from runs/gpu
-    CONFIG=configs/gpu-pairD.toml REUSE=runs/gpu experts runs/gpu-pairD test "$DATA/distractor_validation.parquet"
+  pairD-experts)  # GPU: E5's pair D (Llama-3.2-3B / 3.1-8B) on all 7,405 dev questions; evidence copied from runs/gpu.
+                  # Both are gated: download them on the login node with your own token first (docs/gpu-jobs-jev.md 5.0)
+    HF_HUB_OFFLINE=1 CONFIG=configs/gpu-pairD.toml REUSE=runs/gpu experts runs/gpu-pairD test "$DATA/distractor_validation.parquet"
     ;;
   e5-prepare)  # CPU job: E5's pairs B, C, D cut to the golden set's slr-* splits from their dev caches (no model calls)
     for p in B:runs/gpu-large-14b C:runs/gpu-small-3b D:runs/gpu-pairD; do
@@ -346,6 +347,9 @@ EOF
     ;;
   e9-latency)  # GPU job (DEVICE=cuda) or CPU job (DEVICE=cpu, 8 threads): E9's ms per decision
     HF_HUB_OFFLINE=1 $BIN latency --device "${DEVICE:-cuda}" --threads 8 --out runs/e9-latency
+    ;;
+  tests)  # CPU job: the test suite where torch is installed, TESTS=<pytest -k expression>; gates a GPU resubmission
+    $BIN python -m pytest -q tests ${TESTS:+-k "$TESTS"}
     ;;
   e3-signals)  # GPU: E3's weak-model signals on DATASET=hotpotqa|musique|2wikimultihopqa (pair A's every split), ~1 h
     case ${DATASET:?DATASET=hotpotqa|musique|2wikimultihopqa} in

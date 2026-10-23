@@ -98,13 +98,16 @@ class WeakModel:
             ids = torch.tensor([s + [pad] * (width - len(s)) for s in seqs], device=self.device)
             mask = torch.tensor([[1] * len(s) + [0] * (width - len(s)) for s in seqs], device=self.device)
             with torch.no_grad():
-                res = self.model(input_ids=ids, attention_mask=mask, output_hidden_states=True)
-            logp = torch.log_softmax(res.logits.float(), dim=-1)
+                res = self.model.base_model(input_ids=ids, attention_mask=mask, output_hidden_states=True)
             last = res.hidden_states[-1].float()
             for b, (p, a) in enumerate(zip(p_ids, a_ids)):
-                pos = torch.arange(len(p) - 1, len(p) + len(a) - 1, device=self.device)  # logits that predict the answer
-                tok_lp = logp[b, pos, torch.tensor(a, device=self.device)]
-                first = logp[b, len(p) - 1].exp().topk(2).values
+                # only the positions that predict the answer go through the LM head: logits over every position x
+                # the vocabulary (152k for Qwen), in float, ran out of memory on an L40S (jobs 43220, 43224, 43225)
+                with torch.no_grad():
+                    logits = self.model.get_output_embeddings()(res.last_hidden_state[b, len(p) - 1: len(p) + len(a) - 1])
+                logp = torch.log_softmax(logits.float(), dim=-1)
+                tok_lp = logp[torch.arange(len(a), device=self.device), torch.tensor(a, device=self.device)]
+                first = logp[0].exp().topk(2).values
                 out.append({"sig_msp": float(tok_lp.sum().exp()), "sig_mean_logprob": float(tok_lp.mean()),
                             "sig_first_margin": float(first[0] - first[1]), "answer_tokens": len(a),
                             "hidden": torch.stack([last[b, len(p) - 1], last[b, len(p): len(p) + len(a)].mean(0)])
