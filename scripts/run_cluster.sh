@@ -325,6 +325,18 @@ EOF
          fi ;;
     esac
     ;;
+  e4-e8)  # CPU job: E4 (zero / few labels) and E8 (risk control) on DATASET=musique|2wikimultihopqa|hotpotqa
+    case ${DATASET:?DATASET=musique|2wikimultihopqa|hotpotqa} in
+      hotpotqa) EPLAN=configs/system-one-slr.toml; EOUT=runs/slr-judges; EX=(--exclude "$DATA/nanojev_validation_ids.txt") ;;
+      *) EPLAN=configs/e2-$DATASET.toml; EOUT=runs/e2-$DATASET; EX=() ;;
+    esac
+    $BIN zero-label --plan "$EPLAN" --out "$EOUT" "${EX[@]}"
+    if [ "$DATASET" = musique ]; then  # H6b: the HotpotQA judge calibrated on HotpotQA, tested on MuSiQue
+      $BIN risk-control --plan "$EPLAN" --out "$EOUT" --shift-from configs/system-one-slr.toml runs/slr-judge-models
+    else
+      $BIN risk-control --plan "$EPLAN" --out "$EOUT" "${EX[@]}"
+    fi
+    ;;
   e3-signals)  # GPU: E3's weak-model signals on DATASET=hotpotqa|musique|2wikimultihopqa (pair A's every split), ~1 h
     case ${DATASET:?DATASET=hotpotqa|musique|2wikimultihopqa} in
       hotpotqa) SRUN=runs/slr-pairA; SDATA=$DATA; SARGS="--split router_train --split calib --split test"

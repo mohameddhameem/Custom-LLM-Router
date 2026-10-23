@@ -258,3 +258,25 @@ deviation 1):
      - **grounded:** MultiNLI's 8,000, unchanged.
    - **Calib and test** are built the same way, with no HotpotQA.
    - **The collapsed model** is kept as `runs/nanojev-pretrain/nohotpot-collapsed` and not used.
+3. **2026-10-24, before any E4 analysis ran: where H4's few labels come from.**
+   - **What was found:** `judge zeroshot` scores nano-jev's answer-based typed questions (grounded, correct) on calib
+     and test only, so router_train has no such scores to fit a combiner on.
+   - **New rule:**
+     - The H4b combiners draw their 10, 25 or 50 labelled questions from **calib**.
+     - H4a's "chosen on val" uses calib too.
+     - Test is never used to fit or choose.
+   - **Unchanged:** the trained-judge reference in each gap ratio.
+     - A composition that reads only pre-answer scores is compared with the full-budget qp judge.
+     - Any other composition is compared with the qpa judge.
+     - This makes explicit which judge "the full-budget trained judge" means in H4a.
+   - **Scores on different scales:** relevance scores are not probabilities, so compositions combine ranks
+     (`zero_label.compositions`).
+4. **2026-10-24, before any E8 analysis ran: H6's threshold rule.**
+   - **Wording vs intent:** H6 says "split-conformal", but its claim is about the error rate *among the questions not
+     escalated*. Split-conformal risk control bounds a joint loss (kept *and* wrong), not that conditional rate.
+   - **New rule:** the threshold is chosen by Learn-then-Test with fixed-sequence testing, as `stair.risk_control`
+     implements it.
+     - Thresholds keeping 5%, 10%, …, 100% of the calibration half are tested in that order.
+     - Each test uses a Clopper-Pearson upper bound at δ = 0.1, and the scan stops at the first failure.
+     - This bounds the conditional error with probability ≥ 0.9, which is exactly H6a's "exceeds α in at most 10%".
+   - **No temperature scaling:** only the score's order matters to this rule, so scaling cannot change it.

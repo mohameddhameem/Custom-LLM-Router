@@ -291,3 +291,39 @@ def test_confirmatory_tests_find_what_was_planted():
     for p in pols.values():
         p.calib = p.seeds
     assert stronger(a, [pols["weak"], pols["good"], pols["noise"]]).name == "good"  # chosen on calib
+
+
+def test_zero_label_compositions_and_combiners():
+    import pandas as pd
+
+    from stair import zero_label as zl
+
+    rng = np.random.default_rng(0)
+    n = 300
+    y = (rng.random(n) < 0.3).astype(int)
+    df = pd.DataFrame({"id": [f"q{i}" for i in range(n)], "ev_sufficiency_k2": 1 - 0.6 * y - 0.3 * rng.random(n),
+                       "ev_top1": -y + rng.random(n), "ev_top2_sum": -y + 2 * rng.random(n)})
+    zs = pd.DataFrame({"id": df["id"], "zs_grounded": 0.5 * y + 0.5 * rng.random(n), "zs_correct": rng.random(n)})
+    s = zl.typed_scores(df, zs, "zs")
+    comps = zl.compositions(s)
+    assert {"insufficient", "not-grounded", "max(pre)", "product(pre)", "max(all)"} <= set(comps)
+    assert comps["max(pre)"][1] is False and comps["not-grounded"][1] is True  # pre-answer vs post
+    assert np.corrcoef(comps["insufficient"][0], y)[0, 1] > 0.5  # oriented: higher = escalate
+    test_draws, cal_draws = zl.combiner_draws(s, y, s, 25, seed=0)
+    assert len(test_draws) == zl.DRAWS and all(len(d) == n for d in test_draws + cal_draws)
+
+
+def test_risk_control_keeps_its_guarantee():
+    from stair import risk_control as rc
+
+    rng = np.random.default_rng(0)
+    n = 2000
+    score = rng.random(n)
+    wrong = (rng.random(n) < 0.05 + 0.6 * score).astype(int)  # higher score, more errors: a useful router
+    small, large = np.full(n, 0.5), np.full(n, 10.0)
+    assert rc.upper_bound(0, 100, 0.1) == pytest.approx(1 - 0.1 ** (1 / 100))  # Clopper-Pearson, no errors
+    for alpha in (0.1, 0.2):
+        r = rc.resplits(score, wrong, small, large, alpha, 0.1, n_splits=200, seed=0)
+        assert r["mean_risk"] <= alpha and r["violation_rate"] <= 0.1 and r["h6a"]
+        assert 0 < r["mean_kept"] < 1  # it does keep questions, not just escalate everything
+    assert rc.ltt_threshold(score, np.ones(n, dtype=int), 0.1, 0.1) == -np.inf  # all wrong: keep nothing

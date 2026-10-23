@@ -43,6 +43,7 @@ from `~/Custom-LLM-Router` on branch `feat/jev-novelty` after `uv sync --extra l
 |---|---|---|---|
 | C.1 | `qsub -l walltime=04:00:00 -W depend=afterok:<2.6>:<3.2> -v STEP=confirm,DATASET=<musique / 2wikimultihopqa> scripts/omega-cpu.pbs` | `runs/e2-<dataset>` (judges + eval), `runs/<dataset>-pairA/signals` | `runs/e2-<dataset>/confirm/{H2,H3[,H2-X]}.json` |
 | C.2 | `qsub -l walltime=04:00:00 -W depend=afterok:<3.1> -v STEP=confirm,DATASET=hotpotqa scripts/omega-cpu.pbs` | `runs/slr-judges`, `runs/slr-pairA/signals` | `runs/slr-judges/confirm/H3.json` (exploratory) |
+| C.4 | `qsub -l walltime=04:00:00 -W depend=afterok:<2.6> -v STEP=e4-e8,DATASET=<musique / 2wikimultihopqa / hotpotqa> scripts/omega-cpu.pbs` | the E2 run (or `runs/slr-judges`) with its zero-shot scores | `<run>/confirm/{H4,H6}.json` |
 | C.3 | `qsub -l walltime=04:00:00 -W depend=afterok:<5.4> -v STEP=confirm,DATASET=e5 scripts/omega-cpu.pbs` | `runs/e5-transfer` | `runs/e5-transfer/confirm/H5.json` |
 
 ## E5: transfer across model pairs (HotpotQA golden set)
