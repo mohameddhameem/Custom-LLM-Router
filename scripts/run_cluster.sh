@@ -258,8 +258,22 @@ EOF
   nanojev-pretrain)  # GPU: E1's retrained nano-jev arms, VARIANT=repro|nohotpot (default both), ~15 min each
     $BIN nanojev-pretrain train --out runs/nanojev-pretrain ${VARIANT:+--variant "$VARIANT"}
     ;;
-  e1-curve)  # CPU job: E1's label curves and the pre-registered H1 tests (all 1,481 and the 1,303 nano-jev never saw)
-    $BIN label-curve --plan "${PLAN:-configs/e1-label-curve.toml}" --out "${JOUT:-runs/e1-label-curve}"       --exclude "$DATA/nanojev_validation_ids.txt" --bootstrap "${BOOT:-1000}"
+  e1-curve)  # CPU job: E1's label curves and the pre-registered H1 tests (HotpotQA: all 1,481 and the 1,303 nano-jev
+             # never saw); PLAN / JOUT / DATA for a confirmatory dataset
+    EXCL=$DATA/nanojev_validation_ids.txt
+    $BIN label-curve --plan "${PLAN:-configs/e1-label-curve.toml}" --out "${JOUT:-runs/e1-label-curve}"       $([ -f "$EXCL" ] && echo --exclude "$EXCL") --bootstrap "${BOOT:-1000}"
+    ;;
+  e2-prepare-ext)  # CPU job: 2Wiki's secondary test (test_ext) as pair X of configs/e2-2wikimultihopqa.toml
+    mkdir -p runs/2wikimultihopqa-pairA-ext
+    cp runs/2wikimultihopqa-pairA/{config.toml,router_train.parquet,calib.parquet} runs/2wikimultihopqa-pairA-ext/
+    cp runs/2wikimultihopqa-pairA/test_ext.parquet runs/2wikimultihopqa-pairA-ext/test.parquet
+    ;;
+  e2-judges)  # GPU: E2's judges on DATASET=musique|2wikimultihopqa: nano-jev's zero-shot questions, then in-domain + frozen
+    HF_HUB_OFFLINE=1 $BIN judge zeroshot --plan "configs/e2-${DATASET:?}.toml" --data-dir "data/$DATASET" --out "runs/e2-$DATASET"
+    HF_HUB_OFFLINE=1 $BIN judge train --plan "configs/e2-$DATASET.toml" --data-dir "data/$DATASET" --out "runs/e2-$DATASET"
+    ;;
+  e2-eval)  # CPU job: E2's reports on DATASET (entropy, LR routers, judges, paired bootstrap)
+    $BIN judge eval --plan "configs/e2-${DATASET:?}.toml" --data-dir "data/$DATASET" --out "runs/e2-$DATASET"
     ;;
   multihop-prepare)  # login node: E2's DATASET=2wikimultihopqa|musique download + light export, then its pre-registered splits
     $BIN prepare-multihop --dataset "${DATASET:?DATASET=2wikimultihopqa|musique}"

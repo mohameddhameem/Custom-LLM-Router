@@ -404,11 +404,15 @@ def run_train(splits: Splits, spec: dict, seed: int, plan: dict, out: Path, devi
     if hp.get("max_questions") and len(tr) > hp["max_questions"]:  # e.g. the CPU plan: a stratified subsample
         tr, _ = train_test_split(tr, train_size=hp["max_questions"], stratify=y[tr], random_state=seed)
     items = route_items(df, spec["inputs"])
-    judge = make_judge(spec["init"], device, hp["max_length"], score_batch, spec.get("head", "typed"))
+    init = spec["init"].format(seed=seed)  # "{seed}": a frozen judge's per-seed folder
+    judge = make_judge(init, device, hp["max_length"], score_batch, spec.get("head", "typed"))
     start = time.perf_counter()
-    history = fine_tune(judge, [items[i] for i in tr], y[tr], [items[i] for i in dev], y[dev], hp["epochs"], hp["lr"],
-                        hp["weight_decay"], hp["warmup"], hp["batch_size"], seed, micro_batch or hp.get("micro_batch"),
-                        hp.get("min_steps", 0))
+    if spec.get("frozen"):  # an already fine-tuned judge (e.g. trained on another dataset), only scored here
+        history, tr, dev = [], np.array([], dtype=int), np.array([], dtype=int)
+    else:
+        history = fine_tune(judge, [items[i] for i in tr], y[tr], [items[i] for i in dev], y[dev], hp["epochs"], hp["lr"],
+                            hp["weight_decay"], hp["warmup"], hp["batch_size"], seed, micro_batch or hp.get("micro_batch"),
+                            hp.get("min_steps", 0))
     train_seconds = time.perf_counter() - start
     target.mkdir(parents=True, exist_ok=True)
     scoring, scored = {}, {}  # fingerprint -> scores, reused by pairs whose inputs are identical
@@ -432,7 +436,7 @@ def run_train(splits: Splits, spec: dict, seed: int, plan: dict, out: Path, devi
         "judge": name, **spec, "seed": seed, "tau": plan["tau"], "train": hp, "n_train": len(tr), "n_dev": len(dev),
         "micro_batch": micro_batch or hp.get("micro_batch"),
         "train_label_rate": float(y.mean()), "history": history, "train_seconds": train_seconds,
-        "scoring_seconds_per_question": scoring, "init_revision": provenance.hub_revision(spec["init"]),
+        "scoring_seconds_per_question": scoring, "init_revision": provenance.hub_revision(init), "init_path": init,
         "device": judge.device}, indent=1))
 
 

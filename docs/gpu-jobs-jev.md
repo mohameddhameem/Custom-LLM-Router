@@ -23,7 +23,12 @@ from `~/Custom-LLM-Router` on branch `feat/jev-novelty` after `uv sync --extra l
 |---|---|---|---|---|
 | 2.1 | `DATASET=2wikimultihopqa bash scripts/run_cluster.sh multihop-prepare`, the same with `DATASET=musique` | login node | minutes | `data/<dataset>/{train,dev}.parquet`, `splits.json` (hashes in the pre-registration) |
 | 2.2 | `qsub -l walltime=01:00:00 -v STEP=multihop-pilot,DATASET=musique scripts/omega.pbs`, then the same for `2wikimultihopqa` | GPU | ~15 min each | `runs/<dataset>-pilot/`: timing, prompt lengths |
-| 2.3 | `qsub -l walltime=12:00:00 -W depend=afterok:<2.2> -v STEP=multihop-experts,DATASET=<dataset> scripts/omega.pbs` | GPU | ~4–6 h each | `runs/<dataset>-pairA/{router_train,calib,test[,test_ext]}.parquet` |
+| 2.3 | `qsub -l walltime=12:00:00 -W depend=afterok:<2.2> -v STEP=multihop-experts,DATASET=<dataset> scripts/omega.pbs` | GPU | ~1 h each (pilots: 0.4 / 0.3 s a question) | `runs/<dataset>-pairA/{router_train,calib,test[,test_ext]}.parquet` |
+| 2.4 | `qsub -l walltime=00:30:00 -W depend=afterok:<2.3 2wiki> -v STEP=e2-prepare-ext scripts/omega-cpu.pbs` | CPU | seconds | `runs/2wikimultihopqa-pairA-ext/` (test = test_ext) |
+| 2.5 | `qsub -l walltime=04:00:00 -W depend=afterok:<2.3> -v STEP=e2-judges,DATASET=<dataset> scripts/omega.pbs` | GPU | ~1 h | `runs/e2-<dataset>/{zeroshot,judges}/` |
+| 2.6 | `qsub -l walltime=03:00:00 -W depend=afterok:<2.5> -v STEP=e2-eval,DATASET=<dataset> scripts/omega-cpu.pbs` | CPU | ~1 h | `runs/e2-<dataset>/eval/<pair>/report.json` |
+| 2.7 | `qsub -l walltime=08:00:00 -W depend=afterok:<2.3> -v "STEP=e1-judges,DATA=data/<dataset>,PLAN=configs/e1-label-curve-<dataset>.toml,JOUT=runs/e1-label-curve-<dataset>" scripts/omega.pbs` | GPU | ~3 h | E1 confirmatory: 300 fine-tunes |
+| 2.8 | `qsub -l walltime=04:00:00 -W depend=afterany:<2.7> -v "STEP=e1-curve,DATA=data/<dataset>,PLAN=...,JOUT=..." scripts/omega-cpu.pbs` | CPU | ~30 min | H1 on the dataset |
 
 ## E3: the weak model's own signals
 
