@@ -306,12 +306,16 @@ def fine_tune(judge: Judge, items: list[dict], labels: np.ndarray, dev_items: li
 # Steps
 
 
+def init_label(spec: dict) -> str:
+    """A judge's starting point as its name shows it: `init_name` (a local folder), "nanojev", or the Hub model name."""
+    return spec.get("init_name") or ("nanojev" if "nano-jev" in spec["init"]
+                                     else spec["init"].split("/")[-1].split("@")[0].lower())
+
+
 def judge_name(spec: dict) -> str:
     """inputs-label-init-pair, then -plain for the untyped head and -b<budget> for a label budget. `init_name` (from
     the plan's [init_names]) names a local checkpoint folder."""
-    init = spec.get("init_name") or ("nanojev" if "nano-jev" in spec["init"]
-                                     else spec["init"].split("/")[-1].split("@")[0].lower())
-    name = f"{spec['inputs']}-{spec['label']}-{init}-{spec['train_pair']}"
+    name = f"{spec['inputs']}-{spec['label']}-{init_label(spec)}-{spec['train_pair']}"
     if spec.get("head", "typed") != "typed":
         name += f"-{spec['head']}"
     if spec.get("budget"):

@@ -15,6 +15,7 @@ from `~/Custom-LLM-Router` on branch `feat/jev-novelty` after `uv sync --extra l
 | 1.3 | gate: repro's `eval-v1-test.json` within about 0.02 of v1.0's on every decision | — | — | otherwise stop and look |
 | 1.4 | `qsub -l walltime=12:00:00 -W depend=afterok:<1.2> -v "STEP=e1-judges,MATCH=qp-large" scripts/omega.pbs` | GPU | ~5 h | qp: 550 fine-tunes in `runs/e1-label-curve/judges/` |
 | 1.5 | `qsub -l walltime=12:00:00 -W depend=afterok:<1.2> -v "STEP=e1-judges,MATCH=qpa-large" scripts/omega.pbs` | GPU | ~5 h | qpa: the other 550 |
+| 1.6 | `qsub -l walltime=04:00:00 -W depend=afterany:<1.4>:<1.5> -v STEP=e1-curve scripts/omega-cpu.pbs` | CPU | ~1 h | `runs/e1-label-curve/label-curve/{report,report-clean}.json`, `cells*.csv`, `curves.png`: H1a–H1d |
 
 ## E2: 2WikiMultiHopQA and MuSiQue, pair A
 

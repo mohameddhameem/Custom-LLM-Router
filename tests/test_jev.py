@@ -168,3 +168,41 @@ def test_twowiki_splits_cut_the_answered_dev_set(tmp_path):
     order = shuffled(dev)
     assert splits["calib"] == sorted(order[:500]) and splits["test"] == sorted(order[500:1000])
     assert splits["test_ext"] == sorted(order[1000:3000])
+
+
+def test_holm_and_le_auc():
+    from stair.label_curve import holm, le_auc
+
+    assert holm({"a": 0.01, "b": 0.04, "c": 0.03}) == {"a": 0.03, "c": 0.06, "b": 0.06}
+    assert le_auc({50: 0.6, 100: 0.6, 4814: 0.6}) == pytest.approx(0.6)  # flat curve: its value
+    assert le_auc({64: 0.5, 128: 0.7}) == pytest.approx(0.6)  # the mean over log2(budget)
+
+
+def test_label_curve_finds_a_pretraining_gain_that_fades_with_labels():
+    from stair import label_curve as lc
+
+    rng = np.random.default_rng(0)
+    n = 600
+    small = (rng.random(n) < 0.55).astype(float)
+    large = np.maximum(small, (rng.random(n) < 0.35).astype(float))
+    a = {"small_f1": small, "large_f1": large, "small_em": small, "large_em": large,
+         "small_cost": np.full(n, 0.5), "large_cost": np.full(n, 10.0), "small_uncertainty": rng.random(n)}
+    helps = large - small  # 1 where escalating fixes the answer
+
+    def judge(quality: float, seed: int) -> np.ndarray:  # a score that sees `quality` of the truth
+        r = np.random.default_rng(seed)
+        return quality * helps + (1 - quality) * r.random(n)
+
+    arms = {}
+    for budget, gain in ((50, 0.3), (100, 0.25), (4814, 0.02)):
+        for init, base in (("nanojev", 0.4 + gain), ("minilm-l12-h384-uncased", 0.4), ("nanojev-nohotpot", 0.4 + gain)):
+            arms[(init, "typed", "qp", budget)] = {s: judge(base, 100 * budget + s) for s in range(3)}
+        arms[("nanojev", "plain", "qp", budget)] = {s: judge(0.4, 7 + s) for s in range(3)}
+    report = lc.analyse(a, arms, n_boot=30, seed=0)
+    stats = report["stats"]
+    assert stats["H1a/qp"]["estimate"] > 0 and stats["H1a/qp"]["p_le_0"] < 0.05
+    assert stats["H1b/qp"]["estimate"] > 0  # the gain shrinks as labels grow
+    assert stats["H1c/qp"]["estimate"] > 0  # noHotpot keeps the gain here
+    assert stats["H1d/qp"]["estimate"] > 0 and "p_holm" in stats["H1d/qp"]
+    assert {c["budget"] for c in report["cells"]} == {50, 100, 4814}
+    assert all(0 < c["gap_closed"] < 1 for c in report["cells"])

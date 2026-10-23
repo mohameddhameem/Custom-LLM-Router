@@ -258,6 +258,9 @@ EOF
   nanojev-pretrain)  # GPU: E1's retrained nano-jev arms, VARIANT=repro|nohotpot (default both), ~15 min each
     $BIN nanojev-pretrain train --out runs/nanojev-pretrain ${VARIANT:+--variant "$VARIANT"}
     ;;
+  e1-curve)  # CPU job: E1's label curves and the pre-registered H1 tests (all 1,481 and the 1,303 nano-jev never saw)
+    $BIN label-curve --plan "${PLAN:-configs/e1-label-curve.toml}" --out "${JOUT:-runs/e1-label-curve}"       --exclude "$DATA/nanojev_validation_ids.txt" --bootstrap "${BOOT:-1000}"
+    ;;
   multihop-prepare)  # login node: E2's DATASET=2wikimultihopqa|musique download + light export, then its pre-registered splits
     $BIN prepare-multihop --dataset "${DATASET:?DATASET=2wikimultihopqa|musique}"
     $BIN make-splits --dataset "$DATASET"
