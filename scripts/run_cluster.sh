@@ -282,6 +282,19 @@ EOF
       done
     fi
     ;;
+  e3-signals)  # GPU: E3's weak-model signals on DATASET=hotpotqa|musique|2wikimultihopqa (pair A's every split), ~1 h
+    case ${DATASET:?DATASET=hotpotqa|musique|2wikimultihopqa} in
+      hotpotqa) SRUN=runs/slr-pairA; SDATA=$DATA; SARGS="--split router_train --split calib --split test"
+        SFILES="--split-data distractor_validation.parquet --split-data distractor_validation.parquet --split-data distractor_validation.parquet" ;;
+      musique) SRUN=runs/musique-pairA; SDATA=data/musique; SARGS="--split router_train --split calib --split test"
+        SFILES="--split-data train.parquet --split-data train.parquet --split-data dev.parquet" ;;
+      2wikimultihopqa) SRUN=runs/2wikimultihopqa-pairA; SDATA=data/2wikimultihopqa
+        SARGS="--split router_train --split calib --split test --split test_ext"
+        SFILES="--split-data train.parquet --split-data dev.parquet --split-data dev.parquet --split-data dev.parquet" ;;
+      *) echo "unknown DATASET $DATASET"; exit 1 ;;
+    esac
+    HF_HUB_OFFLINE=1 $BIN signals --run "$SRUN" --data-dir "$SDATA" $SARGS $SFILES
+    ;;
   e1-judges)  # GPU: E1's label-budget grid on pair A, MATCH=<name substring> (e.g. qp-large / qpa-large); resumes
     HF_HUB_OFFLINE=1 $BIN judge train --plan "${PLAN:-configs/e1-label-curve.toml}" --data-dir "$DATA" \
       --out "${JOUT:-runs/e1-label-curve}" ${MATCH:+--match="$MATCH"}

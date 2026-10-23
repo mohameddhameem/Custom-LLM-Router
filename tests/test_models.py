@@ -620,3 +620,28 @@ def test_rescore_validate_commit_and_run(tiny_models, tmp_path):
     s = pd.read_csv(out / "rescore" / "summary.csv").set_index("cell")
     assert s.loc["single", "n"] == 6 and s.loc["single", "answer_units"] == 2.0
     assert s.loc["single", "units"] == pytest.approx(2.0 + d["commit_units"].mean())
+
+
+def test_weak_model_signals(tiny_models):
+    from stair.signals import WeakModel, semantic_entropy, yes_share
+
+    model = WeakModel({"model": str(tiny_models / "chat-lm"), "top_k": 2, "dtype": "float32"}, device="cpu", batch_size=2)
+    prompts = [model.expert._prompt("Who directed it?", ["Film: It was directed by Kalo."]),
+               model.expert._prompt("Is it a film?", ["Film: yes it is.", "Other: no."])]
+    tf = model.teacher_forced(prompts, ["Kalo", "yes"])
+    assert all(0 < r["sig_msp"] <= 1 and r["sig_mean_logprob"] <= 0 and 0 <= r["sig_first_margin"] <= 1 for r in tf)
+    assert tf[0]["hidden"].shape == (2, model.model.config.n_embd)
+    # teacher forcing equals scoring the answer token by token with the full sequence
+    import torch
+    ids = model.tok(prompts[0] + "Kalo", return_tensors="pt", add_special_tokens=False)["input_ids"]
+    p_len = len(model.tok(prompts[0], add_special_tokens=False)["input_ids"])
+    with torch.no_grad():
+        lp = torch.log_softmax(model.model(ids).logits[0].float(), -1)
+    want = sum(lp[j - 1, ids[0, j]].item() for j in range(p_len, ids.shape[1]))
+    assert np.log(tf[0]["sig_msp"]) == pytest.approx(want, abs=1e-4)
+    p, tokens = model.p_yes([model.chat("Is it? Reply yes or no.")] * 3)
+    assert np.allclose(p, p[0]) and 0 <= p[0] <= 1 and (tokens > 0).all()
+    texts, p_tok, g_tok = model.sample(prompts, k=3, temperature=0.7, max_new_tokens=3)
+    assert [len(t) for t in texts] == [3, 3] and (g_tok >= 3).all() and (g_tok <= 9).all()
+    assert semantic_entropy(["Paris", "paris", "the Paris"]) == 0.0 and semantic_entropy(["a", "b"]) == pytest.approx(np.log(2))
+    assert yes_share(["Yes.", "no", "yes", "maybe"]) == pytest.approx(2 / 3)

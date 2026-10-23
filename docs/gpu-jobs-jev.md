@@ -25,6 +25,13 @@ from `~/Custom-LLM-Router` on branch `feat/jev-novelty` after `uv sync --extra l
 | 2.2 | `qsub -l walltime=01:00:00 -v STEP=multihop-pilot,DATASET=musique scripts/omega.pbs`, then the same for `2wikimultihopqa` | GPU | ~15 min each | `runs/<dataset>-pilot/`: timing, prompt lengths |
 | 2.3 | `qsub -l walltime=12:00:00 -W depend=afterok:<2.2> -v STEP=multihop-experts,DATASET=<dataset> scripts/omega.pbs` | GPU | ~4–6 h each | `runs/<dataset>-pairA/{router_train,calib,test[,test_ext]}.parquet` |
 
+## E3: the weak model's own signals
+
+| # | Command | Where | Time | Output |
+|---|---|---|---|---|
+| 3.1 | `qsub -l walltime=04:00:00 -v STEP=e3-signals,DATASET=hotpotqa scripts/omega.pbs` | GPU | ~1 h | `runs/slr-pairA/signals/{router_train,calib,test}.parquet` and `-hidden.npy` |
+| 3.2 | the same with `DATASET=musique` / `2wikimultihopqa`, `-W depend=afterok:<2.3 of that dataset>` | GPU | ~1 h each | `runs/<dataset>-pairA/signals/` |
+
 - **Budgets** are nested and stratified (`judge.budget_split`). A budget counts every label the judge sees, including
   its 10% hold-out (at least 10) that picks the epoch.
 - **Small budgets** train for at least 150 optimizer steps (`min_steps`), the same for every starting point.
