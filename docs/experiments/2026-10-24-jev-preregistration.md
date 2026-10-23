@@ -1,0 +1,221 @@
+# Pre-registration: what nano-jev's typed decisions add to routing (the Jev novelty programme)
+
+**Status:** pre-registered on 2026-10-24.
+- This file is committed before any E1 judge is trained and before any 2WikiMultiHopQA or MuSiQue answer is generated.
+- Later changes go to a dated "Deviations" section at the end. Nothing above it is edited after results exist.
+
+**Plan and code:**
+- Job sheet: [gpu-jobs-jev.md](../gpu-jobs-jev.md).
+- Branch: `feat/jev-novelty`.
+- Background: the literature review (git-ignored, `reports/Typed decision router novelty.md`) found that "a small
+  model can route" is not new. The open claims concern what typed-decision pretraining adds: labels, transfer and
+  per-stage decisions.
+
+## Common protocol
+
+- **Data status:**
+  - HotpotQA (the golden set, `slr-*` splits) is **exploratory**: its earlier results shaped these hypotheses.
+  - 2WikiMultiHopQA and MuSiQue are **confirmatory**.
+- **Pair A on every dataset:**
+  - The weak model is Qwen2.5-1.5B-Instruct reading nano-jev's top 2 passages.
+  - The strong model is Qwen2.5-7B-Instruct reading all of them.
+  - Both run on the transformers backend, greedy, with experiment 1's prompt (`configs/gpu.toml`).
+- **Scoring:** the standard lenient ruler (`stair_common.score.lenient`) against the dataset's gold answer. Aliases
+  (2Wiki's alias file, MuSiQue's `answer_aliases`) give a secondary score only.
+- **Cost:** Table 5 price per answering call (Qwen2.5-7B 10, Qwen2.5-1.5B 0.5). A router's own calls are priced with
+  `stair_common.cost.budget` at its measured tokens. nano-jev's calls floor at 0.
+- **Primary metric:** AIQ, the area under the accuracy-vs-cost hull between always-weak and always-strong
+  (RouterBench). It is reported with and without the router's price. Also reported:
+  - the fraction of the random-to-oracle gap closed;
+  - CPT(50%) and CPT(80%);
+  - the escalation rate at the val-chosen operating point.
+- **One judge model:** the AIQ of a single deployed judge is the mean over seeds of each seed's AIQ. The ensemble
+  (mean score over seeds) is reported beside it as before.
+- **Statistics:**
+  - **Bootstrap:** paired, resampling test questions with the same indices for every router. 1,000 replicates for
+    reports, 5,000 for the confirmatory tests below. Where seeds vary, a two-level bootstrap (questions, then seeds
+    within each arm).
+  - **Non-inferiority / equivalence margin:** δ = 0.010 AIQ.
+    - On HotpotQA, the bootstrap standard error of a judge-minus-LR difference is about 0.004, and judge-minus-entropy
+      about 0.0065.
+    - So δ is about 2 standard errors, and the 1,481 test questions give roughly 80% power at δ for the LR comparison.
+  - **"Ties"** are claimed only by TOST at δ: both one-sided 95% bounds inside ±δ. A difference that is neither
+    significant nor equivalent is reported as "inconclusive".
+  - **Multiple comparisons:** Holm within each hypothesis family below, at familywise α = 0.05.
+  - **Replication:** a claim is *confirmed* when it holds on both confirmatory datasets. It is *replicated* when it
+    holds on at least 2 of the 3 datasets.
+- **Test sets:**
+  - **HotpotQA:** `slr-test` (1,481), with the **1,303 questions nano-jev never saw** as the primary HotpotQA
+    population.
+  - **2Wiki:** the team split's test (dev[500:1000], 500). A secondary test, dev[1000:3000] (2,000), gives tighter
+    intervals; both are reported.
+  - **MuSiQue:** the whole MuSiQue-Ans v1.0 dev set (2,417).
+- **Training and val splits:**
+  - 2Wiki: router_train is 4,814 questions from the official train set; val is the team's dev[0:500].
+  - MuSiQue: val is 500 and router_train is 4,814, both from MuSiQue train.
+  - The rule is the team's: sort ids, shuffle with `numpy.random.default_rng(20260729)`, cut.
+  - `make-splits --dataset` writes them, and their sha256 is added under "Split hashes" before any answer exists.
+- **Exclusions:** none, beyond the clean HotpotQA population above.
+  - A prompt over the model's limit stops the run rather than dropping questions.
+  - nano-jev's card used 1,000 MuSiQue dev questions for its own held-out *evaluation* (no training), so MuSiQue
+    stays clean for nano-jev.
+  - The Strands deciders were trained on data that includes MuSiQue. Any decider number on MuSiQue is labelled
+    contaminated and is left out of every confirmatory test.
+
+## Hypotheses
+
+### H1 (E1): typed-decision pretraining, label efficiency and the typed head
+
+**Arms:**
+- **Starting points:** five MiniLM-L12 checkpoints of 33M each:
+  - **plain** (`microsoft/MiniLM-L12-H384-uncased`);
+  - **MS MARCO** (`cross-encoder/ms-marco-MiniLM-L12-v2`);
+  - **nano-jev v1.0**;
+  - **nano-jev-repro** (v1.0's recipe retrained by us);
+  - **nano-jev-noHotpot** (the same recipe, HotpotQA replaced by SQuAD 2.0).
+- **Heads:** typed and plain.
+- **Inputs:** qp and qpa.
+
+**Training:**
+- Budgets are 50, 100, 250, 500, 1,000, 2,000 and the full 4,814 on HotpotQA, and 100, 500 and full on the
+  confirmatory datasets.
+- Seeds: 10 for budgets up to 500, 5 above.
+- Labels are `large-helps`.
+- Every arm gets identical hyperparameters: nano-jev v1.0's fine-tuning settings, plus a minimum of 150 optimizer
+  steps.
+
+**Summary statistic:** the area under the AIQ-versus-log2(budget) curve (trapezoid), called *LE-AUC*.
+
+**Family H1 (Holm), for each of qp and qpa:**
+- **H1a:** nano-jev v1.0 (typed) has a larger LE-AUC than plain (typed).
+- **H1b:** the gap between v1.0 and plain at budget 100 is larger than at the full budget.
+- **H1c:** nano-jev-noHotpot keeps at least half of v1.0's LE-AUC gain over plain. The one-sided test is on
+  (noHotpot − plain) − 0.5 × (v1.0 − plain) > 0.
+- **H1d:** on nano-jev v1.0, the typed head has a larger LE-AUC than the plain head.
+
+**Gate on the pretraining:**
+- nano-jev-repro must reach v1.0's test accuracies on nano-jev's own test split within 0.02 per decision.
+- If it does not, H1c is reported as not tested.
+- The repro − v1.0 LE-AUC difference estimates the noise added by retraining. It is reported, not tested.
+
+**Exploratory, HotpotQA menu A only:** nano-jev qpa at each budget is compared with Jonathan's 1.5B SFT label router
+by TOST at δ, with both routers priced. Budgets are 100, 500, 1,000 and full, with 3 seeds.
+
+### H2 (E2): evidence decides escalation, on new datasets (confirmatory; pair A)
+
+**Family H2 (Holm), per dataset:**
+- **H2a:** the qp judge (nano-jev v1.0, full budget) has a higher AIQ than the question-only judge (q).
+- **H2b:** the q judge is within δ of random (TOST).
+- **H2c:** the qp and qpa judges are non-inferior at δ to the stronger of entropy and the best logistic-regression
+  router at the same decision point.
+  - qp is compared with the routers that decide before the weak answer, plus entropy.
+  - qpa is compared with the cascade routers and entropy.
+- **H2d:** the HotpotQA-trained judges (`runs/slr-judge-models`, 43118's), applied with no retraining, keep at least
+  75% of the in-domain judge's gain over random. The one-sided test is on
+  (AIQ_transfer − random) − 0.75 × (AIQ_in-domain − random) > 0.
+
+### H3 (E3): the stronger baselines (pair A, all datasets; confirmatory on the new ones)
+
+**Signals, from the weak model:**
+- answer probability (MSP), mean log-prob, perplexity and first-token margin;
+- P(True);
+- a logistic probe on the last hidden layer (5-fold on router_train);
+- self-consistency (k = 10, T = 0.7);
+- discrete semantic entropy (k = 10);
+- AutoMix-style self-verification (k = 8).
+
+**Signals, from the evidence and the question:**
+- an NLI entailment check (`nli-deberta-v3-xsmall`);
+- HHEM-2.1-Open;
+- gradient-boosted trees on retrieval-score features;
+- a BERT question router;
+- kNN on MiniLM embeddings.
+
+**Pricing:** each signal is priced at its extra calls under Eq. 8, and reported free and priced.
+
+**Family H3 (Holm), per dataset:**
+- **H3a:** nano-jev qpa (priced) is non-inferior at δ to every signal that costs at most one extra weak-model pass,
+  priced: MSP, margin, perplexity, P(True), the probe, NLI, HHEM and the retrieval features.
+- **H3b:** nano-jev qpa (priced) has a higher AIQ than self-consistency and semantic entropy (priced).
+
+**Pre-stated reading:** if the probe beats nano-jev, nano-jev's remaining case is that it needs no access to the weak
+model's weights, and that it transfers across weak models (H5).
+
+### H4 (E4): routing from typed decisions with no or few routing labels (CPU)
+
+**Scores:** nano-jev v1.0's untrained typed decisions:
+- `sufficient` over the top 2 passages;
+- relevance of the top passage, and of the top 2;
+- `grounded` of the weak answer;
+- the "is the proposed answer correct?" question.
+
+**Compositions:**
+- every single score;
+- the product and the minimum of the pre-answer scores;
+- a logistic combiner fitted on n = 10, 25 or 50 labelled router_train questions, with 20 draws each.
+
+**Family H4 (Holm), per dataset:**
+- **H4a:** the best zero-label composition **chosen on val** closes at least 50% of the gap between random and the
+  full-budget trained judge, on test.
+- **H4b:** with 50 labels, the combiner closes at least 75% of that gap (the mean over draws).
+- **H4c:** at zero labels, the pre-answer composition (no weak-model call) beats entropy once entropy is charged the
+  weak answer it needs.
+
+### H5 (E5): transfer across model pairs (HotpotQA)
+
+**Pairs:**
+- **B:** 1.5B / 14B.
+- **C:** 3B / 7B.
+- **D:** Llama-3.2-3B on the top 2 / Llama-3.1-8B on all 10, a new model family.
+
+**Judges:** the pair-A judges (43118's weights), frozen and scored on each pair, against judges retrained on that pair
+at the full budget.
+
+**Family H5 (Holm):**
+- **H5a:** on each pair, the frozen qp judge is non-inferior at δ to the retrained qp judge.
+- **H5b:** the frozen qpa judge's transfer ratio, (frozen − random) / (retrained − random), is lower than qp's on C
+  and D, where the weak model changes.
+
+### H6 (E8): risk-controlled escalation (CPU)
+
+**Method:**
+- Temperature-scale P(weak correct) on val.
+- Choose the split-conformal threshold for α = 0.05, 0.10 and 0.20, so that the error among questions that are not
+  escalated is at most α.
+- Repeat over 1,000 random val/test resplits.
+
+**Hypotheses:**
+- **H6a:** within each dataset, the realised error averaged over resplits is at most α, and it exceeds α in at most
+  10% of resplits.
+- **H6b (pre-stated as expected to fail):** calibrated on HotpotQA and applied to MuSiQue, the guarantee is violated.
+  This shows the guarantee needs in-domain calibration labels.
+
+### Descriptive only (no confirmatory claims)
+- **E6, menu A:**
+  - stage-to-stage transfer of the judges;
+  - one 4-option typed question against the two binary stage decisions;
+  - the best fixed path at each budget.
+- **E7:** which rankers make cheap evidence plus sampling work.
+- **E9:**
+  - p50 / p95 latency per decision on an L40S and on 8 CPU threads;
+  - menu A re-priced with AgentTTS v2 Table 10's dollar prices.
+
+## Analysis code
+
+These scripts compute the confirmatory numbers, from the run folders named in the job sheet:
+- `stair.label_curve` (H1);
+- `judge eval` plus `stair.confirm` (H2, H3, H5);
+- `stair.zero_label` (H4);
+- `stair.risk_control` (H6).
+
+## Split hashes
+
+Added before any 2Wiki or MuSiQue answer exists:
+
+| Dataset | Part | n | sha256 |
+|---|---|---|---|
+| (pending `make-splits --dataset`) | | | |
+
+## Deviations
+
+(none yet)
