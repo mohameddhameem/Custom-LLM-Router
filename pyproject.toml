@@ -36,6 +36,7 @@ subset-cache = "stair.subset_cache:main"
 export-common = "stair.export_common:main"
 slr = "stair.slr:main"
 exp10-slr = "stair.exp10_slr:main"
+nanojev-pretrain = "stair.nanojev_pretrain:main"
 
 [project.optional-dependencies]
 llm = [

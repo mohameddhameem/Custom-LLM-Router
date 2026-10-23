@@ -31,6 +31,8 @@
 #   bash scripts/run_cluster.sh slr7-prepare   # experiments 7/9 on the golden set: pair A cut from runs/gpu (CPU job)
 #   bash scripts/run_cluster.sh slr7-judges    # ... their judges, J=zeroshot|train, ONLY=... (GPU); slr7-eval: reports (CPU job)
 #   bash scripts/run_cluster.sh exp8s-pools    # experiment 8 on the golden set: split + pools (CPU job); then exp8-score, exp8-answer, exp8-judge with EXP8_OUT/PLAN
+#   bash scripts/run_cluster.sh nanojev-fetch  # Jev novelty E1: nano-jev's recipe + datasets (login node); nanojev-pretrain: its retrains (GPU)
+# The Jev novelty steps (E0-E9) are documented in docs/gpu-jobs-jev.md.
 # The common-setup steps are documented in docs/gpu-jobs-common.md; the golden-set steps in docs/gpu-jobs-slr.md.
 # Experiment 9's steps are documented in docs/gpu-jobs-exp9.md.
 # Where each step runs: login node = `prepare` (downloads + light parquet export), `exp8-prepare` and `slr-fetch`
@@ -249,6 +251,16 @@ EOF
     ;;
   slr7-judges)  # GPU: experiments 7/9's judges on the golden set, J=zeroshot|train (default train), ONLY="--only <judge> ..."
     $BIN judge "${J:-train}" --plan configs/system-one-slr.toml --data-dir "$DATA" --out runs/slr-judges ${ONLY:-}
+    ;;
+  nanojev-fetch)  # login node: E1's nano-jev recipe at its pinned commit, SQuAD 2.0 / MultiNLI and the bases (downloads only)
+    $BIN nanojev-pretrain fetch --out runs/nanojev-pretrain
+    ;;
+  nanojev-pretrain)  # GPU: E1's retrained nano-jev arms, VARIANT=repro|nohotpot (default both), ~15 min each
+    $BIN nanojev-pretrain train --out runs/nanojev-pretrain ${VARIANT:+--variant "$VARIANT"}
+    ;;
+  e1-judges)  # GPU: E1's label-budget grid on pair A, MATCH=<name substring> (e.g. qp-large / qpa-large); resumes
+    HF_HUB_OFFLINE=1 $BIN judge train --plan "${PLAN:-configs/e1-label-curve.toml}" --data-dir "$DATA" \
+      --out "${JOUT:-runs/e1-label-curve}" ${MATCH:+--match="$MATCH"}
     ;;
   slr7-eval)  # CPU job: reports on slr-test, all 1,481 and without nano-jev's questions (loads no model); JOUT=<judge run>
     $BIN judge eval --plan configs/system-one-slr.toml --data-dir "$DATA" --out "${JOUT:-runs/slr-judges}" \
