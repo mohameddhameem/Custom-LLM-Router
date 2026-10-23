@@ -21,7 +21,7 @@ from `~/Custom-LLM-Router` on branch `feat/jev-novelty` after `uv sync --extra l
 
 | # | Command | Where | Time | Output |
 |---|---|---|---|---|
-| 1.7 | `qsub -l walltime=12:00:00 -W depend=afterok:<1.2> -v "STEP=e1-menuA-train,JUDGES=e1-nanojev,e1-plain,e1-msmarco,e1-nanojev-repro,e1-nanojev-nohotpot,e6-ret-only,e6-answer-only" scripts/omega.pbs` | GPU | ~6 h | `runs/e1-menuA/<set>/qpa/[b<budget>/]seed<k>/` |
+| 1.7 | `qsub -l walltime=12:00:00 -W depend=afterok:<1.2> -v "STEP=e1-menuA-train,JUDGES=e1-nanojev:e1-plain:e1-msmarco:e1-nanojev-repro:e1-nanojev-nohotpot:e6-ret-only:e6-answer-only" scripts/omega.pbs` | GPU | ~6 h | `runs/e1-menuA/<set>/qpa/[b<budget>/]seed<k>/` |
 | 1.8 | `qsub -l walltime=04:00:00 -W depend=afterany:<1.7> -v STEP=e1-menuA-eval scripts/omega-cpu.pbs` | CPU | ~40 min | `runs/e1-menuA/eval/report{,-clean}.json` |
 
 ## E9: latency

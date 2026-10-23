@@ -337,8 +337,9 @@ EOF
       $BIN risk-control --plan "$EPLAN" --out "$EOUT" "${EX[@]}"
     fi
     ;;
-  e1-menuA-train)  # GPU: E1 on menu A + E6, JUDGES=<comma-separated judge sets of configs/e1-menuA.toml>; resumes
-    HF_HUB_OFFLINE=1 $BIN exp10-slr train --plan configs/e1-menuA.toml --judge "${JUDGES:?JUDGES=e1-nanojev,...}"
+  e1-menuA-train)  # GPU: E1 on menu A + E6, JUDGES=<judge sets of configs/e1-menuA.toml, ':'-separated: qsub -v splits
+                   # on commas>; resumes
+    HF_HUB_OFFLINE=1 $BIN exp10-slr train --plan configs/e1-menuA.toml --judge "${JUDGES//:/,}"
     ;;
   e1-menuA-eval)  # CPU job: E1 menu A + E6 reports, his routers priced
     $BIN exp10-slr eval --plan configs/e1-menuA.toml
