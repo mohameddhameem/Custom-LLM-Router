@@ -99,9 +99,16 @@ def main(argv: list[str] | None = None) -> None:
     for name, path in DECIDERS.items():
         if name in args.skip:
             continue
-        j = make_judge(path, args.device, 1024, args.batch)
-        run(name, lambda b, j=j: j.probabilities(b), items, large_n)
-        del j
+        if args.device == "cpu":  # the deciders' Qwen3.5 / Gemma torsos run flash-linear-attention's Triton kernels
+            report["routers"][name] = {"error": "needs a GPU: its Triton kernels have no CPU driver (job 43240)"}
+            continue
+        try:
+            j = make_judge(path, args.device, 1024, args.batch)
+            run(name, lambda b, j=j: j.probabilities(b), items, large_n)
+            del j
+        except Exception as e:  # one router failing must not lose the others' timings
+            report["routers"][name] = {"error": f"{type(e).__name__}: {e}"}
+            log.warning(f"{name}: {e}")
         torch.cuda.empty_cache() if args.device == "cuda" else None
 
     if "Qwen2.5-1.5B router" not in args.skip:
