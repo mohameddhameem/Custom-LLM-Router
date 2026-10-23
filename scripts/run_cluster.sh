@@ -282,6 +282,22 @@ EOF
       done
     fi
     ;;
+  pairD-experts)  # GPU: E5's pair D (Llama-3.2-3B / 3.1-8B) on all 7,405 dev questions; evidence copied from runs/gpu
+    CONFIG=configs/gpu-pairD.toml REUSE=runs/gpu experts runs/gpu-pairD test "$DATA/distractor_validation.parquet"
+    ;;
+  e5-prepare)  # CPU job: E5's pairs B, C, D cut to the golden set's slr-* splits from their dev caches (no model calls)
+    for p in B:runs/gpu-large-14b C:runs/gpu-small-3b D:runs/gpu-pairD; do
+      for split in router_train calib test; do
+        $BIN subset-cache --from "${p#*:}" --splits "$DATA/splits-slr.json" --split "$split" --run "runs/slr-pair${p%%:*}" --name "$split"
+      done
+    done
+    ;;
+  e5-judges)  # GPU: E5's judges, each trained on one pair and scored on every pair (~1-2 h)
+    HF_HUB_OFFLINE=1 $BIN judge train --plan configs/e5-transfer.toml --data-dir "$DATA" --out runs/e5-transfer
+    ;;
+  e5-eval)  # CPU job: E5's reports per pair (all 1,481 and the clean 1,303)
+    $BIN judge eval --plan configs/e5-transfer.toml --data-dir "$DATA" --out runs/e5-transfer       --exclude "$DATA/nanojev_validation_ids.txt"
+    ;;
   e3-signals)  # GPU: E3's weak-model signals on DATASET=hotpotqa|musique|2wikimultihopqa (pair A's every split), ~1 h
     case ${DATASET:?DATASET=hotpotqa|musique|2wikimultihopqa} in
       hotpotqa) SRUN=runs/slr-pairA; SDATA=$DATA; SARGS="--split router_train --split calib --split test"

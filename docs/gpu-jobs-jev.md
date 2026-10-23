@@ -32,6 +32,15 @@ from `~/Custom-LLM-Router` on branch `feat/jev-novelty` after `uv sync --extra l
 | 3.1 | `qsub -l walltime=04:00:00 -v STEP=e3-signals,DATASET=hotpotqa scripts/omega.pbs` | GPU | ~1 h | `runs/slr-pairA/signals/{router_train,calib,test}.parquet` and `-hidden.npy` |
 | 3.2 | the same with `DATASET=musique` / `2wikimultihopqa`, `-W depend=afterok:<2.3 of that dataset>` | GPU | ~1 h each | `runs/<dataset>-pairA/signals/` |
 
+## E5: transfer across model pairs (HotpotQA golden set)
+
+| # | Command | Where | Time | Output |
+|---|---|---|---|---|
+| 5.1 | `qsub -l walltime=12:00:00 -v STEP=pairD-experts scripts/omega.pbs` | GPU | ~4–6 h | `runs/gpu-pairD/test.parquet`: Llama-3.2-3B / 3.1-8B on all 7,405 dev questions (evidence copied from `runs/gpu`) |
+| 5.2 | `qsub -l walltime=00:30:00 -W depend=afterok:<5.1> -v STEP=e5-prepare scripts/omega-cpu.pbs` | CPU | minutes | `runs/slr-pair{B,C,D}/` |
+| 5.3 | `qsub -l walltime=04:00:00 -W depend=afterok:<5.2> -v STEP=e5-judges scripts/omega.pbs` | GPU | ~1–2 h | `runs/e5-transfer/judges/`: qp / qpa trained on each pair, scored on every pair |
+| 5.4 | `qsub -l walltime=02:00:00 -W depend=afterok:<5.3> -v STEP=e5-eval scripts/omega-cpu.pbs` | CPU | ~30 min | `runs/e5-transfer/eval/<pair>/report{,-clean}.json` |
+
 - **Budgets** are nested and stratified (`judge.budget_split`). A budget counts every label the judge sees, including
   its 10% hold-out (at least 10) that picks the epoch.
 - **Small budgets** train for at least 150 optimizer steps (`min_steps`), the same for every starting point.
