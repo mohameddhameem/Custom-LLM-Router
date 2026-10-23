@@ -20,6 +20,7 @@ resumes.
 | 10.3 | `qsub -l walltime=08:00:00 -v STEP=exp10-train,JUDGE=decider-2b scripts/omega.pbs` | GPU | ~3–5 h | `runs/exp10-slr/judge-decider-2b/` |
 | 10.4 | `qsub -l walltime=20:00:00 -v STEP=exp10-train,JUDGE=decider-e4b scripts/omega.pbs` | GPU | ~8–12 h | `runs/exp10-slr/judge-decider-e4b/`. Micro-batch 2, as experiment 9's E4B: at 4 it ran out of GPU memory (43099) |
 | 10.5 | rerun 10.2 after 10.3 and 10.4 | CPU | ~15 min | the reports with the deciders |
+| 10.6 | `slr-fetch` on the login node (adds his `router_prompts.py`), then rerun 10.2 | CPU | ~15 min | benchmark 1 (2026-10-23): his routers priced like ours, `aiq_diff_both_priced` |
 
 **Experiments 7 and 9 on the golden set** (`configs/system-one-slr.toml`). Pair A (Qwen2.5-1.5B on the top 2 /
 Qwen2.5-7B on all 10 distractor passages) is cut from `runs/gpu`'s cache of all 7,405 dev questions, so no expert
@@ -33,6 +34,8 @@ reruns:
 | 7.4 | `qsub -l walltime=01:00:00 -W depend=afterok:<7.2>:<7.3> -v STEP=slr7-eval scripts/omega-cpu.pbs` | CPU | ~20 min | `runs/slr-judges/eval/A/report{,-clean}.json` |
 | 7.5 | `qsub -l walltime=08:00:00 -v "STEP=slr7-judges,ONLY=--only qp-large-helps-strands-decider-2b-hobson-v21-A --only qpa-large-helps-strands-decider-2b-hobson-v21-A" scripts/omega.pbs` | GPU | ~2–3 h | experiment 9, 2B (with the deciders, step 5 of the queue) |
 | 7.6 | `qsub -l walltime=12:00:00 -v "STEP=slr7-judges,ONLY=--only qp-large-helps-strands-decider-e4b-gemma4-v1-2610-A --only qpa-large-helps-strands-decider-e4b-gemma4-v1-2610-A" scripts/omega.pbs` | GPU | ~5–6 h | experiment 9, E4B; then rerun 7.4 |
+| 7.7 | `qsub -l walltime=03:00:00 -v "STEP=save-judges,PLAN=configs/system-one-slr.toml,JUDGE_OUT=runs/slr-judge-models,ONLY=--only qp-large-helps-nanojev-A --only qpa-large-helps-nanojev-A" scripts/omega.pbs` | GPU | ~5 min | 43118 (2026-10-23): the qp / qpa judges again, weights saved for Hugging Face (`runs/slr-judge-models/judges/<judge>/seed<k>/model/`, 128 MB each) |
+| 7.8 | `qsub -l walltime=01:00:00 -W depend=afterok:<7.7> -v STEP=slr7-eval,JOUT=runs/slr-judge-models scripts/omega-cpu.pbs` | CPU | ~10 min | their reports, to check them against 7.2's (0.674 / 0.677) |
 
 - **Cost (`cost = "table5"`):** each answering call pays its golden-set price: Qwen2.5-7B 10 (Table 5), and
   Qwen2.5-1.5B 0.5 (the same formula; Table 5 doesn't list it).

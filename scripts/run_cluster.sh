@@ -228,7 +228,7 @@ EOF
   exp10-train)  # GPU: one judge set of configs/exp10-slr.toml, every (inputs, seed); resumes
     $BIN exp10-slr train --judge "${JUDGE:?JUDGE=nano-jev|decider-2b|decider-e4b}" --plan "${PLAN:-configs/exp10-slr.toml}"
     ;;
-  exp10-eval)  # CPU job: reports for every judge set trained so far, against Jonathan's routers (loads no model)
+  exp10-eval)  # CPU job: reports for every judge set trained so far, against Jonathan's routers (loads only his router's tokenizer, to price its calls)
     $BIN exp10-slr eval --plan "${PLAN:-configs/exp10-slr.toml}"
     ;;
   exp8s-pools)  # CPU job: experiment 8 on the golden set: its split (questions answered before drawn first) and pools
@@ -250,8 +250,8 @@ EOF
   slr7-judges)  # GPU: experiments 7/9's judges on the golden set, J=zeroshot|train (default train), ONLY="--only <judge> ..."
     $BIN judge "${J:-train}" --plan configs/system-one-slr.toml --data-dir "$DATA" --out runs/slr-judges ${ONLY:-}
     ;;
-  slr7-eval)  # CPU job: reports on slr-test, all 1,481 and without nano-jev's questions (loads no model)
-    $BIN judge eval --plan configs/system-one-slr.toml --data-dir "$DATA" --out runs/slr-judges \
+  slr7-eval)  # CPU job: reports on slr-test, all 1,481 and without nano-jev's questions (loads no model); JOUT=<judge run>
+    $BIN judge eval --plan configs/system-one-slr.toml --data-dir "$DATA" --out "${JOUT:-runs/slr-judges}" \
       --exclude "$DATA/nanojev_validation_ids.txt"
     ;;
   *)
