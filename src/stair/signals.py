@@ -238,7 +238,7 @@ def main(argv: list[str] | None = None) -> None:
         out.to_parquet(target / f"{split}.parquet", index=False)
         log.info(f"signals {split}: {len(out)} questions | MSP {out['sig_msp'].mean():.3f}, P(True) {out['sig_ptrue'].mean():.3f}, "
                  f"agree {out['sig_sc_agree'].mean():.3f}, verify {out['sig_verify_yes'].mean():.3f}")
-    provenance.record(target, "signals", run=str(args.run), splits=args.split, k=args.k, k_verify=args.k_verify,
+    provenance.record(target, "signals", pair_run=str(args.run), splits=args.split, k=args.k, k_verify=args.k_verify,
                       temperature=args.temperature, model=small["model"], revision=provenance.hub_revision(small["model"]),
                       **provenance.environment())
     (target / "settings.json").write_text(json.dumps({"k": args.k, "k_verify": args.k_verify,

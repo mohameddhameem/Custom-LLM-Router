@@ -327,3 +327,18 @@ def test_risk_control_keeps_its_guarantee():
         assert r["mean_risk"] <= alpha and r["violation_rate"] <= 0.1 and r["h6a"]
         assert 0 < r["mean_kept"] < 1  # it does keep questions, not just escalate everything
     assert rc.ltt_threshold(score, np.ones(n, dtype=int), 0.1, 0.1) == -np.inf  # all wrong: keep nothing
+
+
+def test_signals_finish_a_run_whose_splits_are_done(tmp_path):
+    import pandas as pd
+
+    from stair import signals
+
+    run = tmp_path / "pairA"
+    (run / "signals").mkdir(parents=True)
+    (run / "config.toml").write_text('[[experts]]\nname = "small"\nkind = "hf"\nmodel = "tiny/weak"\n')
+    pd.DataFrame({"id": ["q1"], "sig_msp": [0.5], "sig_nli_entail": [0.9]}).to_parquet(run / "signals" / "test.parquet")
+    signals.main(["--run", str(run), "--data-dir", str(tmp_path), "--split", "test"])  # loads no model
+    record = json.loads((run / "signals" / "provenance.jsonl").read_text().splitlines()[-1])
+    assert record["pair_run"] == str(run) and record["splits"] == ["test"]
+    assert json.loads((run / "signals" / "settings.json").read_text())["k"] == 10  # confirm.py prices the samples by it

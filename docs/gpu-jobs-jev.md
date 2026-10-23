@@ -45,7 +45,7 @@ from `~/Custom-LLM-Router` on branch `feat/jev-novelty` after `uv sync --extra l
 | 2.5 | `qsub -l walltime=04:00:00 -W depend=afterok:<2.3> -v STEP=e2-judges,DATASET=<dataset> scripts/omega.pbs` | GPU | ~1 h | `runs/e2-<dataset>/{zeroshot,judges}/` |
 | 2.6 | `qsub -l walltime=03:00:00 -W depend=afterok:<2.5> -v STEP=e2-eval,DATASET=<dataset> scripts/omega-cpu.pbs` | CPU | ~1 h | `runs/e2-<dataset>/eval/<pair>/report.json` |
 | 2.7 | `qsub -l walltime=08:00:00 -W depend=afterok:<2.3> -v "STEP=e1-judges,DATA=data/<dataset>,PLAN=configs/e1-label-curve-<dataset>.toml,JOUT=runs/e1-label-curve-<dataset>" scripts/omega.pbs` | GPU | ~3 h | E1 confirmatory: 300 fine-tunes |
-| 2.8 | `qsub -l walltime=04:00:00 -W depend=afterany:<2.7> -v "STEP=e1-curve,DATA=data/<dataset>,PLAN=...,JOUT=..." scripts/omega-cpu.pbs` | CPU | ~30 min | H1 on the dataset |
+| 2.8 | `qsub -l walltime=04:00:00 -W depend=afterany:<2.7> -v "STEP=e1-curve,DATA=data/<dataset>,PLAN=...,JOUT=...,BOOT=5000" scripts/omega-cpu.pbs` | CPU | ~30 min | H1 on the dataset. `BOOT=5000`: the pre-registration's replicates for confirmatory tests (43235/43236 ran the default 1,000; rerun as 43266/43267) |
 
 ## E3: the weak model's own signals
 
@@ -58,6 +58,10 @@ The first runs (43220, 43224, 43225) ran out of GPU memory: the float log-softma
 vocabulary. `teacher_forced` now puts only the answer positions through the LM head. The reruns wait on a CPU job
 that runs the signals test (`STEP=tests,TESTS=weak_model`). HotpotQA's router_train had already finished and is
 kept.
+
+The reruns (43255–43257) wrote every split, then failed at the provenance record (`run=` clashed with `record`'s own
+argument), so `settings.json`, which confirm reads, was never written. With every split done, the step loads no model,
+so the finishing runs are CPU jobs: `qsub -l walltime=00:30:00 -v STEP=e3-signals,DATASET=<dataset> scripts/omega-cpu.pbs`.
 
 ## Confirmatory tests (CPU, after the runs they read)
 
