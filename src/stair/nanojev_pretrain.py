@@ -6,8 +6,11 @@ fixes the settings: base microsoft/MiniLM-L12-H384-uncased, 3 epochs, lr 5e-5, b
 
     repro     v1.0's own committed data (data/{train,calib,test}.jsonl: 6,000 HotpotQA + 6,000 SQuAD 2.0 + 8,000
               MultiNLI training questions): a retrain, so the gap to v1.0 measures retraining noise
-    nohotpot  the same builders with HotpotQA replaced by as many SQuAD 2.0 questions (12,000 SQuAD + 8,000 MultiNLI),
-              and calib / test without HotpotQA, so not even epoch selection sees it
+    nohotpot  HotpotQA replaced by SQuAD 2.0 decision for decision (pre-registration deviation 2): v1.0's 23,840
+              HotpotQA relevance examples by 24,000 built the same way from SQuAD paragraphs (squad_relevance_examples),
+              its 17,920 sufficiency examples by 18,000 of nano-jev's own SQuAD ones, MultiNLI's 8,000 unchanged; calib /
+              test without HotpotQA too, so not even epoch selection sees it. Without a relevance decision (only yes/no
+              decisions) the plain base never left the tied start: loss ln 2 for 3 epochs (job 43206)
 
     nanojev-pretrain fetch --out runs/nanojev-pretrain          # login node: clone + dataset downloads, no compute
     nanojev-pretrain train --variant repro --out runs/nanojev-pretrain   # GPU: build (nohotpot), train, evaluate
@@ -37,7 +40,8 @@ BASE = "microsoft/MiniLM-L12-H384-uncased"
 V1 = "sdmlai/nano-jev@v1.0"
 HPARAMS = ["--epochs", "3", "--lr", "5e-5", "--batch-size", "16", "--max-length", "512"]  # v1.0's card
 DATASETS = [("rajpurkar/squad_v2", None), ("nyu-mll/multi_nli", None), ("hotpotqa/hotpot_qa", "distractor")]
-NOHOTPOT = {"squad_train": 12000, "mnli_train": 8000, "squad_eval": 500, "mnli_eval": 500}
+NOHOTPOT = {"relevance_train": 6000, "squad_train": 18000, "mnli_train": 8000,
+            "relevance_eval": 500, "squad_eval": 500, "mnli_eval": 500}
 VARIANTS = ("repro", "nohotpot")
 
 
@@ -61,15 +65,58 @@ def fetch(out: Path) -> None:
     log.info(f"nano-jev recipe at {COMMIT[:7]} in {src}")
 
 
+def load_squad(split: str):
+    from datasets import load_dataset
+
+    return load_dataset("rajpurkar/squad_v2", split=split)
+
+
+def squad_relevance_examples(rows, n: int, rng: random.Random, example) -> list[dict]:
+    """nano-jev's HotpotQA relevance examples, rebuilt from SQuAD 2.0: per answerable question, its own paragraph
+    ("directly answers", 2), another paragraph of the same article without the answer string ("partially relevant", 1),
+    and one paragraph from each of two other articles ("irrelevant", 0): four examples a question, as HotpotQA's two
+    gold paragraphs plus two distractors. `example` is nano-jev's own `_example`, so the question template is its."""
+    by_title: dict[str, list[str]] = {}
+    for title, context in zip(rows["title"], rows["context"]):
+        contexts = by_title.setdefault(title, [])
+        if context not in contexts:
+            contexts.append(context)
+    titles = sorted(by_title)
+    order = list(range(len(rows)))
+    rng.shuffle(order)
+    out, used = [], 0
+    for i in order:
+        row = rows[i]
+        if not row["answers"]["text"]:
+            continue
+        answer = row["answers"]["text"][0].strip().lower()
+        same = [c for c in by_title[row["title"]] if c != row["context"] and answer not in c.lower()]
+        if not same:
+            continue
+        name = row["title"].replace("_", " ")
+        out.append(example("relevance", 2, f"{name}: {row['context']}", "squad2", query=row["question"]))
+        out.append(example("relevance", 1, f"{name}: {rng.choice(same)}", "squad2", query=row["question"]))
+        for other in rng.sample([t for t in titles if t != row["title"]], 2):
+            out.append(example("relevance", 0, f"{other.replace('_', ' ')}: {rng.choice(by_title[other])}", "squad2",
+                               query=row["question"]))
+        used += 1
+        if used == n:
+            break
+    return out
+
+
 def build_nohotpot(src: Path, seed: int = 0) -> dict[str, list[dict]]:
-    """nanojev.data.build_all with HotpotQA left out of train, calib and test (its builders, its rng order)."""
+    """nanojev.data.build_all with HotpotQA's examples replaced by SQuAD 2.0 ones, decision for decision, in train,
+    calib and test (its own builders and question templates, its rng order)."""
     sys.path.insert(0, str(src))
-    from nanojev.data import mnli_examples, squad2_examples
+    from nanojev.data import _example, mnli_examples, squad2_examples
 
     rng = random.Random(seed)
-    train = squad2_examples("train", NOHOTPOT["squad_train"], rng) + mnli_examples("train", NOHOTPOT["mnli_train"], rng)
+    train = (squad_relevance_examples(load_squad("train"), NOHOTPOT["relevance_train"], rng, _example)
+             + squad2_examples("train", NOHOTPOT["squad_train"], rng) + mnli_examples("train", NOHOTPOT["mnli_train"], rng))
     calib, test = [], []
-    for part in (squad2_examples("validation", 2 * NOHOTPOT["squad_eval"], rng),
+    for part in (squad_relevance_examples(load_squad("validation"), 2 * NOHOTPOT["relevance_eval"], rng, _example),
+                 squad2_examples("validation", 2 * NOHOTPOT["squad_eval"], rng),
                  mnli_examples("validation_matched", 2 * NOHOTPOT["mnli_eval"], rng)):
         rng.shuffle(part)
         calib += part[: len(part) // 2]
@@ -130,7 +177,7 @@ def train(out: Path, variant: str, seed: int) -> None:
         run([sys.executable, "scripts/train.py", "--data", str(data), "--out", str(model), "--base", BASE,
              "--seed", str(seed), *HPARAMS], src)
     evaluate(src, model, data, data, target, "eval-own", save=True)  # fits calibration.json on its own calib
-    evaluate(src, model, data, src / "data", target, "eval-v1-test", save=False)
+    evaluate(src, model, src / "data", src / "data", target, "eval-v1-test", save=False)  # v1.0's calib: all decisions
     v1 = out.resolve() / "v1.0"
     if not (v1 / "eval-v1-test.json").exists():  # the reference: released v1.0 on the same split
         evaluate(src, resolve_checkpoint(V1), src / "data", src / "data", v1, "eval-v1-test", save=False)

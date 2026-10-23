@@ -239,3 +239,22 @@ deviation 1):
      - router_train is unchanged.
      - `prepare-multihop` now refuses any part with questions that lack a gold answer.
    - **Aliases:** 2Wiki's alias file is not in the mirror, so the secondary alias score exists for MuSiQue only.
+2. **2026-10-24, before any E1 judge was trained: the nano-jev-noHotpot arm.**
+   - **What happened:** as pre-registered (HotpotQA replaced by 12,000 SQuAD 2.0 questions with nano-jev's own
+     builders), the arm never trained. Job 43206 shows loss and dev NLL at 0.693 (ln 2) for all three epochs, and test
+     accuracy 0.48–0.49.
+   - **Why:** in nano-jev's recipe only HotpotQA produces the 3-option *relevance* decision. Without it every example
+     is a yes/no choice, and the plain base never leaves the start where every option scores the same.
+   - **The reproduction is unaffected:** it reaches v1.0's test accuracy within 0.02 (grounded 0.858 against 0.844,
+     relevance 0.812 against 0.815, sufficient 0.854 against 0.845), so the gate passes.
+   - **New rule:** HotpotQA is replaced by SQuAD 2.0 *decision for decision*, so the arm keeps v1.0's decision mix and
+     volume and differs only in HotpotQA:
+     - **relevance:** 6,000 SQuAD questions × 4 examples (`squad_relevance_examples`), against v1.0's 23,840
+       HotpotQA ones. Per question:
+       - its own paragraph, "directly answers";
+       - another paragraph of the same article without the answer, "partially relevant";
+       - paragraphs from two other articles, "irrelevant".
+     - **sufficiency:** 18,000 of nano-jev's own SQuAD examples, against v1.0's 17,920.
+     - **grounded:** MultiNLI's 8,000, unchanged.
+   - **Calib and test** are built the same way, with no HotpotQA.
+   - **The collapsed model** is kept as `runs/nanojev-pretrain/nohotpot-collapsed` and not used.

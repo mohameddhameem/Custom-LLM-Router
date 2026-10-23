@@ -10,6 +10,7 @@ import pytest
 from stair import judge, nanojev_pretrain
 
 CONFIGS = Path(__file__).parent.parent / "configs"
+FAKE_EXAMPLE = '\ndef _example(decision, label, state, source, **fields):\n    return {"decision": decision, "question": str(fields), "options": ["a", "b", "c"], "state": state,\n            "label": label, "source": source}\n'
 
 
 def test_budgets_nest_and_keep_the_label_rate():
@@ -91,17 +92,65 @@ def mnli_examples(split, n, rng):
 ''')
 
 
+class _Rows:
+    """A stand-in for a SQuAD 2.0 split: column access by name, row access by index."""
+
+    def __init__(self, rows):
+        self.rows = rows
+
+    def __len__(self):
+        return len(self.rows)
+
+    def __getitem__(self, key):
+        return [r[key] for r in self.rows] if isinstance(key, str) else self.rows[key]
+
+
+def _squad(n_titles=4, per_title=3):
+    rows = []
+    for t in range(n_titles):
+        for p in range(per_title):
+            context = f"paragraph {t}-{p} mentions answer{t}{p}"
+            rows.append({"title": f"T_{t}", "context": context, "question": f"q{t}{p}?",
+                         "answers": {"text": [f"answer{t}{p}"]}})
+            rows.append({"title": f"T_{t}", "context": context, "question": f"u{t}{p}?", "answers": {"text": []}})
+    return _Rows(rows)
+
+
+def _example(decision, label, state, source, **fields):
+    return {"decision": decision, "question": str(fields), "options": ["a", "b", "c"], "state": state,
+            "label": label, "source": source}
+
+
+def test_squad_relevance_mirrors_hotpotqa_four_examples():
+    import random
+
+    out = nanojev_pretrain.squad_relevance_examples(_squad(), 3, random.Random(0), _example)
+    assert len(out) == 12 and [e["label"] for e in out[:4]] == [2, 1, 0, 0]
+    gold, partial, other = out[0]["state"], out[1]["state"], out[2]["state"]
+    assert gold.split(":")[0] == partial.split(":")[0] != other.split(":")[0]  # same article, then another one
+    answer = gold.split("mentions ")[1]
+    assert answer not in partial  # "partially relevant": same article, without the answer string
+
+
 def test_the_nohotpot_arm_has_no_hotpotqa_anywhere(tmp_path, monkeypatch):
+    import sys
+
     _fake_recipe(tmp_path / "src")
-    monkeypatch.setattr(nanojev_pretrain, "NOHOTPOT", {"squad_train": 6, "mnli_train": 4, "squad_eval": 2, "mnli_eval": 3})
-    monkeypatch.setattr("sys.path", list(__import__("sys").path))  # build_nohotpot prepends the recipe folder
+    data_py = tmp_path / "src" / "nanojev" / "data.py"
+    data_py.write_text(data_py.read_text() + FAKE_EXAMPLE)
+    monkeypatch.setattr(nanojev_pretrain, "NOHOTPOT", {"relevance_train": 2, "squad_train": 6, "mnli_train": 4,
+                                                       "relevance_eval": 1, "squad_eval": 2, "mnli_eval": 3})
+    monkeypatch.setattr(nanojev_pretrain, "load_squad", lambda split: _squad())
+    monkeypatch.setattr("sys.path", list(sys.path))  # build_nohotpot prepends the recipe folder
+    for mod in [m for m in sys.modules if m == "nanojev" or m.startswith("nanojev.")]:
+        monkeypatch.delitem(sys.modules, mod)
     data = nanojev_pretrain.build_nohotpot(tmp_path / "src", seed=0)
-    assert len(data["train"]) == 10 and len(data["calib"]) == 5 and len(data["test"]) == 5  # eval sets halved
+    assert len(data["train"]) == 8 + 10 and len(data["calib"]) == 4 + 5 and len(data["test"]) == 4 + 5
     assert {ex["source"] for split in data.values() for ex in split} == {"squad2", "mnli"}
     for split, examples in data.items():
         nanojev_pretrain.write_jsonl(examples, tmp_path / "data" / f"{split}.jsonl")
     counts = nanojev_pretrain.source_counts(tmp_path / "data")
-    assert counts["train"] == {"squad2/sufficient": 6, "mnli/sufficient": 4}
+    assert counts["train"] == {"squad2/relevance": 8, "squad2/sufficient": 6, "mnli/sufficient": 4}
     again = nanojev_pretrain.build_nohotpot(tmp_path / "src", seed=0)
     assert json.dumps(again) == json.dumps(data)  # deterministic for a seed
 
